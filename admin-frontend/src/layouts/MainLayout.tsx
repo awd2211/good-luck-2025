@@ -222,6 +222,12 @@ const MainLayout = () => {
           permission: Permission.ADMIN_VIEW,
         },
         {
+          key: '/roles',
+          icon: <TeamOutlined />,
+          label: '角色管理',
+          permission: Permission.ADMIN_VIEW,
+        },
+        {
           key: '/audit-log',
           icon: <FileTextOutlined />,
           label: '操作日志',
