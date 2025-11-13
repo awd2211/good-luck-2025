@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <meta name="theme-color" content="#ff6b6b" />
+    <meta name="description" content="掌握财富运势,抓住机会做个有钱人 - 专业的算命、八字、运势测算平台" />
+    <meta name="keywords" content="算命,八字,生肖运势,流年运势,姓名测算,婚姻分析,财运分析" />
+
+    <!-- DNS 预连接 - 提前解析API域名 -->
+    <link rel="dns-prefetch" href="//localhost:3000" />
+    <link rel="preconnect" href="http://localhost:3000" crossorigin />
+
+    <!-- 预加载关键资源 -->
+    <link rel="preload" href="/src/main.tsx" as="script" />
+    <link rel="preload" href="/src/App.css" as="style" />
+
+    <!-- 预加载字体(如果有) -->
+    <!-- <link rel="preload" href="/fonts/your-font.woff2" as="font" type="font/woff2" crossorigin /> -->
+
+    <!-- iOS优化 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="财富运势" />
+
+    <!-- Android优化 -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- PWA支持 -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- 禁用电话号码自动识别 -->
+    <meta name="format-detection" content="telephone=no" />
+
+    <title>掌握财富运势 - 专业算命测算平台</title>
+
+    <style>
+      /* 首屏关键CSS - 防止闪烁 */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        min-height: 100vh;
+      }
+      #root {
+        width: 100%;
+        min-height: 100vh;
+      }
+      /* 初始加载动画 */
+      .loading-initial {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        font-size: 24px;
+        color: #ff6b6b;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <!-- 首屏加载占位 -->
+      <div class="loading-initial">
+        <div>加载中...</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- 性能监控脚本 -->
+    <script>
+      // 记录首屏加载时间
+      window.addEventListener('load', function() {
+        const perfData = window.performance.timing;
+        const loadTime = perfData.loadEventEnd - perfData.navigationStart;
+        console.log('⚡ 页面加载完成:', (loadTime / 1000).toFixed(2) + 's');
+      });
+    </script>
+  </body>
+</html>
