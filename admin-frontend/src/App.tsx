@@ -24,6 +24,10 @@ import FortuneTemplateManagement from './pages/FortuneTemplateManagement'
 import DailyHoroscopeManagement from './pages/DailyHoroscopeManagement'
 import ArticleManagement from './pages/ArticleManagement'
 import AIModelManagement from './pages/AIModelManagement'
+import AttributionAnalytics from './pages/AttributionAnalytics'
+import PaymentConfigManagement from './pages/PaymentConfigManagement'
+import PaymentMethodManagement from './pages/PaymentMethodManagement'
+import PaymentTransactions from './pages/PaymentTransactions'
 import Login from './pages/Login'
 import PrivateRoute from './components/PrivateRoute'
 
@@ -42,6 +46,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="orders" element={<OrderManagement />} />
+        <Route path="attribution" element={<AttributionAnalytics />} />
         <Route path="fortunes" element={<FortuneManagement />} />
         <Route path="fortune-categories" element={<FortuneCategoryManagement />} />
         <Route path="fortune-services" element={<FortuneServiceManagement />} />
@@ -52,6 +57,9 @@ function App() {
         <Route path="system-configs" element={<SystemConfigManagement />} />
         <Route path="statistics" element={<Statistics />} />
         <Route path="financial" element={<FinancialManagement />} />
+        <Route path="payment-transactions" element={<PaymentTransactions />} />
+        <Route path="payment-methods" element={<PaymentMethodManagement />} />
+        <Route path="payment-configs" element={<PaymentConfigManagement />} />
         <Route path="refunds" element={<RefundManagement />} />
         <Route path="feedbacks" element={<FeedbackManagement />} />
         <Route path="reviews" element={<ReviewManagement />} />

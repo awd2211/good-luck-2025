@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = '/api'
+const API_BASE_URL = '/api/manage'
 
 // 创建 axios 实例
 const authApi = axios.create({

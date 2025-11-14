@@ -34,6 +34,7 @@ import {
   CalendarOutlined,
   FormOutlined,
   RobotOutlined,
+  FunnelPlotOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermission } from '../hooks/usePermission'
@@ -84,6 +85,12 @@ const MainLayout = () => {
           label: '订单管理',
           permission: Permission.ORDER_VIEW,
         },
+        {
+          key: '/attribution',
+          icon: <FunnelPlotOutlined />,
+          label: '归因统计',
+          permission: Permission.STATS_VIEW,
+        },
       ],
     },
     {
@@ -127,18 +134,6 @@ const MainLayout = () => {
           label: '文章管理',
           permission: Permission.FORTUNE_CONTENT_VIEW,
         },
-        {
-          key: '/ai-models',
-          icon: <RobotOutlined />,
-          label: 'AI模型管理',
-          permission: Permission.SYSTEM_CONFIG_VIEW,
-        },
-        {
-          key: '/system-configs',
-          icon: <SettingOutlined />,
-          label: '系统配置',
-          permission: Permission.SYSTEM_CONFIG_VIEW,
-        },
       ],
     },
     {
@@ -156,6 +151,24 @@ const MainLayout = () => {
           key: '/financial',
           icon: <DollarOutlined />,
           label: '财务管理',
+          permission: Permission.FINANCIAL_VIEW,
+        },
+        {
+          key: '/payment-transactions',
+          icon: <TransactionOutlined />,
+          label: '支付交易',
+          permission: Permission.FINANCIAL_VIEW,
+        },
+        {
+          key: '/payment-methods',
+          icon: <DollarOutlined />,
+          label: '支付方式',
+          permission: Permission.FINANCIAL_VIEW,
+        },
+        {
+          key: '/payment-configs',
+          icon: <SettingOutlined />,
+          label: '支付配置',
           permission: Permission.FINANCIAL_VIEW,
         },
         {
@@ -226,6 +239,18 @@ const MainLayout = () => {
           icon: <TeamOutlined />,
           label: '角色管理',
           permission: Permission.ADMIN_VIEW,
+        },
+        {
+          key: '/ai-models',
+          icon: <RobotOutlined />,
+          label: 'AI模型管理',
+          permission: Permission.SYSTEM_CONFIG_VIEW,
+        },
+        {
+          key: '/system-configs',
+          icon: <SettingOutlined />,
+          label: '系统配置',
+          permission: Permission.SYSTEM_CONFIG_VIEW,
         },
         {
           key: '/audit-log',
