@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getAIModels,
+  getAIModelsByProvider,
   getAIModel,
   createAIModel,
   updateAIModel,
@@ -20,15 +21,23 @@ const router = express.Router();
 router.get(
   '/',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getAIModels
+);
+
+// 按供应商获取AI模型（需要读取权限）- 用于下拉选择
+router.get(
+  '/by-provider/:provider',
+  authenticate,
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
+  getAIModelsByProvider
 );
 
 // 获取单个AI模型（需要读取权限）
 router.get(
   '/:id',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getAIModel
 );
 
@@ -44,7 +53,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.UPDATE),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.EDIT),
   updateAIModel
 );
 
@@ -60,7 +69,7 @@ router.delete(
 router.post(
   '/:id/test',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.UPDATE),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.EDIT),
   testAIModel
 );
 
@@ -68,7 +77,7 @@ router.post(
 router.get(
   '/:id/stats',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getAIModelStats
 );
 
@@ -76,7 +85,7 @@ router.get(
 router.post(
   '/:id/set-default',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.UPDATE),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.EDIT),
   setDefaultAIModel
 );
 
@@ -84,7 +93,7 @@ router.post(
 router.post(
   '/batch-update',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.UPDATE),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.EDIT),
   batchUpdateAIModels
 );
 

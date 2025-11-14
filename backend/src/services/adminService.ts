@@ -180,8 +180,10 @@ export const getAdminStats = async () => {
     SELECT
       COUNT(*) as total,
       COUNT(CASE WHEN role = 'super_admin' THEN 1 END) as super_admin_count,
+      COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
       COUNT(CASE WHEN role = 'manager' THEN 1 END) as manager_count,
       COUNT(CASE WHEN role = 'editor' THEN 1 END) as editor_count,
+      COUNT(CASE WHEN role = 'operator' THEN 1 END) as operator_count,
       COUNT(CASE WHEN role = 'viewer' THEN 1 END) as viewer_count
     FROM admins
   `);

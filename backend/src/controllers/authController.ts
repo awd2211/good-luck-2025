@@ -1,12 +1,12 @@
 import { Request, Response } from 'express'
-import { login, refreshToken } from '../services/authService'
+import { login, refreshToken, changePassword } from '../services/authService'
 
 /**
  * 用户登录
  */
 export const loginHandler = async (req: Request, res: Response) => {
   try {
-    const { username, password } = req.body
+    const { username, password, twoFactorToken } = req.body
 
     if (!username || !password) {
       return res.status(400).json({
@@ -15,7 +15,16 @@ export const loginHandler = async (req: Request, res: Response) => {
       })
     }
 
-    const result = await login(username, password)
+    const result = await login(username, password, twoFactorToken)
+
+    // 如果需要2FA验证
+    if (result.requiresTwoFactor) {
+      return res.status(200).json({
+        success: false,
+        requiresTwoFactor: true,
+        message: result.message,
+      })
+    }
 
     res.json({
       success: true,
@@ -84,4 +93,46 @@ export const logout = (req: Request, res: Response) => {
     success: true,
     message: '登出成功',
   })
+}
+
+/**
+ * 修改密码
+ */
+export const changePasswordHandler = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: '未登录',
+      })
+    }
+
+    const { old_password, new_password } = req.body
+
+    if (!old_password || !new_password) {
+      return res.status(400).json({
+        success: false,
+        message: '旧密码和新密码不能为空',
+      })
+    }
+
+    if (new_password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: '新密码长度至少8个字符',
+      })
+    }
+
+    const result = await changePassword(req.user.id, old_password, new_password)
+
+    res.json({
+      success: true,
+      message: result.message,
+    })
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : '密码修改失败',
+    })
+  }
 }

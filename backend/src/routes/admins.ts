@@ -18,17 +18,17 @@ const router = express.Router();
  */
 
 // 统计接口需要在参数化路由之前
-router.get('/stats', authenticate, requirePermission(Resource.ADMINS, Action.READ), getStats);
+router.get('/stats', authenticate, requirePermission(Resource.ADMINS, Action.VIEW), getStats);
 
 // 查询操作 - 需要读取权限
-router.get('/', authenticate, requirePermission(Resource.ADMINS, Action.READ), getAdmins);
-router.get('/:id', authenticate, requirePermission(Resource.ADMINS, Action.READ), getAdmin);
+router.get('/', authenticate, requirePermission(Resource.ADMINS, Action.VIEW), getAdmins);
+router.get('/:id', authenticate, requirePermission(Resource.ADMINS, Action.VIEW), getAdmin);
 
 // 创建操作 - 需要创建权限
 router.post('/', authenticate, requirePermission(Resource.ADMINS, Action.CREATE), addAdmin);
 
 // 更新操作 - 需要更新权限
-router.put('/:id', authenticate, requirePermission(Resource.ADMINS, Action.UPDATE), modifyAdmin);
+router.put('/:id', authenticate, requirePermission(Resource.ADMINS, Action.EDIT), modifyAdmin);
 
 // 删除操作 - 需要删除权限
 router.delete('/:id', authenticate, requirePermission(Resource.ADMINS, Action.DELETE), removeAdmin);

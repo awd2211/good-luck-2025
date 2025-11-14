@@ -17,15 +17,15 @@ const router = Router();
  */
 
 // 查询操作 - 需要读取权限
-router.get('/', authenticate, requirePermission(Resource.BANNERS, Action.READ), getBanners);
-router.get('/:id', authenticate, requirePermission(Resource.BANNERS, Action.READ), getBanner);
+router.get('/', authenticate, requirePermission(Resource.BANNERS, Action.VIEW), getBanners);
+router.get('/:id', authenticate, requirePermission(Resource.BANNERS, Action.VIEW), getBanner);
 
 // 创建操作 - 需要创建权限
 router.post('/', authenticate, requirePermission(Resource.BANNERS, Action.CREATE), addBanner);
 
 // 更新操作 - 需要更新权限
-router.put('/:id', authenticate, requirePermission(Resource.BANNERS, Action.UPDATE), modifyBanner);
-router.patch('/:id/position', authenticate, requirePermission(Resource.BANNERS, Action.UPDATE), changeBannerPosition);
+router.put('/:id', authenticate, requirePermission(Resource.BANNERS, Action.EDIT), modifyBanner);
+router.patch('/:id/position', authenticate, requirePermission(Resource.BANNERS, Action.EDIT), changeBannerPosition);
 
 // 删除操作 - 需要删除权限
 router.delete('/:id', authenticate, requirePermission(Resource.BANNERS, Action.DELETE), removeBanner);

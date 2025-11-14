@@ -17,7 +17,7 @@ const router = express.Router();
 router.get(
   '/types',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getConfigTypes
 );
 
@@ -25,7 +25,7 @@ router.get(
 router.post(
   '/batch',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getBatchConfigs
 );
 
@@ -33,7 +33,7 @@ router.post(
 router.get(
   '/',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getSystemConfigs
 );
 
@@ -41,7 +41,7 @@ router.get(
 router.get(
   '/:key',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.READ),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.VIEW),
   getSystemConfig
 );
 
@@ -57,7 +57,7 @@ router.post(
 router.put(
   '/:key',
   authenticate,
-  requirePermission(Resource.SYSTEM_CONFIG, Action.UPDATE),
+  requirePermission(Resource.SYSTEM_CONFIG, Action.EDIT),
   updateSystemConfig
 );
 

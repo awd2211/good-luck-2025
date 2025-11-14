@@ -23,7 +23,7 @@ const router = express.Router();
 router.get(
   '/stats',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getAllServicesStats
 );
 
@@ -31,7 +31,7 @@ router.get(
 router.get(
   '/export',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   exportServices
 );
 
@@ -39,7 +39,7 @@ router.get(
 router.post(
   '/batch-update',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   batchUpdateServices
 );
 
@@ -63,7 +63,7 @@ router.post(
 router.patch(
   '/batch/status',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   batchUpdateStatus
 );
 
@@ -71,7 +71,7 @@ router.patch(
 router.get(
   '/',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getFortuneServices
 );
 
@@ -79,7 +79,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getFortuneService
 );
 
@@ -95,7 +95,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   updateFortuneService
 );
 
@@ -111,7 +111,7 @@ router.delete(
 router.patch(
   '/:id/view',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   incrementViewCount
 );
 
@@ -119,7 +119,7 @@ router.patch(
 router.get(
   '/:id/stats',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getServiceStats
 );
 

@@ -18,18 +18,18 @@ const router = express.Router()
  */
 
 // 统计和批量操作需要在参数化路由之前
-router.get('/stats', authenticate, requirePermission(Resource.USERS, Action.READ), getStats)
-router.post('/batch-status', authenticate, requirePermission(Resource.USERS, Action.UPDATE), batchUpdateStatus)
+router.get('/stats', authenticate, requirePermission(Resource.USERS, Action.VIEW), getStats)
+router.post('/batch-status', authenticate, requirePermission(Resource.USERS, Action.EDIT), batchUpdateStatus)
 
 // 查询操作 - 需要读取权限
-router.get('/', authenticate, requirePermission(Resource.USERS, Action.READ), getUsers)
-router.get('/:id', authenticate, requirePermission(Resource.USERS, Action.READ), getUser)
+router.get('/', authenticate, requirePermission(Resource.USERS, Action.VIEW), getUsers)
+router.get('/:id', authenticate, requirePermission(Resource.USERS, Action.VIEW), getUser)
 
 // 创建操作 - 需要创建权限
 router.post('/', authenticate, requirePermission(Resource.USERS, Action.CREATE), addUser)
 
 // 更新操作 - 需要更新权限
-router.put('/:id', authenticate, requirePermission(Resource.USERS, Action.UPDATE), modifyUser)
+router.put('/:id', authenticate, requirePermission(Resource.USERS, Action.EDIT), modifyUser)
 
 // 删除操作 - 需要删除权限
 router.delete('/:id', authenticate, requirePermission(Resource.USERS, Action.DELETE), removeUser)

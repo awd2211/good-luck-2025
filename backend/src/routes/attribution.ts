@@ -9,7 +9,7 @@ const router = Router()
 router.get(
   '/channels',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getChannels
 )
 
@@ -23,7 +23,7 @@ router.post(
 router.put(
   '/channels/:id',
   authenticate,
-  requirePermission(Resource.STATS, Action.UPDATE),
+  requirePermission(Resource.STATS, Action.EDIT),
   attributionController.updateChannel
 )
 
@@ -38,7 +38,7 @@ router.delete(
 router.get(
   '/utm-templates',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getUtmTemplates
 )
 
@@ -52,7 +52,7 @@ router.post(
 router.put(
   '/utm-templates/:id',
   authenticate,
-  requirePermission(Resource.STATS, Action.UPDATE),
+  requirePermission(Resource.STATS, Action.EDIT),
   attributionController.updateUtmTemplate
 )
 
@@ -67,7 +67,7 @@ router.delete(
 router.get(
   '/promotion-codes',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getPromotionCodes
 )
 
@@ -81,7 +81,7 @@ router.post(
 router.put(
   '/promotion-codes/:id',
   authenticate,
-  requirePermission(Resource.STATS, Action.UPDATE),
+  requirePermission(Resource.STATS, Action.EDIT),
   attributionController.updatePromotionCode
 )
 
@@ -96,7 +96,7 @@ router.delete(
 router.get(
   '/conversion-events',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getConversionEvents
 )
 
@@ -110,7 +110,7 @@ router.post(
 router.put(
   '/conversion-events/:id',
   authenticate,
-  requirePermission(Resource.STATS, Action.UPDATE),
+  requirePermission(Resource.STATS, Action.EDIT),
   attributionController.updateConversionEvent
 )
 
@@ -133,7 +133,7 @@ router.post(
 router.get(
   '/dashboard',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getDashboard
 )
 
@@ -141,7 +141,7 @@ router.get(
 router.get(
   '/funnel',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getFunnel
 )
 
@@ -149,7 +149,7 @@ router.get(
 router.get(
   '/touchpoints',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getTouchpoints
 )
 
@@ -157,7 +157,7 @@ router.get(
 router.get(
   '/model-comparison',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getModelComparison
 )
 
@@ -165,7 +165,7 @@ router.get(
 router.get(
   '/roi',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getRoi
 )
 
@@ -173,7 +173,7 @@ router.get(
 router.get(
   '/channel-comparison',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getChannelComparison
 )
 
@@ -181,7 +181,7 @@ router.get(
 router.get(
   '/trends',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getTrends
 )
 
@@ -189,7 +189,7 @@ router.get(
 router.get(
   '/user-quality',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getUserQuality
 )
 
@@ -197,7 +197,7 @@ router.get(
 router.get(
   '/custom-reports',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getCustomReports
 )
 
@@ -211,7 +211,7 @@ router.post(
 router.put(
   '/custom-reports/:id',
   authenticate,
-  requirePermission(Resource.STATS, Action.UPDATE),
+  requirePermission(Resource.STATS, Action.EDIT),
   attributionController.updateCustomReport
 )
 
@@ -225,7 +225,7 @@ router.delete(
 router.get(
   '/custom-reports/:id/data',
   authenticate,
-  requirePermission(Resource.STATS, Action.READ),
+  requirePermission(Resource.STATS, Action.VIEW),
   attributionController.getCustomReportData
 )
 

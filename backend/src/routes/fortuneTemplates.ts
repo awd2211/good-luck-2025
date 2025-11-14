@@ -18,7 +18,7 @@ const router = express.Router();
 router.get(
   '/types',
   authenticate,
-  requirePermission(Resource.FORTUNE_CONTENT, Action.READ),
+  requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW),
   getTemplateTypes
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   '/',
   authenticate,
-  requirePermission(Resource.FORTUNE_CONTENT, Action.READ),
+  requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW),
   getFortuneTemplates
 );
 
@@ -34,7 +34,7 @@ router.get(
 router.get(
   '/service/:serviceId',
   authenticate,
-  requirePermission(Resource.FORTUNE_CONTENT, Action.READ),
+  requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW),
   getTemplatesByService
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_CONTENT, Action.READ),
+  requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW),
   getFortuneTemplate
 );
 
@@ -58,7 +58,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_CONTENT, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_CONTENT, Action.EDIT),
   updateFortuneTemplate
 );
 

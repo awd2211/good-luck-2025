@@ -2,11 +2,11 @@ import pool from '../config/database';
 
 export const getFinancialStats = async () => {
   const result = await pool.query(`
-    SELECT 
+    SELECT
       COALESCE(SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END), 0) as total_revenue,
-      COALESCE(SUM(CASE WHEN status = 'completed' AND DATE(created_at) = CURRENT_DATE THEN amount ELSE 0 END), 0) as today_revenue,
+      COALESCE(SUM(CASE WHEN status = 'completed' AND DATE(create_time) = CURRENT_DATE THEN amount ELSE 0 END), 0) as today_revenue,
       COUNT(CASE WHEN status = 'completed' THEN 1 END) as total_orders,
-      COUNT(CASE WHEN status = 'completed' AND DATE(created_at) = CURRENT_DATE THEN 1 END) as today_orders
+      COUNT(CASE WHEN status = 'completed' AND DATE(create_time) = CURRENT_DATE THEN 1 END) as today_orders
     FROM orders
   `);
   
@@ -21,14 +21,14 @@ export const getFinancialStats = async () => {
 
 export const getFinancialData = async (startDate?: string, endDate?: string) => {
   const query = `
-    SELECT 
-      DATE(created_at) as date,
+    SELECT
+      DATE(create_time) as date,
       SUM(CASE WHEN status = 'completed' THEN amount ELSE 0 END) as revenue,
       COUNT(CASE WHEN status = 'completed' THEN 1 END) as order_count
     FROM orders
-    WHERE DATE(created_at) >= COALESCE($1::date, CURRENT_DATE - INTERVAL '30 days')
-      AND DATE(created_at) <= COALESCE($2::date, CURRENT_DATE)
-    GROUP BY DATE(created_at)
+    WHERE DATE(create_time) >= COALESCE($1::date, CURRENT_DATE - INTERVAL '30 days')
+      AND DATE(create_time) <= COALESCE($2::date, CURRENT_DATE)
+    GROUP BY DATE(create_time)
     ORDER BY date DESC
   `;
   

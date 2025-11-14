@@ -51,7 +51,7 @@ export const addAdmin = async (req: Request, res: Response) => {
     }
 
     // 验证角色
-    const validRoles = ['super_admin', 'manager', 'editor', 'viewer'];
+    const validRoles = ['super_admin', 'manager', 'editor', 'viewer', 'cs_manager', 'cs_agent'];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,

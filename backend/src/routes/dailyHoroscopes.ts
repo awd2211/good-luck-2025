@@ -13,12 +13,12 @@ import { Resource, Action } from '../config/permissions';
 
 const router = express.Router();
 
-router.get('/', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.READ), getDailyHoroscopes);
-router.get('/by-date/:date/:type', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.READ), getHoroscopeByDateAndType);
+router.get('/', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW), getDailyHoroscopes);
+router.get('/by-date/:date/:type', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW), getHoroscopeByDateAndType);
 router.post('/batch-generate', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.CREATE), batchGenerateHoroscopes);
-router.get('/:id', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.READ), getDailyHoroscope);
+router.get('/:id', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.VIEW), getDailyHoroscope);
 router.post('/', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.CREATE), createDailyHoroscope);
-router.put('/:id', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.UPDATE), updateDailyHoroscope);
+router.put('/:id', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.EDIT), updateDailyHoroscope);
 router.delete('/:id', authenticate, requirePermission(Resource.FORTUNE_CONTENT, Action.DELETE), deleteDailyHoroscope);
 
 export default router;

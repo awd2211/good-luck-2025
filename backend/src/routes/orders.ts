@@ -19,19 +19,19 @@ const router = express.Router()
  */
 
 // 统计需要在参数化路由之前
-router.get('/stats', authenticate, requirePermission(Resource.ORDERS, Action.READ), getStats)
-router.get('/today-stats', authenticate, requirePermission(Resource.ORDERS, Action.READ), getTodayStats)
+router.get('/stats', authenticate, requirePermission(Resource.ORDERS, Action.VIEW), getStats)
+router.get('/today-stats', authenticate, requirePermission(Resource.ORDERS, Action.VIEW), getTodayStats)
 
 // 查询操作 - 需要读取权限
-router.get('/', authenticate, requirePermission(Resource.ORDERS, Action.READ), getOrders)
-router.get('/:id', authenticate, requirePermission(Resource.ORDERS, Action.READ), getOrder)
+router.get('/', authenticate, requirePermission(Resource.ORDERS, Action.VIEW), getOrders)
+router.get('/:id', authenticate, requirePermission(Resource.ORDERS, Action.VIEW), getOrder)
 
 // 创建操作 - 需要创建权限
 router.post('/', authenticate, requirePermission(Resource.ORDERS, Action.CREATE), addOrder)
 
 // 更新操作 - 需要更新权限
-router.put('/:id', authenticate, requirePermission(Resource.ORDERS, Action.UPDATE), modifyOrder)
-router.patch('/:id/status', authenticate, requirePermission(Resource.ORDERS, Action.UPDATE), changeOrderStatus)
+router.put('/:id', authenticate, requirePermission(Resource.ORDERS, Action.EDIT), modifyOrder)
+router.patch('/:id/status', authenticate, requirePermission(Resource.ORDERS, Action.EDIT), changeOrderStatus)
 
 // 删除操作 - 需要删除权限
 router.delete('/:id', authenticate, requirePermission(Resource.ORDERS, Action.DELETE), removeOrder)

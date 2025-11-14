@@ -17,17 +17,17 @@ const router = Router();
  */
 
 // 查询操作 - 需要读取权限
-router.get('/', authenticate, requirePermission(Resource.REFUNDS, Action.READ), getRefunds);
-router.get('/:id', authenticate, requirePermission(Resource.REFUNDS, Action.READ), getRefund);
+router.get('/', authenticate, requirePermission(Resource.REFUNDS, Action.VIEW), getRefunds);
+router.get('/:id', authenticate, requirePermission(Resource.REFUNDS, Action.VIEW), getRefund);
 
 // 创建操作 - 需要创建权限
 router.post('/', authenticate, requirePermission(Resource.REFUNDS, Action.CREATE), addRefund);
 
 // 审核操作 - 需要更新权限
-router.post('/:id/review', authenticate, requirePermission(Resource.REFUNDS, Action.UPDATE), handleReviewRefund);
+router.post('/:id/review', authenticate, requirePermission(Resource.REFUNDS, Action.EDIT), handleReviewRefund);
 
 // 更新操作 - 需要更新权限
-router.patch('/:id/status', authenticate, requirePermission(Resource.REFUNDS, Action.UPDATE), modifyRefundStatus);
+router.patch('/:id/status', authenticate, requirePermission(Resource.REFUNDS, Action.EDIT), modifyRefundStatus);
 
 // 删除操作 - 需要删除权限
 router.delete('/:id', authenticate, requirePermission(Resource.REFUNDS, Action.DELETE), removeRefund);

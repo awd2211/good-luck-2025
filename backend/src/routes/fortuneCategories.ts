@@ -16,7 +16,7 @@ const router = express.Router();
 router.get(
   '/',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getFortuneCategories
 );
 
@@ -24,7 +24,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.READ),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.VIEW),
   getFortuneCategory
 );
 
@@ -40,7 +40,7 @@ router.post(
 router.put(
   '/:id',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   updateFortuneCategory
 );
 
@@ -56,7 +56,7 @@ router.delete(
 router.patch(
   '/order/batch',
   authenticate,
-  requirePermission(Resource.FORTUNE_SERVICES, Action.UPDATE),
+  requirePermission(Resource.FORTUNE_SERVICES, Action.EDIT),
   updateCategoriesOrder
 );
 

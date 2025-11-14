@@ -6,6 +6,8 @@ declare namespace Express {
       username: string
       role: string
       email: string
+      phone?: string
+      nickname?: string
     }
   }
 }

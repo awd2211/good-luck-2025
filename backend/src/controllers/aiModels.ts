@@ -2,6 +2,35 @@ import { Request, Response } from 'express';
 import { query } from '../config/database';
 
 /**
+ * 按供应商获取AI模型（用于下拉选择）
+ */
+export const getAIModelsByProvider = async (req: Request, res: Response) => {
+  try {
+    const { provider } = req.params;
+
+    const result = await query(
+      `SELECT id, model_name, name, status, max_tokens, api_base_url
+       FROM ai_models
+       WHERE provider = $1
+       ORDER BY priority DESC, created_at DESC`,
+      [provider]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error: any) {
+    console.error('获取供应商模型列表失败:', error);
+    res.status(500).json({
+      success: false,
+      message: '获取供应商模型列表失败',
+      error: error.message
+    });
+  }
+};
+
+/**
  * 获取所有AI模型配置
  */
 export const getAIModels = async (req: Request, res: Response) => {

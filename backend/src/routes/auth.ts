@@ -4,6 +4,7 @@ import {
   refreshTokenHandler,
   getCurrentUser,
   logout,
+  changePasswordHandler,
 } from '../controllers/authController'
 import { authenticate } from '../middleware/auth'
 
@@ -36,5 +37,12 @@ router.get('/me', authenticate, getCurrentUser)
  * @access  Private
  */
 router.post('/logout', authenticate, logout)
+
+/**
+ * @route   POST /api/auth/change-password
+ * @desc    修改密码
+ * @access  Private
+ */
+router.post('/change-password', authenticate, changePasswordHandler)
 
 export default router

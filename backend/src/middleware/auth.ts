@@ -11,6 +11,8 @@ declare global {
         username: string
         role: string
         email: string
+        phone?: string
+        nickname?: string
       }
     }
   }
