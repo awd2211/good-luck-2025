@@ -37,9 +37,10 @@ export const getRecommendedFortunes = (limit = 10) => {
 // 获取服务分类
 export const getCategories = () => {
   return api.get<ApiResponse<Array<{
-    id: string
+    category: string
     name: string
-    icon: string
     count: number
+    minPrice: number
+    maxPrice: number
   }>>>('/fortunes/categories')
 }

@@ -14,6 +14,11 @@ const OrdersPage = lazy(() => import('./pages/OrdersPage'));
 const CouponsPage = lazy(() => import('./pages/CouponsPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const BrowseHistoryPage = lazy(() => import('./pages/BrowseHistoryPage'));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
+const UserAgreementPage = lazy(() => import('./pages/UserAgreementPage'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const ArticlesPage = lazy(() => import('./pages/ArticlesPage'));
+const ArticleDetailPage = lazy(() => import('./pages/ArticleDetailPage'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -52,6 +57,7 @@ function App() {
           </Route>
 
           {/* 不需要底部导航的页面 */}
+          <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/fortune/:type" element={<FortuneDetail />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -59,6 +65,10 @@ function App() {
           <Route path="/coupons" element={<CouponsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/history" element={<BrowseHistoryPage />} />
+          <Route path="/user-agreement" element={<UserAgreementPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/articles" element={<ArticlesPage />} />
+          <Route path="/articles/:id" element={<ArticleDetailPage />} />
         </Routes>
       </Suspense>
     </Router>

@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, CSSProperties } from 'react';
+import { useState, useEffect, useRef } from 'react'
+import type { CSSProperties } from 'react'
 import './LazyImage.css';
 
 interface LazyImageProps {

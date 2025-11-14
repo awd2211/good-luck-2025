@@ -45,13 +45,15 @@ export interface CartItem {
 }
 
 // 订单类型
-export enum OrderStatus {
-  PENDING = 'pending',           // 待支付
-  PAID = 'paid',                 // 已支付
-  PROCESSING = 'processing',     // 处理中
-  COMPLETED = 'completed',       // 已完成
-  CANCELLED = 'cancelled',       // 已取消
-  REFUNDED = 'refunded'          // 已退款
+export type OrderStatus = 'pending' | 'paid' | 'processing' | 'completed' | 'cancelled' | 'refunded'
+
+export const OrderStatus = {
+  PENDING: 'pending' as const,           // 待支付
+  PAID: 'paid' as const,                 // 已支付
+  PROCESSING: 'processing' as const,     // 处理中
+  COMPLETED: 'completed' as const,       // 已完成
+  CANCELLED: 'cancelled' as const,       // 已取消
+  REFUNDED: 'refunded' as const          // 已退款
 }
 
 export interface Order {
@@ -81,9 +83,11 @@ export interface OrderItem {
 }
 
 // 优惠券类型
-export enum CouponType {
-  PERCENTAGE = 'percentage',  // 百分比折扣
-  FIXED = 'fixed'             // 固定金额
+export type CouponType = 'percentage' | 'fixed'
+
+export const CouponType = {
+  PERCENTAGE: 'percentage' as const,  // 百分比折扣
+  FIXED: 'fixed' as const             // 固定金额
 }
 
 export interface Coupon {

@@ -1,10 +1,12 @@
 import api from './api'
 import type { ApiResponse } from '../types'
 
-export enum PaymentMethod {
-  ALIPAY = 'alipay',
-  WECHAT = 'wechat',
-  BALANCE = 'balance',
+export type PaymentMethod = 'alipay' | 'wechat' | 'balance'
+
+export const PaymentMethod = {
+  ALIPAY: 'alipay' as const,
+  WECHAT: 'wechat' as const,
+  BALANCE: 'balance' as const,
 }
 
 // 创建支付

@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { CartItem, Fortune } from '../types'
+import { createContext, useContext, useState, useEffect } from 'react'
+import type { ReactNode } from 'react'
+import type { CartItem, Fortune } from '../types'
 import * as cartApi from '../services/cartService'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 interface CartContextType {
   items: CartItem[]
@@ -42,7 +43,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     try {
       const response = await cartApi.getCart()
-      setItems(response.data || [])
+      setItems(response.data.data || [])
     } catch (error) {
       console.error('获取购物车失败:', error)
     } finally {

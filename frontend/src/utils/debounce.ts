@@ -51,7 +51,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
   callback: T,
   delay: number = 300
 ) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const callbackRef = useRef(callback);
 
   // 更新回调函数
@@ -87,7 +87,7 @@ export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
   delay: number = 300
 ) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lastRunRef = useRef(0);
   const callbackRef = useRef(callback);
 
