@@ -25,11 +25,13 @@ export interface RegisterData {
 export interface Fortune {
   id: string
   title: string
+  subtitle?: string
   description: string
   price: number
   original_price?: number
   icon: string
   category: string
+  bg_color?: string
   rating?: number
   review_count?: number
   sales_count?: number
