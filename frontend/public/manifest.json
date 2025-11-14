@@ -1,0 +1,20 @@
+{
+  "name": "算命测算平台",
+  "short_name": "算命平台",
+  "description": "提供生肖运势、八字精批、流年运势、姓名测算、婚姻分析等算命服务",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1890ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["lifestyle", "entertainment"],
+  "lang": "zh-CN"
+}
