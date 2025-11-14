@@ -143,7 +143,7 @@ const fortuneData: any = {
 }
 
 const FortuneDetail = () => {
-  const { type } = useParams<{ type: string }>()
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { addItem } = useCart()
@@ -152,21 +152,21 @@ const FortuneDetail = () => {
   const [reviews, setReviews] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'detail' | 'reviews'>('detail')
 
-  const fortune = type ? fortuneData[type] : null
+  const fortune = id ? fortuneData[id] : null
 
   useEffect(() => {
-    if (type && user) {
+    if (id && user) {
       checkFavoriteStatus()
       addToBrowseHistory()
     }
-    if (type) {
+    if (id) {
       fetchReviews()
     }
-  }, [type, user])
+  }, [id, user])
 
   const fetchReviews = async () => {
     try {
-      const response = await reviewService.getReviews(type!)
+      const response = await reviewService.getReviews(id!)
       setReviews(response.data.data || [])
     } catch (error) {
       console.error('获取评价失败:', error)
@@ -175,7 +175,7 @@ const FortuneDetail = () => {
 
   const checkFavoriteStatus = async () => {
     try {
-      const response = await favoriteService.checkFavorite(type!)
+      const response = await favoriteService.checkFavorite(id!)
       setIsFavorite(response.data.data?.is_favorite || false)
     } catch (error) {
       console.error('检查收藏状态失败:', error)
@@ -184,7 +184,7 @@ const FortuneDetail = () => {
 
   const addToBrowseHistory = async () => {
     try {
-      await favoriteService.addBrowseHistory(type!)
+      await favoriteService.addBrowseHistory(id!)
     } catch (error) {
       console.error('添加浏览历史失败:', error)
     }
@@ -198,10 +198,10 @@ const FortuneDetail = () => {
 
     try {
       if (isFavorite) {
-        await favoriteService.removeFavorite(type!)
+        await favoriteService.removeFavorite(id!)
         setIsFavorite(false)
       } else {
-        await favoriteService.addFavorite(type!)
+        await favoriteService.addFavorite(id!)
         setIsFavorite(true)
       }
     } catch (error) {
@@ -217,7 +217,7 @@ const FortuneDetail = () => {
 
     try {
       await addItem({
-        id: type!,
+        id: id!,
         title: fortune.title,
         description: fortune.subtitle,
         price: fortune.price,
@@ -238,7 +238,7 @@ const FortuneDetail = () => {
 
     try {
       await addItem({
-        id: type!,
+        id: id!,
         title: fortune.title,
         description: fortune.subtitle,
         price: fortune.price,
@@ -257,7 +257,7 @@ const FortuneDetail = () => {
       return
     }
     // 直接跳转到参数输入页面（免费测算）
-    navigate(`/fortune/${type}/input`)
+    navigate(`/fortune/${id}/input`)
   }
 
   const renderStars = (rating: number) => {

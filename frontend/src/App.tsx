@@ -63,7 +63,7 @@ function App() {
 
           {/* 不需要底部导航的页面 */}
           <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/fortune/:type" element={<FortuneDetail />} />
+          <Route path="/fortune/:id" element={<FortuneDetail />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/orders" element={<OrdersPage />} />
