@@ -6,7 +6,7 @@ import {
 } from 'antd'
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, CalendarOutlined,
-  CopyOutlined, BarChartOutlined, FilterOutlined, ThunderboltOutlined,
+  CopyOutlined, ThunderboltOutlined,
   EyeOutlined
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
@@ -558,7 +558,7 @@ const DailyHoroscopeManagement = () => {
                 onChange: (page, pageSize) => {
                   fetchHoroscopes(page, pageSize)
                 },
-                onShowSizeChange: (current, size) => {
+                onShowSizeChange: (_, size) => {
                   fetchHoroscopes(1, size)
                 }
               }}

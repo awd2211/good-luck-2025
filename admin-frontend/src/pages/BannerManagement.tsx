@@ -283,7 +283,7 @@ const BannerManagement = () => {
             onChange: (page, pageSize) => {
               loadBanners(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               loadBanners(1, size)
             }
           }}

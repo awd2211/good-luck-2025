@@ -1,79 +1,123 @@
 import { useState, useEffect } from 'react'
-import { Card, Row, Col, Statistic, Table, DatePicker, Select, Space, Button } from 'antd'
+import { Card, Row, Col, Statistic, Table, DatePicker, Space, Button, message, Spin } from 'antd'
 import {
   DollarOutlined,
   ShoppingOutlined,
   UserOutlined,
-  RiseOutlined,
   DownloadOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
 import { Permission } from '../config/permissions'
+import { getFinancialStats, getFinancialData } from '../services/apiService'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
 
 interface FinancialStats {
-  totalRevenue: number
-  todayRevenue: number
-  totalOrders: number
-  todayOrders: number
-  avgOrderValue: number
-  totalUsers: number
+  total_revenue: string
+  today_revenue: string
+  total_orders: string
+  today_orders: string
+  avg_order_value: number
+  total_users: number
 }
 
 interface OrderFinancial {
   date: string
-  revenue: number
-  orderCount: number
-  refundAmount: number
-  refundCount: number
+  revenue: string
+  order_count: string
 }
 
 const FinancialManagement = () => {
-  const [stats, setStats] = useState<FinancialStats>({
-    totalRevenue: 156789.50,
-    todayRevenue: 3245.80,
-    totalOrders: 4523,
-    todayOrders: 78,
-    avgOrderValue: 34.67,
-    totalUsers: 2341,
-  })
-
+  const [stats, setStats] = useState<FinancialStats | null>(null)
   const [financialData, setFinancialData] = useState<OrderFinancial[]>([])
   const [loading, setLoading] = useState(false)
+  const [statsLoading, setStatsLoading] = useState(true)
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs]>([
     dayjs().subtract(30, 'day'),
     dayjs(),
   ])
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 15,
+    total: 0,
+  })
 
   useEffect(() => {
-    loadFinancialData()
+    loadStats()
+  }, [])
+
+  useEffect(() => {
+    loadFinancialData(pagination.current, pagination.pageSize)
   }, [dateRange])
 
-  const loadFinancialData = () => {
-    setLoading(true)
-    // Mock data - replace with actual API call
-    const mockData: OrderFinancial[] = []
-    for (let i = 29; i >= 0; i--) {
-      const date = dayjs().subtract(i, 'day')
-      mockData.push({
-        date: date.format('YYYY-MM-DD'),
-        revenue: Math.random() * 5000 + 1000,
-        orderCount: Math.floor(Math.random() * 100 + 20),
-        refundAmount: Math.random() * 300,
-        refundCount: Math.floor(Math.random() * 5),
-      })
+  const loadStats = async () => {
+    try {
+      setStatsLoading(true)
+      const response = await getFinancialStats()
+      setStats(response.data)
+    } catch (error: any) {
+      message.error('加载财务统计失败')
+      console.error('加载财务统计失败:', error)
+    } finally {
+      setStatsLoading(false)
     }
-    setFinancialData(mockData)
-    setLoading(false)
+  }
+
+  const loadFinancialData = async (page = 1, pageSize = 15) => {
+    setLoading(true)
+    try {
+      const response = await getFinancialData({
+        startDate: dateRange[0].format('YYYY-MM-DD'),
+        endDate: dateRange[1].format('YYYY-MM-DD'),
+        page,
+        limit: pageSize
+      })
+      const data = response.data || []
+      setFinancialData(Array.isArray(data) ? data : data.list || [])
+      setPagination({
+        current: page,
+        pageSize,
+        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+      })
+    } catch (error: any) {
+      message.error('加载财务明细失败')
+      console.error('加载财务明细失败:', error)
+      setFinancialData([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleExport = () => {
-    // Export logic
-    console.log('Exporting financial data...')
+    try {
+      message.loading('正在导出...', 0)
+
+      const csv = [
+        ['日期', '收入金额', '订单数'].join(','),
+        ...financialData.map((item) =>
+          [
+            item.date,
+            Number(item.revenue).toFixed(2),
+            item.order_count
+          ].join(',')
+        )
+      ].join('\n')
+
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `financial_data_${dayjs().format('YYYYMMDD_HHmmss')}.csv`
+      link.click()
+
+      message.destroy()
+      message.success('导出成功')
+    } catch (error) {
+      message.destroy()
+      message.error('导出失败')
+    }
   }
 
   const columns: ColumnsType<OrderFinancial> = [
@@ -81,53 +125,48 @@ const FinancialManagement = () => {
       title: '日期',
       dataIndex: 'date',
       key: 'date',
-      width: 120,
+      width: 150,
       fixed: 'left',
     },
     {
       title: '收入金额',
       dataIndex: 'revenue',
       key: 'revenue',
-      width: 120,
-      render: (value: number) => `¥${value.toFixed(2)}`,
-      sorter: (a, b) => a.revenue - b.revenue,
+      width: 150,
+      render: (value: string) => `¥${Number(value || 0).toFixed(2)}`,
+      sorter: (a, b) => Number(a.revenue || 0) - Number(b.revenue || 0),
     },
     {
       title: '订单数',
-      dataIndex: 'orderCount',
-      key: 'orderCount',
-      width: 100,
-      sorter: (a, b) => a.orderCount - b.orderCount,
-    },
-    {
-      title: '退款金额',
-      dataIndex: 'refundAmount',
-      key: 'refundAmount',
+      dataIndex: 'order_count',
+      key: 'order_count',
       width: 120,
-      render: (value: number) => `¥${value.toFixed(2)}`,
-      sorter: (a, b) => a.refundAmount - b.refundAmount,
-    },
-    {
-      title: '退款笔数',
-      dataIndex: 'refundCount',
-      key: 'refundCount',
-      width: 100,
-      sorter: (a, b) => a.refundCount - b.refundCount,
-    },
-    {
-      title: '净收入',
-      key: 'netRevenue',
-      width: 120,
-      render: (_, record) => `¥${(record.revenue - record.refundAmount).toFixed(2)}`,
-      sorter: (a, b) => (a.revenue - a.refundAmount) - (b.revenue - b.refundAmount),
+      sorter: (a, b) => Number(a.order_count || 0) - Number(b.order_count || 0),
     },
     {
       title: '平均订单价值',
       key: 'avgValue',
-      width: 120,
-      render: (_, record) => `¥${(record.revenue / record.orderCount).toFixed(2)}`,
+      width: 150,
+      render: (_, record) => {
+        const revenue = Number(record.revenue || 0)
+        const count = Number(record.order_count || 0)
+        const avg = count > 0 ? revenue / count : 0
+        return `¥${avg.toFixed(2)}`
+      },
     },
   ]
+
+  if (statsLoading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '100px 0' }}>
+        <Spin size="large" tip="加载中..." />
+      </div>
+    )
+  }
+
+  if (!stats) {
+    return <div>加载失败</div>
+  }
 
   return (
     <PermissionGuard permission={Permission.STATS_VIEW}>
@@ -138,14 +177,14 @@ const FinancialManagement = () => {
             <Card>
               <Statistic
                 title="总收入"
-                value={stats.totalRevenue}
+                value={Number(stats.total_revenue || 0)}
                 precision={2}
                 prefix={<DollarOutlined />}
                 suffix="元"
                 valueStyle={{ color: '#3f8600' }}
               />
               <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                今日：¥{stats.todayRevenue.toFixed(2)}
+                今日：¥{Number(stats.today_revenue || 0).toFixed(2)}
               </div>
             </Card>
           </Col>
@@ -153,12 +192,12 @@ const FinancialManagement = () => {
             <Card>
               <Statistic
                 title="总订单数"
-                value={stats.totalOrders}
+                value={Number(stats.total_orders || 0)}
                 prefix={<ShoppingOutlined />}
                 valueStyle={{ color: '#1677ff' }}
               />
               <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                今日：{stats.todayOrders} 单
+                今日：{Number(stats.today_orders || 0)} 单
               </div>
             </Card>
           </Col>
@@ -166,26 +205,20 @@ const FinancialManagement = () => {
             <Card>
               <Statistic
                 title="平均订单价值"
-                value={stats.avgOrderValue}
+                value={stats.avg_order_value || 0}
                 precision={2}
                 prefix="¥"
                 valueStyle={{ color: '#cf1322' }}
               />
-              <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                <RiseOutlined /> 较昨日 +5.2%
-              </div>
             </Card>
           </Col>
           <Col span={6}>
             <Card>
               <Statistic
                 title="总用户数"
-                value={stats.totalUsers}
+                value={stats.total_users || 0}
                 prefix={<UserOutlined />}
               />
-              <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-                今日新增：23 人
-              </div>
             </Card>
           </Col>
         </Row>
@@ -203,7 +236,10 @@ const FinancialManagement = () => {
                   }
                 }}
               />
-              <Button icon={<ReloadOutlined />} onClick={loadFinancialData}>
+              <Button icon={<ReloadOutlined />} onClick={() => {
+                loadStats()
+                loadFinancialData()
+              }}>
                 刷新
               </Button>
               <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport}>
@@ -218,20 +254,27 @@ const FinancialManagement = () => {
             loading={loading}
             rowKey="date"
             pagination={{
-              pageSize: 15,
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
               showSizeChanger: true,
+              showQuickJumper: true,
               showTotal: total => `共 ${total} 条`,
+              onChange: (page, pageSize) => {
+                loadFinancialData(page, pageSize)
+              },
+              onShowSizeChange: (_, size) => {
+                loadFinancialData(1, size)
+              },
             }}
             scroll={{ x: 800 }}
             summary={(pageData) => {
               let totalRevenue = 0
               let totalOrders = 0
-              let totalRefund = 0
 
-              pageData.forEach(({ revenue, orderCount, refundAmount }) => {
-                totalRevenue += revenue
-                totalOrders += orderCount
-                totalRefund += refundAmount
+              pageData.forEach(({ revenue, order_count }) => {
+                totalRevenue += Number(revenue || 0)
+                totalOrders += Number(order_count || 0)
               })
 
               return (
@@ -247,41 +290,13 @@ const FinancialManagement = () => {
                       <strong>{totalOrders}</strong>
                     </Table.Summary.Cell>
                     <Table.Summary.Cell index={3}>
-                      <strong>¥{totalRefund.toFixed(2)}</strong>
+                      <strong>¥{totalOrders > 0 ? (totalRevenue / totalOrders).toFixed(2) : '0.00'}</strong>
                     </Table.Summary.Cell>
-                    <Table.Summary.Cell index={4} />
-                    <Table.Summary.Cell index={5}>
-                      <strong>¥{(totalRevenue - totalRefund).toFixed(2)}</strong>
-                    </Table.Summary.Cell>
-                    <Table.Summary.Cell index={6} />
                   </Table.Summary.Row>
                 </Table.Summary>
               )
             }}
           />
-        </Card>
-
-        {/* 分类收入统计 */}
-        <Card title="算命类型收入占比" style={{ marginTop: 16 }}>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Statistic title="八字精批" value={45620} prefix="¥" suffix="(29.1%)" />
-            </Col>
-            <Col span={8}>
-              <Statistic title="生肖运势" value={38450} prefix="¥" suffix="(24.5%)" />
-            </Col>
-            <Col span={8}>
-              <Statistic title="流年运势" value={32890} prefix="¥" suffix="(21.0%)" />
-            </Col>
-          </Row>
-          <Row gutter={16} style={{ marginTop: 16 }}>
-            <Col span={8}>
-              <Statistic title="姓名详批" value={25430} prefix="¥" suffix="(16.2%)" />
-            </Col>
-            <Col span={8}>
-              <Statistic title="婚姻分析" value={14399} prefix="¥" suffix="(9.2%)" />
-            </Col>
-          </Row>
         </Card>
       </div>
     </PermissionGuard>

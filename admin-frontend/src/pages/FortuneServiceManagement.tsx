@@ -20,7 +20,6 @@ import {
   Drawer,
   Checkbox,
   Slider,
-  Collapse,
   Descriptions,
   Badge,
   Divider,
@@ -46,9 +45,9 @@ import ReactQuill from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import api from '../services/apiService'
 
-const { TextArea } = Input
+
 const { Option } = Select
-const { Panel } = Collapse
+
 
 interface Category {
   id: number
@@ -738,7 +737,7 @@ const FortuneServiceManagement = () => {
             onChange: (page, pageSize) => {
               fetchServices(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               fetchServices(1, size)
             },
           }}

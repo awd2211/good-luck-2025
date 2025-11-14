@@ -5,12 +5,13 @@ import {
 } from 'antd'
 import {
   PlusOutlined, EditOutlined, DeleteOutlined, CodeOutlined,
-  DownloadOutlined, UploadOutlined, CopyOutlined, SearchOutlined,
-  FilterOutlined, HistoryOutlined
+  DownloadOutlined, UploadOutlined, CopyOutlined, SearchOutlined
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import api from '../services/apiService'
 import JsonView from '@uiw/react-json-view'
+import SmtpConfigForm from '../components/SmtpConfigForm'
+import DynamicConfigForm from '../components/DynamicConfigForm'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -82,6 +83,27 @@ const CONFIG_TEMPLATES = {
       sms_enabled: true,
       push_enabled: true,
       daily_limit: 100
+    }
+  },
+  smtp_settings: {
+    name: 'SMTP邮件配置',
+    config_type: 'smtp',
+    description: 'SMTP服务器配置（用于发送密码重置邮件、2FA通知等）',
+    config_value: {
+      provider: 'gmail',  // gmail, mailgun, custom
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      user: '',
+      password: '',
+      from_name: '算命平台管理后台',
+      from_email: '',
+      // Mailgun专用配置
+      mailgun_domain: '',
+      mailgun_api_key: '',
+      // 测试状态
+      test_email: '',
+      enabled: false
     }
   },
   fortune_pricing: {
@@ -226,6 +248,9 @@ const SystemConfigManagement = () => {
   const [templateModalVisible, setTemplateModalVisible] = useState(false)
   const [selectedConfig, setSelectedConfig] = useState<SystemConfig | null>(null)
   const [editingConfig, setEditingConfig] = useState<SystemConfig | null>(null)
+  const [smtpFormValues, setSmtpFormValues] = useState<any>(null)
+  const [formValues, setFormValues] = useState<any>(null) // 通用表单值
+  const [editMode, setEditMode] = useState<'form' | 'json'>('form') // 编辑模式：表单或JSON
   const [form] = Form.useForm()
 
   // 分页和筛选状态
@@ -305,15 +330,63 @@ const SystemConfigManagement = () => {
   const handleOpenModal = (config?: SystemConfig) => {
     if (config) {
       setEditingConfig(config)
+      // 编辑现有配置时，默认使用图形模式
+      setEditMode('form')
+      if (config.config_type === 'smtp') {
+        setSmtpFormValues(config.config_value)
+      } else {
+        setFormValues(config.config_value)
+      }
       form.setFieldsValue({
         ...config,
         config_value: JSON.stringify(config.config_value, null, 2)
       })
     } else {
+      // 创建新配置时，使用JSON模式
       setEditingConfig(null)
+      setSmtpFormValues(null)
+      setFormValues(null)
+      setEditMode('json')
       form.resetFields()
     }
     setModalVisible(true)
+  }
+
+  // 切换编辑模式时同步数据
+  const handleToggleEditMode = () => {
+    const currentMode = editMode
+    const newMode = currentMode === 'form' ? 'json' : 'form'
+
+    try {
+      if (currentMode === 'form' && newMode === 'json') {
+        // 从表单模式切换到JSON模式：将表单值序列化到JSON编辑器
+        const currentFormValues = editingConfig?.config_type === 'smtp' ? smtpFormValues : formValues
+        if (currentFormValues) {
+          form.setFieldsValue({
+            config_value: JSON.stringify(currentFormValues, null, 2)
+          })
+        }
+      } else if (currentMode === 'json' && newMode === 'form') {
+        // 从JSON模式切换到表单模式：解析JSON到表单值
+        const jsonValue = form.getFieldValue('config_value')
+        if (jsonValue) {
+          try {
+            const parsed = JSON.parse(jsonValue)
+            if (editingConfig?.config_type === 'smtp') {
+              setSmtpFormValues(parsed)
+            } else {
+              setFormValues(parsed)
+            }
+          } catch (error) {
+            message.error('JSON格式错误，无法切换到表单模式')
+            return
+          }
+        }
+      }
+      setEditMode(newMode)
+    } catch (error) {
+      message.error('切换模式失败')
+    }
   }
 
   const handleViewJson = (config: SystemConfig) => {
@@ -325,13 +398,27 @@ const SystemConfigManagement = () => {
     try {
       const values = await form.validateFields()
 
-      // 验证JSON
+      // 根据编辑模式处理配置值
       let configValue
-      try {
-        configValue = JSON.parse(values.config_value)
-      } catch {
-        message.error('配置值必须是有效的JSON格式')
-        return
+      if (editMode === 'form' && editingConfig) {
+        // 表单模式 - 使用表单值
+        if (editingConfig.config_type === 'smtp') {
+          configValue = smtpFormValues
+        } else {
+          configValue = formValues
+        }
+        if (!configValue) {
+          message.error('请完成配置')
+          return
+        }
+      } else {
+        // JSON模式 - 验证JSON
+        try {
+          configValue = JSON.parse(values.config_value)
+        } catch {
+          message.error('配置值必须是有效的JSON格式')
+          return
+        }
       }
 
       const payload = {
@@ -667,7 +754,7 @@ const SystemConfigManagement = () => {
                 onChange: (page, pageSize) => {
                   fetchConfigs(page, pageSize)
                 },
-                onShowSizeChange: (current, size) => {
+                onShowSizeChange: (_, size) => {
                   fetchConfigs(1, size)
                 }
               }}
@@ -748,7 +835,21 @@ const SystemConfigManagement = () => {
 
       {/* 创建/编辑弹窗 */}
       <Modal
-        title={editingConfig ? '编辑配置' : '创建配置'}
+        title={
+          <Space>
+            <span>{editingConfig ? '编辑配置' : '创建配置'}</span>
+            {editingConfig && (
+              <Button
+                size="small"
+                type={editMode === 'form' ? 'default' : 'primary'}
+                onClick={handleToggleEditMode}
+                icon={<CodeOutlined />}
+              >
+                {editMode === 'form' ? '切换到JSON模式' : '切换到图形模式'}
+              </Button>
+            )}
+          </Space>
+        }
         open={modalVisible}
         onOk={handleSubmit}
         onCancel={() => setModalVisible(false)}
@@ -756,63 +857,88 @@ const SystemConfigManagement = () => {
         okText="保存"
         cancelText="取消"
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="config_key"
-            label="配置键"
-            rules={[{ required: true, message: '请输入配置键' }]}
-          >
-            <Input
-              placeholder="请输入配置键（如：free_trial, member_levels）"
-              disabled={!!editingConfig}
+        {editMode === 'form' && editingConfig ? (
+          /* 图形化编辑模式 */
+          <div>
+            <Alert
+              message={`配置键: ${editingConfig.config_key} | 类型: ${editingConfig.config_type}`}
+              type="info"
+              style={{ marginBottom: 16 }}
             />
-          </Form.Item>
+            {editingConfig.config_type === 'smtp' ? (
+              <SmtpConfigForm
+                initialValues={smtpFormValues}
+                onValuesChange={setSmtpFormValues}
+              />
+            ) : (
+              /* 通用的动态表单 */
+              <DynamicConfigForm
+                initialValues={formValues}
+                onValuesChange={setFormValues}
+              />
+            )}
+          </div>
+        ) : (
+          /* JSON编辑模式 */
+          <Form form={form} layout="vertical">
+            <Form.Item
+              name="config_key"
+              label="配置键"
+              rules={[{ required: true, message: '请输入配置键' }]}
+            >
+              <Input
+                placeholder="请输入配置键（如：free_trial, member_levels）"
+                disabled={!!editingConfig}
+              />
+            </Form.Item>
 
-          <Form.Item
-            name="config_type"
-            label="配置类型"
-            rules={[{ required: true, message: '请选择配置类型' }]}
-          >
-            <Select placeholder="请选择配置类型">
-              {types.map(type => (
-                <Option key={type} value={type}>{type}</Option>
-              ))}
-              <Option value="trial">trial</Option>
-              <Option value="member">member</Option>
-              <Option value="payment">payment</Option>
-              <Option value="notification">notification</Option>
-              <Option value="general">general</Option>
-            </Select>
-          </Form.Item>
+            <Form.Item
+              name="config_type"
+              label="配置类型"
+              rules={[{ required: true, message: '请选择配置类型' }]}
+            >
+              <Select placeholder="请选择配置类型">
+                {types.map(type => (
+                  <Option key={type} value={type}>{type}</Option>
+                ))}
+                <Option value="trial">trial</Option>
+                <Option value="member">member</Option>
+                <Option value="payment">payment</Option>
+                <Option value="notification">notification</Option>
+                <Option value="smtp">smtp</Option>
+                <Option value="general">general</Option>
+              </Select>
+            </Form.Item>
 
-          <Form.Item
-            name="config_value"
-            label={
-              <Space>
-                <span>配置值（JSON格式）</span>
-                <Button type="link" size="small" onClick={handleFormatJson}>
-                  格式化
-                </Button>
-              </Space>
-            }
-            rules={[{ required: true, message: '请输入配置值' }]}
-            help="请输入有效的JSON格式数据"
-          >
-            <TextArea
-              rows={15}
-              placeholder='{"enabled": true, "daily_limit": 3}'
-              style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: 13 }}
-            />
-          </Form.Item>
+            <Form.Item
+              name="config_value"
+              label={
+                <Space>
+                  <span>配置值（JSON格式）</span>
+                  <Button type="link" size="small" onClick={handleFormatJson}>
+                    格式化
+                  </Button>
+                </Space>
+              }
+              rules={[{ required: true, message: '请输入配置值' }]}
+              help="请输入有效的JSON格式数据"
+            >
+              <TextArea
+                rows={15}
+                placeholder='{"enabled": true, "daily_limit": 3}'
+                style={{ fontFamily: 'Consolas, Monaco, monospace', fontSize: 13 }}
+              />
+            </Form.Item>
 
-          <Form.Item name="description" label="描述">
-            <TextArea rows={2} placeholder="请输入配置描述" />
-          </Form.Item>
+            <Form.Item name="description" label="描述">
+              <TextArea rows={2} placeholder="请输入配置描述" />
+            </Form.Item>
 
-          <Form.Item name="updated_by" label="更新人">
-            <Input placeholder="请输入更新人" />
-          </Form.Item>
-        </Form>
+            <Form.Item name="updated_by" label="更新人">
+              <Input placeholder="请输入更新人" />
+            </Form.Item>
+          </Form>
+        )}
       </Modal>
 
       {/* JSON查看弹窗 */}

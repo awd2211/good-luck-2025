@@ -5,11 +5,11 @@ import UserManagement from './pages/UserManagement'
 import OrderManagement from './pages/OrderManagement'
 import FortuneManagement from './pages/FortuneManagement'
 import Statistics from './pages/Statistics'
-import Settings from './pages/Settings'
 import AuditLog from './pages/AuditLog'
 import RoleManagement from './pages/RoleManagement'
 import BannerManagement from './pages/BannerManagement'
 import NotificationManagement from './pages/NotificationManagement'
+import NotificationTemplates from './pages/NotificationTemplates'
 import FinancialManagement from './pages/FinancialManagement'
 import RefundManagement from './pages/RefundManagement'
 import FeedbackManagement from './pages/FeedbackManagement'
@@ -28,13 +28,21 @@ import AttributionAnalytics from './pages/AttributionAnalytics'
 import PaymentConfigManagement from './pages/PaymentConfigManagement'
 import PaymentMethodManagement from './pages/PaymentMethodManagement'
 import PaymentTransactions from './pages/PaymentTransactions'
+import EmailTemplateManagement from './pages/EmailTemplateManagement'
+import CustomerServiceManagement from './pages/CustomerServiceManagement'
+import CSWorkbench from './pages/CSWorkbench'
+import ShareAnalytics from './pages/ShareAnalytics'
 import Login from './pages/Login'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 import PrivateRoute from './components/PrivateRoute'
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/"
         element={
@@ -47,6 +55,7 @@ function App() {
         <Route path="users" element={<UserManagement />} />
         <Route path="orders" element={<OrderManagement />} />
         <Route path="attribution" element={<AttributionAnalytics />} />
+        <Route path="share-analytics" element={<ShareAnalytics />} />
         <Route path="fortunes" element={<FortuneManagement />} />
         <Route path="fortune-categories" element={<FortuneCategoryManagement />} />
         <Route path="fortune-services" element={<FortuneServiceManagement />} />
@@ -66,11 +75,14 @@ function App() {
         <Route path="coupons" element={<CouponManagement />} />
         <Route path="banners" element={<BannerManagement />} />
         <Route path="notifications" element={<NotificationManagement />} />
+        <Route path="notification-templates" element={<NotificationTemplates />} />
+        <Route path="email-templates" element={<EmailTemplateManagement />} />
+        <Route path="customer-service" element={<CustomerServiceManagement />} />
+        <Route path="cs-workbench" element={<CSWorkbench />} />
         <Route path="roles" element={<RoleManagement />} />
         <Route path="admins" element={<AdminManagement />} />
         <Route path="audit-log" element={<AuditLog />} />
         <Route path="profile" element={<ProfileSettings />} />
-        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   )

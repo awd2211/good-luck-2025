@@ -13,7 +13,7 @@ import {
   Tag,
   Popconfirm,
   InputNumber,
-  Upload,
+
   Statistic,
   Row,
   Col,
@@ -24,9 +24,11 @@ import {
   DeleteOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  UploadOutlined,
   BarChartOutlined,
   ReloadOutlined,
+  WalletOutlined,
+  PayCircleOutlined,
+  CreditCardOutlined,
 } from '@ant-design/icons'
 import { fetchWithAuth } from '../services/apiService'
 import type { ColumnsType } from 'antd/es/table'
@@ -71,6 +73,9 @@ const PaymentMethodManagement: React.FC = () => {
 
   useEffect(() => {
     fetchMethods()
+    // 确保页面加载时弹窗是关闭的
+    setModalVisible(false)
+    setStatsModalVisible(false)
   }, [])
 
   const fetchMethods = async () => {
@@ -195,13 +200,21 @@ const PaymentMethodManagement: React.FC = () => {
       title: '支付方式',
       dataIndex: 'method_name',
       key: 'method_name',
-      render: (text: string, record) => (
-        <Space>
-          {record.icon && <img src={record.icon} alt={text} style={{ width: 24, height: 24 }} />}
-          <span>{text}</span>
-          <Tag color="default">{record.method_code}</Tag>
-        </Space>
-      ),
+      render: (text: string, record) => {
+        const iconMap: Record<string, React.ReactNode> = {
+          'wallet': <WalletOutlined style={{ fontSize: 20, color: '#1890ff' }} />,
+          'paypal': <PayCircleOutlined style={{ fontSize: 20, color: '#003087' }} />,
+          'credit-card': <CreditCardOutlined style={{ fontSize: 20, color: '#52c41a' }} />,
+        }
+
+        return (
+          <Space>
+            {record.icon && iconMap[record.icon]}
+            <span>{text}</span>
+            <Tag color="default">{record.method_code}</Tag>
+          </Space>
+        )
+      },
     },
     {
       title: '提供商',
@@ -213,8 +226,8 @@ const PaymentMethodManagement: React.FC = () => {
       title: '金额范围',
       key: 'amount_range',
       render: (_, record) => {
-        const min = record.min_amount.toFixed(2)
-        const max = record.max_amount ? record.max_amount.toFixed(2) : '无限制'
+        const min = Number(record.min_amount || 0).toFixed(2)
+        const max = record.max_amount ? Number(record.max_amount).toFixed(2) : '无限制'
         return `¥${min} - ${max}`
       },
     },
@@ -223,8 +236,8 @@ const PaymentMethodManagement: React.FC = () => {
       key: 'fee',
       render: (_, record) => {
         if (record.fee_type === 'none') return '无'
-        if (record.fee_type === 'fixed') return `固定 ¥${record.fee_value}`
-        if (record.fee_type === 'percentage') return `${record.fee_value}%`
+        if (record.fee_type === 'fixed') return `固定 ¥${Number(record.fee_value || 0).toFixed(2)}`
+        if (record.fee_type === 'percentage') return `${Number(record.fee_value || 0)}%`
         return '-'
       },
     },

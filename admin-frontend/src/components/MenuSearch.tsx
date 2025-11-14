@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Input, Empty } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
-import type { MenuProps } from 'antd'
 
 interface MenuSearchProps {
   menuConfig: any[]

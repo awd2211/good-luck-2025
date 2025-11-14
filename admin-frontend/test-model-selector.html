@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>模型选择器测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        select { padding: 8px; width: 300px; font-size: 14px; }
+        button { padding: 8px 16px; margin-left: 10px; }
+    </style>
+</head>
+<body>
+    <h1>AI模型选择器测试</h1>
+
+    <div class="test">
+        <h3>1. 选择供应商：</h3>
+        <select id="provider" onchange="updateModels()">
+            <option value="">请选择供应商</option>
+            <option value="openai">OpenAI</option>
+            <option value="grok">Grok (X.AI)</option>
+            <option value="qwen">Qwen (通义千问)</option>
+            <option value="deepseek">DeepSeek</option>
+        </select>
+    </div>
+
+    <div class="test">
+        <h3>2. 选择模型：</h3>
+        <select id="model" disabled>
+            <option value="">请先选择供应商</option>
+        </select>
+        <button onclick="showModelInfo()">查看模型信息</button>
+    </div>
+
+    <div class="test" id="info" style="display:none;">
+        <h3>模型信息：</h3>
+        <pre id="modelInfo"></pre>
+    </div>
+
+    <script>
+        const modelPresets = {
+            'openai': {
+                'gpt-4o': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o 多模态旗舰' },
+                'gpt-4o-mini': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o Mini 经济版' },
+                'o4-mini': { api_base_url: 'https://api.openai.com/v1', max_tokens: 200000, description: '⭐ O4 Mini（2025最新）' },
+            },
+            'grok': {
+                'grok-4': { api_base_url: 'https://api.x.ai/v1', max_tokens: 2000000, description: '⭐ Grok 4 旗舰（200万tokens）' },
+                'grok-4-fast': { api_base_url: 'https://api.x.ai/v1', max_tokens: 2000000, description: '⭐ Grok 4 Fast（节省40% tokens）' },
+                'grok-3': { api_base_url: 'https://api.x.ai/v1', max_tokens: 131072, description: 'Grok 3 旗舰' },
+            },
+            'qwen': {
+                'qwen3-max': { api_base_url: 'https://dashscope.aliyuncs.com/api/v1', max_tokens: 32768, description: '⭐ Qwen3 Max（2025年9月新）' },
+                'qwen-long': { api_base_url: 'https://dashscope.aliyuncs.com/api/v1', max_tokens: 10000000, description: 'Qwen Long 超长文本（1000万tokens）' },
+            },
+            'deepseek': {
+                'deepseek-chat': { api_base_url: 'https://api.deepseek.com', max_tokens: 64000, description: '⭐ DeepSeek Chat（V3.1-Terminus）' },
+                'deepseek-reasoner': { api_base_url: 'https://api.deepseek.com', max_tokens: 64000, description: '⭐ DeepSeek Reasoner（V3.1思考模式）' },
+            },
+        };
+
+        function updateModels() {
+            const provider = document.getElementById('provider').value;
+            const modelSelect = document.getElementById('model');
+
+            console.log('选择的供应商:', provider);
+
+            // 清空现有选项
+            modelSelect.innerHTML = '';
+
+            if (!provider) {
+                modelSelect.disabled = true;
+                modelSelect.innerHTML = '<option value="">请先选择供应商</option>';
+                return;
+            }
+
+            // 启用下拉框
+            modelSelect.disabled = false;
+
+            // 获取该供应商的模型
+            const models = modelPresets[provider];
+            console.log('该供应商的模型:', models);
+            console.log('模型数量:', Object.keys(models).length);
+
+            // 添加提示选项
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '请选择模型';
+            modelSelect.appendChild(placeholder);
+
+            // 添加模型选项
+            for (const [modelKey, modelConfig] of Object.entries(models)) {
+                const option = document.createElement('option');
+                option.value = modelKey;
+                option.textContent = `${modelKey} - ${modelConfig.description}`;
+                modelSelect.appendChild(option);
+                console.log('添加选项:', modelKey);
+            }
+
+            console.log('总共添加了', modelSelect.options.length - 1, '个模型选项');
+        }
+
+        function showModelInfo() {
+            const provider = document.getElementById('provider').value;
+            const modelKey = document.getElementById('model').value;
+
+            if (!provider || !modelKey) {
+                alert('请先选择供应商和模型');
+                return;
+            }
+
+            const modelConfig = modelPresets[provider][modelKey];
+            const info = document.getElementById('info');
+            const modelInfo = document.getElementById('modelInfo');
+
+            modelInfo.textContent = JSON.stringify({
+                provider: provider,
+                model: modelKey,
+                config: modelConfig
+            }, null, 2);
+
+            info.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

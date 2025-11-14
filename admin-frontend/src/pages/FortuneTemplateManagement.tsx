@@ -332,7 +332,7 @@ const FortuneTemplateManagement = () => {
             onChange: (page, pageSize) => {
               fetchTemplates(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               fetchTemplates(1, size)
             }
           }}

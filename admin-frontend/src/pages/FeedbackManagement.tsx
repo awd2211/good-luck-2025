@@ -39,16 +39,29 @@ const FeedbackManagement = () => {
   const [currentFeedback, setCurrentFeedback] = useState<Feedback | null>(null)
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 15,
+    total: 0,
+  })
 
   useEffect(() => {
-    loadFeedbacks()
+    loadFeedbacks(pagination.current, pagination.pageSize)
   }, [])
 
-  const loadFeedbacks = async () => {
+  const loadFeedbacks = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/feedbacks')
-      setFeedbacks(response.data.data || [])
+      const response = await api.get('/feedbacks', {
+        params: { page, limit: pageSize }
+      })
+      const data = response.data.data || []
+      setFeedbacks(Array.isArray(data) ? data : data.list || [])
+      setPagination({
+        current: page,
+        pageSize,
+        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+      })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载反馈失败')
     } finally {
@@ -315,9 +328,18 @@ const FeedbackManagement = () => {
           loading={loading}
           rowKey="id"
           pagination={{
-            pageSize: 15,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: total => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              loadFeedbacks(page, pageSize)
+            },
+            onShowSizeChange: (_, size) => {
+              loadFeedbacks(1, size)
+            },
           }}
           scroll={{ x: 1600 }}
         />

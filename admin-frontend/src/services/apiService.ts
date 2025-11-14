@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const API_BASE_URL = '/api/manage'
+// @ts-ignore - Vite env variable
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/manage`
 
 // 创建 axios 实例
 const api = axios.create({
@@ -151,6 +152,23 @@ export const getFortuneTypeDistribution = async () => {
   return response.data
 }
 
+// ========== 财务管理 ==========
+
+export const getFinancialStats = async () => {
+  const response = await api.get('/financial/stats')
+  return response.data
+}
+
+export const getFinancialData = async (params?: {
+  startDate?: string
+  endDate?: string
+  page?: number
+  limit?: number
+}) => {
+  const response = await api.get('/financial/data', { params })
+  return response.data
+}
+
 // ========== 审计日志 ==========
 
 export const getAuditLogs = async (params?: {
@@ -180,6 +198,39 @@ export const addAuditLog = async (logData: {
 export const cleanAuditLogs = async (keepCount?: number) => {
   const response = await api.post('/audit/clean', { keepCount })
   return response.data
+}
+
+// ========== 通用请求函数 ==========
+
+export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('admin_token')
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  }
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    headers,
+  })
+
+  if (response.status === 401) {
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
+    window.location.href = '/login'
+    throw new Error('Unauthorized')
+  }
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return response.json()
 }
 
 export default api

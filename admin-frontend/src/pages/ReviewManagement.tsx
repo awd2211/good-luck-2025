@@ -36,16 +36,29 @@ const ReviewManagement = () => {
   const [currentReview, setCurrentReview] = useState<Review | null>(null)
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 15,
+    total: 0,
+  })
 
   useEffect(() => {
-    loadReviews()
+    loadReviews(pagination.current, pagination.pageSize)
   }, [])
 
-  const loadReviews = async () => {
+  const loadReviews = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/reviews')
-      setReviews(response.data.data || [])
+      const response = await api.get('/reviews', {
+        params: { page, limit: pageSize }
+      })
+      const data = response.data.data || []
+      setReviews(Array.isArray(data) ? data : data.list || [])
+      setPagination({
+        current: page,
+        pageSize,
+        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+      })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载评价失败')
     } finally {
@@ -320,9 +333,18 @@ const ReviewManagement = () => {
           loading={loading}
           rowKey="id"
           pagination={{
-            pageSize: 15,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: total => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              loadReviews(page, pageSize)
+            },
+            onShowSizeChange: (_, size) => {
+              loadReviews(1, size)
+            },
           }}
           scroll={{ x: 1600 }}
           expandable={{

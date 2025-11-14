@@ -52,8 +52,6 @@ import {
   SaveOutlined,
   FolderOpenOutlined,
   HistoryOutlined,
-  HeartOutlined,
-  DragOutlined,
   DiffOutlined,
   ExperimentOutlined,
 } from '@ant-design/icons'
@@ -68,23 +66,6 @@ import {
   TitleComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import api from '../services/apiService'
 
 // 注册ECharts组件
@@ -159,34 +140,6 @@ interface VersionHistory {
   changed_by: string
   changed_at: string
   change_description: string
-}
-
-// 拖拽排序的行组件
-const DraggableRow = ({ children, ...props }: any) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: props['data-row-key'],
-  })
-
-  const style = {
-    ...props.style,
-    transform: CSS.Transform.toString(transform),
-    transition,
-    cursor: 'move',
-    ...(isDragging ? { position: 'relative', zIndex: 9999 } : {}),
-  }
-
-  return (
-    <tr {...props} ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
-    </tr>
-  )
 }
 
 const AIModelManagement = () => {
@@ -271,12 +224,12 @@ const AIModelManagement = () => {
   const [compareVersions, setCompareVersions] = useState<[string?, string?]>([])
 
   // 5. 健康监控相关
-  const [healthCheckInterval, setHealthCheckInterval] = useState<number>(300000) // 5分钟
-  const healthCheckTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const [healthCheckInterval] = useState<number>(300000) // 5分钟
+  const healthCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [healthAlerts, setHealthAlerts] = useState<string[]>([])
 
   // 6. 表格列宽
-  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+  const [columnWidths] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem('aimodel_column_widths')
     return saved ? JSON.parse(saved) : {}
   })
@@ -285,10 +238,21 @@ const AIModelManagement = () => {
   const [batchEditFields, setBatchEditFields] = useState<string[]>([])
   const [batchEditMode, setBatchEditMode] = useState<'replace' | 'increment'>('replace')
 
+  // 8. 当前选择的供应商（用于动态显示模型列表）
+  const [selectedProvider, setSelectedProvider] = useState<string>('')
+
+  // 9. 从数据库获取的供应商模型列表
+  const [providerModels, setProviderModels] = useState<AIModel[]>([])
+  const [providerModelsLoading, setProviderModelsLoading] = useState(false)
+
   const providerOptions = [
     { value: 'openai', label: 'OpenAI', color: 'green' },
+    { value: 'anthropic', label: 'Anthropic Claude', color: 'cyan' },
     { value: 'grok', label: 'Grok (X.AI)', color: 'blue' },
     { value: 'qwen', label: 'Qwen (通义千问)', color: 'orange' },
+    { value: 'deepseek', label: 'DeepSeek', color: 'purple' },
+    { value: 'openrouter', label: 'OpenRouter (聚合)', color: 'magenta' },
+    { value: 'together', label: 'Together AI (开源)', color: 'geekblue' },
   ]
 
   const statusOptions = [
@@ -312,19 +276,112 @@ const AIModelManagement = () => {
     { key: 'actions', label: '操作' },
   ]
 
+  // ⚠️ 模型预设配置 - 与数据库对齐（2025年1月14日）
+  // 基于官方API文档验证的模型列表
   const modelPresets: Record<string, any> = {
     'openai': {
-      'gpt-4': { api_base_url: 'https://api.openai.com/v1', max_tokens: 4000 },
-      'gpt-4-turbo': { api_base_url: 'https://api.openai.com/v1', max_tokens: 4000 },
-      'gpt-3.5-turbo': { api_base_url: 'https://api.openai.com/v1', max_tokens: 4000 },
+      // GPT-5 系列（400K tokens）
+      'gpt-5': { api_base_url: 'https://api.openai.com/v1', max_tokens: 400000, description: 'GPT-5 旗舰（400K）' },
+      'gpt-5-mini': { api_base_url: 'https://api.openai.com/v1', max_tokens: 400000, description: 'GPT-5 Mini' },
+      'gpt-5-nano': { api_base_url: 'https://api.openai.com/v1', max_tokens: 400000, description: 'GPT-5 Nano' },
+
+      // O1 系列（推理模型）
+      'o1': { api_base_url: 'https://api.openai.com/v1', max_tokens: 200000, description: 'O1 推理模型（200K）' },
+      'o1-preview': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'O1 Preview' },
+      'o1-mini': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'O1 Mini' },
+
+      // GPT-4o 系列（多模态）
+      'gpt-4o': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o 多模态' },
+      'chatgpt-4o-latest': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'ChatGPT-4o Latest（动态）' },
+      'gpt-4o-2024-11-20': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o（2024-11-20）' },
+      'gpt-4o-2024-08-06': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o（2024-08-06）' },
+      'gpt-4o-mini': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o Mini 经济版' },
+      'gpt-4o-mini-2024-07-18': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4o Mini（2024-07-18）' },
+
+      // GPT-4 Turbo 系列
+      'gpt-4-turbo': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4 Turbo' },
+      'gpt-4-turbo-2024-04-09': { api_base_url: 'https://api.openai.com/v1', max_tokens: 128000, description: 'GPT-4 Turbo（2024-04-09）' },
+      'gpt-4': { api_base_url: 'https://api.openai.com/v1', max_tokens: 8192, description: 'GPT-4 经典版' },
+
+      // GPT-3.5 系列
+      'gpt-3.5-turbo': { api_base_url: 'https://api.openai.com/v1', max_tokens: 16385, description: 'GPT-3.5 Turbo' },
+      'gpt-3.5-turbo-0125': { api_base_url: 'https://api.openai.com/v1', max_tokens: 16385, description: 'GPT-3.5 Turbo（0125）' },
     },
+
+    'anthropic': {
+      // Claude 4.5 系列（最新）
+      'claude-sonnet-4-5-20250929': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 1000000, description: 'Claude Sonnet 4.5（1M）' },
+      'claude-haiku-4-5-20251001': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 200000, description: 'Claude Haiku 4.5（200K）' },
+
+      // Claude 4 系列
+      'claude-sonnet-4-20250514': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 1000000, description: 'Claude Sonnet 4（1M）' },
+      'claude-opus-4-1-20250805': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 1000000, description: 'Claude Opus 4.1（高级推理）' },
+
+      // Claude 3 系列（旧版）
+      'claude-3-7-sonnet-20250219': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 200000, description: 'Claude Sonnet 3.7' },
+      'claude-3-5-haiku-20241022': { api_base_url: 'https://api.anthropic.com/v1', max_tokens: 200000, description: 'Claude Haiku 3.5' },
+    },
+
     'grok': {
-      'grok-beta': { api_base_url: 'https://api.x.ai/v1', max_tokens: 4000 },
+      // Grok 4 系列（最新）
+      'grok-4': { api_base_url: 'https://api.x.ai/v1', max_tokens: 128000, description: 'Grok 4 世界最智能' },
+      'grok-4-latest': { api_base_url: 'https://api.x.ai/v1', max_tokens: 128000, description: 'Grok 4 Latest（动态）' },
+      'grok-4-0709': { api_base_url: 'https://api.x.ai/v1', max_tokens: 128000, description: 'Grok 4（0709）' },
+
+      // Grok 3 系列
+      'grok-3': { api_base_url: 'https://api.x.ai/v1', max_tokens: 131072, description: 'Grok 3' },
+      'grok-3-latest': { api_base_url: 'https://api.x.ai/v1', max_tokens: 131072, description: 'Grok 3 Latest（动态）' },
+      'grok-3-mini': { api_base_url: 'https://api.x.ai/v1', max_tokens: 131072, description: 'Grok 3 Mini' },
     },
+
     'qwen': {
-      'qwen-plus': { api_base_url: 'https://dashscope.aliyuncs.com/api/v1', max_tokens: 6000 },
-      'qwen-turbo': { api_base_url: 'https://dashscope.aliyuncs.com/api/v1', max_tokens: 6000 },
-      'qwen-max': { api_base_url: 'https://dashscope.aliyuncs.com/api/v1', max_tokens: 6000 },
+      // Qwen Plus 系列（推荐）
+      'qwen-plus': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Plus 主力' },
+      'qwen-plus-latest': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Plus Latest' },
+      'qwen-plus-2025-09-11': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Plus（2025-09-11）' },
+
+      // Qwen Flash 系列（替代Turbo）
+      'qwen-flash': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Flash（推荐）' },
+      'qwen-flash-2025-07-28': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Flash（2025-07-28）' },
+
+      // Qwen Turbo 系列（已停止更新）
+      'qwen-turbo': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Turbo（已停止更新）' },
+      'qwen-turbo-latest': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen Turbo Latest（已停止更新）' },
+
+      // Qwen3 Vision 系列
+      'qwen3-vl-plus': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 VL Plus（视觉）' },
+      'qwen3-vl-plus-2025-09-23': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 VL Plus（2025-09-23）' },
+
+      // Qwen3 Coder 系列
+      'qwen3-coder-plus': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 Coder Plus（代码）' },
+      'qwen3-coder-plus-2025-09-23': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 Coder Plus（2025-09-23）' },
+      'qwen3-coder-flash': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 Coder Flash（代码）' },
+      'qwen3-coder-flash-2025-07-28': { api_base_url: 'https://dashscope.aliyuncs.com/compatible-mode/v1', max_tokens: 128000, description: 'Qwen3 Coder Flash（2025-07-28）' },
+    },
+
+    'deepseek': {
+      // DeepSeek 官方API（仅2个端点）
+      'deepseek-chat': { api_base_url: 'https://api.deepseek.com', max_tokens: 128000, description: 'DeepSeek Chat（V3.1非思考）' },
+      'deepseek-reasoner': { api_base_url: 'https://api.deepseek.com', max_tokens: 128000, description: 'DeepSeek Reasoner（R1思考）' },
+    },
+
+    'openrouter': {
+      // OpenRouter 聚合平台（统一网关）
+      'anthropic/claude-sonnet-4.5': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 1000000, description: 'Claude Sonnet 4.5（OpenRouter）' },
+      'anthropic/claude-haiku-4.5': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 200000, description: 'Claude Haiku 4.5（OpenRouter）' },
+      'xai/grok-4-fast': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 2000000, description: 'Grok 4 Fast（2M OpenRouter）' },
+      'qwen/qwen3-max': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 256000, description: 'Qwen3 Max（OpenRouter）' },
+      'google/gemini-2.5-flash-preview-09-2025': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 1000000, description: 'Gemini 2.5 Flash（OpenRouter）' },
+      'amazon/nova-premier-1.0': { api_base_url: 'https://openrouter.ai/api/v1', max_tokens: 1000000, description: 'Amazon Nova Premier（OpenRouter）' },
+    },
+
+    'together': {
+      // Together AI 开源模型平台
+      'meta/llama-4-maverick': { api_base_url: 'https://api.together.xyz/v1', max_tokens: 256000, description: 'Llama 4 Maverick（Together）' },
+      'meta/llama-4-scout': { api_base_url: 'https://api.together.xyz/v1', max_tokens: 512000, description: 'Llama 4 Scout（Together）' },
+      'qwen/qwen3-235b-a22b-fp8': { api_base_url: 'https://api.together.xyz/v1', max_tokens: 128000, description: 'Qwen3 235B MoE（Together）' },
+      'deepseek/deepseek-r1-0528': { api_base_url: 'https://api.together.xyz/v1', max_tokens: 128000, description: 'DeepSeek R1-0528（Together）' },
+      'deepseek/deepseek-v3.1': { api_base_url: 'https://api.together.xyz/v1', max_tokens: 128000, description: 'DeepSeek V3.1（Together）' },
     },
   }
 
@@ -540,11 +597,164 @@ const AIModelManagement = () => {
 
   // ============ 配置模板相关函数 ============
 
+  // 预设模板定义
+  const defaultTemplates: ConfigTemplate[] = [
+    {
+      id: 'preset-gpt4',
+      name: 'GPT-4 标准配置',
+      description: 'OpenAI GPT-4 模型的推荐配置，适合复杂任务和高质量输出',
+      config: {
+        provider: 'openai',
+        model_name: 'gpt-4',
+        api_base_url: 'https://api.openai.com/v1',
+        max_tokens: 4000,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一个专业的算命大师，精通中国传统命理学，包括生肖、八字、五行、紫微斗数等。请用专业、准确、易懂的语言为用户提供算命服务。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-gpt35-fast',
+      name: 'GPT-3.5 快速配置',
+      description: 'OpenAI GPT-3.5 模型配置，速度快、成本低，适合日常查询',
+      config: {
+        provider: 'openai',
+        model_name: 'gpt-3.5-turbo',
+        api_base_url: 'https://api.openai.com/v1',
+        max_tokens: 2000,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一个友好的算命助手，擅长为用户提供简洁明了的运势分析和建议。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-gpt4-creative',
+      name: 'GPT-4 创意配置',
+      description: 'GPT-4 高创意度配置，适合生成独特的解读和建议',
+      config: {
+        provider: 'openai',
+        model_name: 'gpt-4',
+        api_base_url: 'https://api.openai.com/v1',
+        max_tokens: 4000,
+        temperature: 0.9,
+        top_p: 0.95,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.3,
+        system_prompt: '你是一个富有创意的命理大师，善于用生动有趣的方式解读命理，同时保持专业性。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-grok-standard',
+      name: 'Grok 标准配置',
+      description: 'X.AI Grok 模型标准配置，平衡速度和质量',
+      config: {
+        provider: 'grok',
+        model_name: 'grok-beta',
+        api_base_url: 'https://api.x.ai/v1',
+        max_tokens: 4000,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一个专业的算命师，精通东方命理学。请为用户提供准确、详细的命理分析。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-qwen-plus',
+      name: 'Qwen-Plus 推荐配置',
+      description: '通义千问Plus模型配置，中文理解能力强，适合国内用户',
+      config: {
+        provider: 'qwen',
+        model_name: 'qwen-plus',
+        api_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+        max_tokens: 6000,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一位资深的中国传统命理师，精通周易八卦、生辰八字、紫微斗数等命理学说。请用通俗易懂的中文为用户解读命理，提供准确的分析和建议。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-qwen-max',
+      name: 'Qwen-Max 高级配置',
+      description: '通义千问Max模型配置，最强中文能力，适合复杂命理分析',
+      config: {
+        provider: 'qwen',
+        model_name: 'qwen-max',
+        api_base_url: 'https://dashscope.aliyuncs.com/api/v1',
+        max_tokens: 6000,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一位德高望重的命理大师，精通各类中国传统命理学，包括八字、六爻、奇门遁甲、紫微斗数等。请为用户提供深入、专业、全面的命理分析。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-conservative',
+      name: '保守型配置',
+      description: '低温度配置，输出更稳定可预测，适合需要一致性的场景',
+      config: {
+        provider: 'openai',
+        model_name: 'gpt-4',
+        api_base_url: 'https://api.openai.com/v1',
+        max_tokens: 3000,
+        temperature: 0.3,
+        top_p: 0.8,
+        frequency_penalty: 0,
+        presence_penalty: 0,
+        system_prompt: '你是一个严谨的命理分析师，注重准确性和一致性。请基于传统命理理论，为用户提供可靠的分析结果。',
+      },
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'preset-balanced',
+      name: '平衡型配置',
+      description: '平衡创意和稳定性，适合大多数场景的通用配置',
+      config: {
+        provider: 'openai',
+        model_name: 'gpt-4',
+        api_base_url: 'https://api.openai.com/v1',
+        max_tokens: 3500,
+        temperature: 0.7,
+        top_p: 0.9,
+        frequency_penalty: 0.1,
+        presence_penalty: 0.1,
+        system_prompt: '你是一个经验丰富的命理师，既能保持专业准确，又能用生动的语言解读。请为用户提供平衡实用与趣味的命理分析。',
+      },
+      created_at: new Date().toISOString(),
+    },
+  ]
+
   // 从localStorage加载模板
   const loadTemplates = () => {
     const saved = localStorage.getItem('aimodel_templates')
     if (saved) {
-      setTemplates(JSON.parse(saved))
+      const savedTemplates = JSON.parse(saved)
+      // 合并默认模板和用户保存的模板，避免重复
+      const existingIds = savedTemplates.map((t: ConfigTemplate) => t.id)
+      const newDefaults = defaultTemplates.filter(t => !existingIds.includes(t.id))
+      const merged = [...newDefaults, ...savedTemplates]
+      setTemplates(merged)
+      // 如果有新增的默认模板，保存到localStorage
+      if (newDefaults.length > 0) {
+        localStorage.setItem('aimodel_templates', JSON.stringify(merged))
+      }
+    } else {
+      // 首次加载，使用默认模板
+      setTemplates(defaultTemplates)
+      localStorage.setItem('aimodel_templates', JSON.stringify(defaultTemplates))
     }
   }
 
@@ -757,7 +967,7 @@ const AIModelManagement = () => {
   // 执行健康检查
   const performHealthCheck = async (model: AIModel) => {
     try {
-      const res = await api.post(`/ai-models/${model.id}/test`, {
+      await api.post(`/ai-models/${model.id}/test`, {
         test_prompt: 'health check',
       })
 
@@ -815,71 +1025,28 @@ const AIModelManagement = () => {
   }, [models.filter(m => m.health_monitoring).length, healthCheckInterval])
 
   // 切换健康监控
-  const handleToggleHealthMonitoring = async (modelId: number, enabled: boolean) => {
-    try {
-      // 后续对接API
-      // await api.put(`/ai-models/${modelId}`, { health_monitoring: enabled })
-
-      setModels(prev => prev.map(m =>
-        m.id === modelId ? { ...m, health_monitoring: enabled } : m
-      ))
-
-      message.success(enabled ? '已启用健康监控' : '已关闭健康监控')
-    } catch (error: any) {
-      message.error('操作失败')
-    }
-  }
-
-  // ============ 拖拽排序相关 ============
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (!over || active.id === over.id) {
-      return
-    }
-
-    const oldIndex = models.findIndex(m => m.id === active.id)
-    const newIndex = models.findIndex(m => m.id === over.id)
-
-    const newModels = arrayMove(models, oldIndex, newIndex)
-
-    // 更新priority字段（根据新顺序）
-    const updatedModels = newModels.map((model, index) => ({
-      ...model,
-      priority: 100 - index, // 倒序，第一个优先级最高
-    }))
-
-    setModels(updatedModels)
-
-    // 调用API更新后端
-    try {
-      const movedModel = updatedModels[newIndex]
-      await api.put(`/ai-models/${movedModel.id}`, {
-        priority: movedModel.priority,
-      })
-      message.success('排序已更新')
-    } catch (error: any) {
-      message.error('更新排序失败')
-      // 恢复原顺序
-      fetchModels()
-    }
-  }
+  //   const handleToggleHealthMonitoring = async (modelId: number, enabled: boolean) => {
+  //     try {
+  //       // 后续对接API
+  //       // await api.put(`/ai-models/${modelId}`, { health_monitoring: enabled })
+  // 
+  //       setModels(prev => prev.map(m =>
+  //         m.id === modelId ? { ...m, health_monitoring: enabled } : m
+  //       ))
+  // 
+  //       message.success(enabled ? '已启用健康监控' : '已关闭健康监控')
+  //     } catch (error: any) {
+  //       message.error('操作失败')
+  //     }
+  //   }
 
   // ============ 列宽调整相关 ============
 
-  const handleColumnResize = (key: string, width: number) => {
-    const newWidths = { ...columnWidths, [key]: width }
-    setColumnWidths(newWidths)
-    localStorage.setItem('aimodel_column_widths', JSON.stringify(newWidths))
-  }
+  //   const handleColumnResize = (key: string, width: number) => {
+  //     const newWidths = { ...columnWidths, [key]: width }
+  //     setColumnWidths(newWidths)
+  //     localStorage.setItem('aimodel_column_widths', JSON.stringify(newWidths))
+  //   }
 
   // ============ 增强批量编辑相关 ============
 
@@ -965,12 +1132,27 @@ const AIModelManagement = () => {
     fetchModels()
   }, [filters])
 
-  const handleOpenModal = (model?: AIModel) => {
+  const handleOpenModal = async (model?: AIModel) => {
     if (model) {
       setEditingModel(model)
+      setSelectedProvider(model.provider) // 设置当前供应商，用于显示模型列表
       form.setFieldsValue(model)
+
+      // 加载该供应商的模型列表
+      try {
+        setProviderModelsLoading(true)
+        const response = await api.get(`/ai-models/by-provider/${model.provider}`)
+        setProviderModels(response.data.data || [])
+      } catch (error: any) {
+        console.error('获取供应商模型失败:', error)
+        setProviderModels([])
+      } finally {
+        setProviderModelsLoading(false)
+      }
     } else {
       setEditingModel(null)
+      setSelectedProvider('') // 清空选择的供应商
+      setProviderModels([]) // 清空模型列表
       form.resetFields()
       form.setFieldsValue({
         temperature: 0.7,
@@ -1153,22 +1335,66 @@ const AIModelManagement = () => {
     }
   }
 
-  const handleProviderChange = (provider: string) => {
+  const handleProviderChange = async (provider: string) => {
+    console.log('供应商变化:', provider)
+    setSelectedProvider(provider)
+
+    // 清空模型名称并设置默认API Base URL
+    const apiBaseUrls: Record<string, string> = {
+      'openai': 'https://api.openai.com/v1',
+      'anthropic': 'https://api.anthropic.com/v1',
+      'grok': 'https://api.x.ai/v1',
+      'qwen': 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+      'deepseek': 'https://api.deepseek.com',
+      'openrouter': 'https://openrouter.ai/api/v1',
+      'together': 'https://api.together.xyz/v1',
+    }
+
     form.setFieldsValue({
       model_name: undefined,
-      api_base_url: modelPresets[provider]?.[Object.keys(modelPresets[provider])[0]]?.api_base_url || '',
+      api_base_url: apiBaseUrls[provider] || ''
     })
+
+    // 从数据库获取该供应商的所有模型
+    if (provider) {
+      try {
+        setProviderModelsLoading(true)
+        const response = await api.get(`/ai-models/by-provider/${provider}`)
+        console.log('从数据库获取的模型:', response.data.data)
+        setProviderModels(response.data.data || [])
+      } catch (error: any) {
+        console.error('获取供应商模型失败:', error)
+        message.error(error.response?.data?.message || '获取模型列表失败')
+        setProviderModels([])
+      } finally {
+        setProviderModelsLoading(false)
+      }
+    } else {
+      setProviderModels([])
+    }
   }
 
   const handleModelNameChange = (modelName: string) => {
-    const provider = form.getFieldValue('provider')
-    const preset = modelPresets[provider]?.[modelName]
+    // 优先从数据库模型中查找
+    const dbModel = providerModels.find(m => m.model_name === modelName)
 
-    if (preset) {
+    if (dbModel) {
+      // 如果在数据库中找到，使用数据库的配置
       form.setFieldsValue({
-        api_base_url: preset.api_base_url,
-        max_tokens: preset.max_tokens,
+        api_base_url: dbModel.api_base_url,
+        max_tokens: dbModel.max_tokens,
       })
+    } else {
+      // 如果是新模型，尝试从预设中获取默认配置
+      const provider = form.getFieldValue('provider')
+      const preset = modelPresets[provider]?.[modelName]
+
+      if (preset) {
+        form.setFieldsValue({
+          api_base_url: preset.api_base_url,
+          max_tokens: preset.max_tokens,
+        })
+      }
     }
   }
 
@@ -1274,12 +1500,6 @@ const AIModelManagement = () => {
   }
 
   const columns: ColumnsType<AIModel> = [
-    {
-      title: '',
-      key: 'drag',
-      width: 40,
-      render: () => <DragOutlined style={{ cursor: 'move', color: '#999' }} />,
-    },
     {
       title: 'ID',
       dataIndex: 'id',
@@ -1856,44 +2076,28 @@ const AIModelManagement = () => {
 
         {/* 表格或卡片视图 */}
         {viewMode === 'table' ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={models.map(m => m.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <Table
-                rowSelection={rowSelection}
-                columns={filteredColumns}
-                dataSource={models}
-                rowKey="id"
-                loading={loading}
-                scroll={{ x: 1800 }}
-                components={{
-                  body: {
-                    row: DraggableRow,
-                  },
-                }}
-                pagination={{
-                  current: pagination.current,
-                  pageSize: pagination.pageSize,
-                  total: pagination.total,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total) => `共 ${total} 条记录`,
-                  onChange: (page, pageSize) => {
-                    fetchModels(page, pageSize)
-                  },
-                  onShowSizeChange: (_current, size) => {
-                    fetchModels(1, size)
-                  },
-                }}
-              />
-            </SortableContext>
-          </DndContext>
+          <Table
+            rowSelection={rowSelection}
+            columns={filteredColumns}
+            dataSource={models}
+            rowKey="id"
+            loading={loading}
+            scroll={{ x: 1800 }}
+            pagination={{
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条记录`,
+              onChange: (page, pageSize) => {
+                fetchModels(page, pageSize)
+              },
+              onShowSizeChange: (_current, size) => {
+                fetchModels(1, size)
+              },
+            }}
+          />
         ) : (
           <>
             {renderCardView()}
@@ -1966,9 +2170,43 @@ const AIModelManagement = () => {
                   <Form.Item
                     name="model_name"
                     label="模型标识"
-                    rules={[{ required: true, message: '请输入模型标识' }]}
+                    rules={[{ required: true, message: '请选择或输入模型标识' }]}
                   >
-                    <Input placeholder="例如: gpt-4" onChange={(e) => handleModelNameChange(e.target.value)} />
+                    <Select
+                      showSearch
+                      placeholder="选择数据库中已有的模型或输入新模型名"
+                      optionFilterProp="children"
+                      onChange={handleModelNameChange}
+                      filterOption={(input, option) =>
+                        (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      dropdownRender={(menu) => (
+                        <>
+                          {menu}
+                          <div style={{ padding: '8px', borderTop: '1px solid #f0f0f0' }}>
+                            <small style={{ color: '#999' }}>
+                              {selectedProvider
+                                ? `当前供应商: ${selectedProvider}, 数据库模型数量: ${providerModels.length}`
+                                : '提示：先选择供应商，可选择已有模型或输入新模型名'
+                              }
+                            </small>
+                          </div>
+                        </>
+                      )}
+                      disabled={!selectedProvider}
+                      loading={providerModelsLoading}
+                      notFoundContent={
+                        providerModelsLoading ? <Spin size="small" /> :
+                        !selectedProvider ? '请先选择供应商' :
+                        providerModels.length === 0 ? '该供应商暂无模型，可输入新模型名' : '未找到匹配的模型'
+                      }
+                    >
+                      {providerModels.map((model) => (
+                        <Option key={model.id} value={model.model_name}>
+                          {model.model_name} - {model.name} {model.status === 'active' ? '✓' : ''}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
                 <Col span={12}>

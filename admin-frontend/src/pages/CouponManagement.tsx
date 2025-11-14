@@ -37,16 +37,29 @@ const CouponManagement = () => {
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null)
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 15,
+    total: 0,
+  })
 
   useEffect(() => {
-    loadCoupons()
+    loadCoupons(pagination.current, pagination.pageSize)
   }, [])
 
-  const loadCoupons = async () => {
+  const loadCoupons = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/coupons')
-      setCoupons(response.data.data || [])
+      const response = await api.get('/coupons', {
+        params: { page, limit: pageSize }
+      })
+      const data = response.data.data || []
+      setCoupons(Array.isArray(data) ? data : data.list || [])
+      setPagination({
+        current: page,
+        pageSize,
+        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+      })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载优惠券失败')
     } finally {
@@ -375,9 +388,18 @@ const CouponManagement = () => {
           loading={loading}
           rowKey="id"
           pagination={{
-            pageSize: 15,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: total => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              loadCoupons(page, pageSize)
+            },
+            onShowSizeChange: (_, size) => {
+              loadCoupons(1, size)
+            },
           }}
           scroll={{ x: 1500 }}
         />

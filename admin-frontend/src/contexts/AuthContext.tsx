@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUser = (userData: UserInfo) => {
     // 更新用户信息并保存到本地存储
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('admin_token')
     if (token) {
       saveAuthData(token, userData)
     }

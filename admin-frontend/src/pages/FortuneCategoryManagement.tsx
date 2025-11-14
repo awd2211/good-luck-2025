@@ -301,7 +301,7 @@ const FortuneCategoryManagement = () => {
             onChange: (page, pageSize) => {
               fetchCategories(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               fetchCategories(1, size)
             }
           }}

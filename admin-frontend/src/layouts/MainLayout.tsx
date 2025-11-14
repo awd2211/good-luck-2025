@@ -35,6 +35,8 @@ import {
   FormOutlined,
   RobotOutlined,
   FunnelPlotOutlined,
+  MailOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermission } from '../hooks/usePermission'
@@ -202,6 +204,18 @@ const MainLayout = () => {
           label: '通知管理',
           permission: Permission.NOTIFICATION_VIEW,
         },
+        {
+          key: '/notification-templates',
+          icon: <FileTextOutlined />,
+          label: '通知模板',
+          permission: Permission.NOTIFICATION_VIEW,
+        },
+        {
+          key: '/share-analytics',
+          icon: <ShareAltOutlined />,
+          label: '分享统计',
+          permission: Permission.STATS_VIEW,
+        },
       ],
     },
     {
@@ -220,6 +234,25 @@ const MainLayout = () => {
           icon: <LikeOutlined />,
           label: '评价管理',
           permission: Permission.REVIEW_VIEW,
+        },
+      ],
+    },
+    {
+      key: 'customer-service',
+      icon: <MessageOutlined />,
+      label: '客服系统',
+      children: [
+        {
+          key: '/customer-service',
+          icon: <TeamOutlined />,
+          label: '客服管理',
+          permission: Permission.CS_AGENT_VIEW,
+        },
+        {
+          key: '/cs-workbench',
+          icon: <MessageOutlined />,
+          label: '客服工作台',
+          permission: Permission.CS_WORKBENCH_VIEW,
         },
       ],
     },
@@ -253,16 +286,16 @@ const MainLayout = () => {
           permission: Permission.SYSTEM_CONFIG_VIEW,
         },
         {
+          key: '/email-templates',
+          icon: <MailOutlined />,
+          label: '邮件模板',
+          permission: Permission.SYSTEM_CONFIG_VIEW,
+        },
+        {
           key: '/audit-log',
           icon: <FileTextOutlined />,
           label: '操作日志',
           permission: Permission.LOG_VIEW,
-        },
-        {
-          key: '/settings',
-          icon: <SettingOutlined />,
-          label: '系统设置',
-          permission: Permission.SETTINGS_VIEW,
         },
       ],
     },

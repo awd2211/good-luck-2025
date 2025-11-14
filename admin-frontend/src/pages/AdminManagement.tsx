@@ -23,11 +23,14 @@ import {
   UserOutlined,
   CrownOutlined,
   TeamOutlined,
-  FileTextOutlined,
   EyeOutlined,
+  CustomerServiceOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons'
 import api from '../services/apiService'
 import { useAuth } from '../contexts/AuthContext'
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'
+import { validatePasswordMinimum } from '../utils/passwordStrength'
 
 const { Option } = Select
 
@@ -48,6 +51,7 @@ const AdminManagement = () => {
   const [form] = Form.useForm()
   const [searchText, setSearchText] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('')
+  const [password, setPassword] = useState('')
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -102,6 +106,7 @@ const AdminManagement = () => {
   const handleAdd = () => {
     setEditingAdmin(null)
     form.resetFields()
+    setPassword('')
     setModalVisible(true)
   }
 
@@ -112,6 +117,7 @@ const AdminManagement = () => {
       email: record.email,
       role: record.role,
     })
+    setPassword('')
     setModalVisible(true)
   }
 
@@ -161,11 +167,13 @@ const AdminManagement = () => {
   const getRoleTag = (role: string) => {
     const roleConfig: Record<string, { color: string; icon: any; text: string }> = {
       super_admin: { color: 'red', icon: <CrownOutlined />, text: '超级管理员' },
-      manager: { color: 'blue', icon: <TeamOutlined />, text: '管理员' },
-      editor: { color: 'green', icon: <FileTextOutlined />, text: '编辑员' },
-      viewer: { color: 'default', icon: <EyeOutlined />, text: '查看员' },
+      admin: { color: 'blue', icon: <TeamOutlined />, text: '管理员' },
+      manager: { color: 'cyan', icon: <TeamOutlined />, text: '经理' },
+      viewer: { color: 'default', icon: <EyeOutlined />, text: '访客' },
+      cs_manager: { color: 'purple', icon: <CustomerServiceOutlined />, text: '客服主管' },
+      cs_agent: { color: 'geekblue', icon: <CustomerServiceOutlined />, text: '客服专员' },
     }
-    const config = roleConfig[role] || roleConfig.viewer
+    const config = roleConfig[role] || { color: 'default', icon: <QuestionCircleOutlined />, text: role }
     return (
       <Tag color={config.color} icon={config.icon}>
         {config.text}
@@ -240,7 +248,7 @@ const AdminManagement = () => {
     <div>
       {/* 统计卡片 */}
       <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
               title="总管理员"
@@ -249,7 +257,7 @@ const AdminManagement = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
               title="超级管理员"
@@ -259,23 +267,42 @@ const AdminManagement = () => {
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
               title="管理员"
-              value={stats.manager_count || 0}
+              value={stats.admin_count || 0}
               prefix={<TeamOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
-        <Col span={6}>
+        <Col span={4}>
           <Card>
             <Statistic
-              title="编辑员"
-              value={stats.editor_count || 0}
-              prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#52c41a' }}
+              title="经理"
+              value={stats.manager_count || 0}
+              prefix={<TeamOutlined />}
+              valueStyle={{ color: '#13c2c2' }}
+            />
+          </Card>
+        </Col>
+        <Col span={4}>
+          <Card>
+            <Statistic
+              title="访客"
+              value={stats.viewer_count || 0}
+              prefix={<EyeOutlined />}
+            />
+          </Card>
+        </Col>
+        <Col span={4}>
+          <Card>
+            <Statistic
+              title="客服"
+              value={(stats.cs_manager_count || 0) + (stats.cs_agent_count || 0)}
+              prefix={<CustomerServiceOutlined />}
+              valueStyle={{ color: '#722ed1' }}
             />
           </Card>
         </Col>
@@ -298,9 +325,11 @@ const AdminManagement = () => {
             allowClear
           >
             <Option value="super_admin">超级管理员</Option>
-            <Option value="manager">管理员</Option>
-            <Option value="editor">编辑员</Option>
-            <Option value="viewer">查看员</Option>
+            <Option value="admin">管理员</Option>
+            <Option value="manager">经理</Option>
+            <Option value="viewer">访客</Option>
+            <Option value="cs_manager">客服主管</Option>
+            <Option value="cs_agent">客服专员</Option>
           </Select>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             添加管理员
@@ -321,7 +350,7 @@ const AdminManagement = () => {
             onChange: (page, pageSize) => {
               fetchAdmins(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               fetchAdmins(1, size)
             }
           }}
@@ -333,7 +362,10 @@ const AdminManagement = () => {
         title={editingAdmin ? '编辑管理员' : '添加管理员'}
         open={modalVisible}
         onOk={handleSubmit}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false)
+          setPassword('')
+        }}
         okText="确定"
         cancelText="取消"
       >
@@ -358,19 +390,65 @@ const AdminManagement = () => {
           <Form.Item name="role" label="角色" rules={[{ required: true, message: '请选择角色' }]}>
             <Select placeholder="请选择角色">
               <Option value="super_admin">超级管理员</Option>
-              <Option value="manager">管理员</Option>
-              <Option value="editor">编辑员</Option>
-              <Option value="viewer">查看员</Option>
+              <Option value="admin">管理员</Option>
+              <Option value="manager">经理</Option>
+              <Option value="viewer">访客</Option>
+              <Option value="cs_manager">客服主管</Option>
+              <Option value="cs_agent">客服专员</Option>
             </Select>
           </Form.Item>
           {!editingAdmin && (
-            <Form.Item name="password" label="密码">
-              <Input.Password placeholder="留空则使用默认密码 123456" />
+            <Form.Item
+              name="password"
+              label="密码"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve()
+                    if (!validatePasswordMinimum(value)) {
+                      return Promise.reject('密码强度不足，至少需要8位且包含字母和数字')
+                    }
+                    return Promise.resolve()
+                  }
+                }
+              ]}
+            >
+              <Input.Password
+                placeholder="留空则使用默认密码 123456"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Form.Item>
+          )}
+          {!editingAdmin && password && (
+            <Form.Item label=" " colon={false}>
+              <PasswordStrengthIndicator password={password} />
             </Form.Item>
           )}
           {editingAdmin && (
-            <Form.Item name="password" label="新密码">
-              <Input.Password placeholder="留空表示不修改密码" />
+            <Form.Item
+              name="password"
+              label="新密码"
+              rules={[
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve()
+                    if (!validatePasswordMinimum(value)) {
+                      return Promise.reject('密码强度不足，至少需要8位且包含字母和数字')
+                    }
+                    return Promise.resolve()
+                  }
+                }
+              ]}
+            >
+              <Input.Password
+                placeholder="留空表示不修改密码"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </Form.Item>
+          )}
+          {editingAdmin && password && (
+            <Form.Item label=" " colon={false}>
+              <PasswordStrengthIndicator password={password} />
             </Form.Item>
           )}
         </Form>

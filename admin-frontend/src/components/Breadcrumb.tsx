@@ -66,13 +66,13 @@ const Breadcrumb = ({ menuConfig }: BreadcrumbProps) => {
 
     if (parentItem) {
       items.push({
-        title: parentItem.label,
+        title: <span>{parentItem.label}</span>,
       })
     }
 
     if (currentItem) {
       items.push({
-        title: currentItem.label,
+        title: <span>{currentItem.label}</span>,
       })
     }
 

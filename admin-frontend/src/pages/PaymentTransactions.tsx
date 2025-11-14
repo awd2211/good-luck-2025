@@ -23,7 +23,7 @@ import {
 } from '@ant-design/icons'
 import { fetchWithAuth } from '../services/apiService'
 import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
+import dayjs, { Dayjs } from 'dayjs'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
@@ -61,12 +61,18 @@ const PaymentTransactions: React.FC = () => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
   const [loading, setLoading] = useState(false)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 })
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    status: string
+    payment_method: string
+    provider: string
+    search: string
+    date_range: [Dayjs, Dayjs] | null
+  }>({
     status: '',
     payment_method: '',
     provider: '',
     search: '',
-    date_range: [] as any[],
+    date_range: null,
   })
   const [detailModalVisible, setDetailModalVisible] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<PaymentTransaction | null>(null)
@@ -89,7 +95,7 @@ const PaymentTransactions: React.FC = () => {
       if (filters.payment_method) params.append('payment_method', filters.payment_method)
       if (filters.provider) params.append('provider', filters.provider)
       if (filters.search) params.append('search', filters.search)
-      if (filters.date_range.length === 2) {
+      if (filters.date_range && filters.date_range.length === 2) {
         params.append('start_date', filters.date_range[0].format('YYYY-MM-DD'))
         params.append('end_date', filters.date_range[1].format('YYYY-MM-DD'))
       }
@@ -129,7 +135,7 @@ const PaymentTransactions: React.FC = () => {
       payment_method: '',
       provider: '',
       search: '',
-      date_range: [],
+      date_range: null,
     })
     setPagination(prev => ({ ...prev, current: 1 }))
   }
@@ -328,7 +334,7 @@ const PaymentTransactions: React.FC = () => {
           </Select>
           <RangePicker
             value={filters.date_range}
-            onChange={dates => setFilters(prev => ({ ...prev, date_range: dates || [] }))}
+            onChange={dates => setFilters(prev => ({ ...prev, date_range: dates ? [dates[0]!, dates[1]!] : null }))}
           />
           <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
             搜索

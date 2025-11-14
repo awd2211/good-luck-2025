@@ -14,17 +14,13 @@ import {
   Statistic,
   Row,
   Col,
-  Tabs,
   InputNumber,
   Popconfirm,
   Switch,
   Typography,
   Tooltip,
   Divider,
-  Layout,
-  Menu,
   Drawer,
-  List,
   Breadcrumb,
   Spin,
   Badge,
@@ -53,13 +49,12 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import ReactECharts from 'echarts-for-react'
 import PermissionGuard from '../components/PermissionGuard'
-import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs, { Dayjs } from 'dayjs'
 import api from '../services/apiService'
 
 const { RangePicker } = DatePicker
-const { Title, Text, Paragraph } = Typography
+const { Text } = Typography
 const { TextArea } = Input
 
 // ==================== 类型定义 ====================
@@ -127,17 +122,24 @@ interface ConversionEvent {
 
 // Dashboard数据类型
 interface DashboardStats {
-  visits: number
-  conversions: number
-  conversion_rate: number
-  revenue: number
-  cost: number
-  roi: number
-  channel_performance: {
-    channel: string
-    visits: number
-    conversions: number
+  summary: {
+    total_visits: number
+    total_conversions: number
     conversion_rate: number
+    total_revenue: number
+    total_cost: number
+    roi: number
+  }
+  channels: {
+    id: number
+    name: string
+    channel_type: string
+    visits: string | number
+    conversions: string | number
+    revenue: string | number
+    cost: string | number
+    conversion_rate: string | number
+    roi: string | number
   }[]
 }
 
@@ -232,7 +234,6 @@ const AttributionAnalytics = () => {
   ])
   const [drawerLoading, setDrawerLoading] = useState(false)
   const [recentModules, setRecentModules] = useState<string[]>([])
-  const checkPermission = usePermission()
 
   // 功能模块配置（分组）
   const moduleGroups = [
@@ -767,7 +768,6 @@ const ChannelsTab = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null)
   const [form] = Form.useForm()
-  const checkPermission = usePermission()
 
   useEffect(() => {
     loadChannels()

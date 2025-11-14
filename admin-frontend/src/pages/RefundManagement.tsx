@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Card, Table, Button, Space, Modal, Form, Input, Select, message, Tag, Popconfirm, Descriptions, Badge } from 'antd'
+import { Card, Table, Button, Space, Modal, Form, Input, Select, message, Tag, Descriptions, Badge } from 'antd'
 import { EyeOutlined, CheckOutlined, CloseOutlined, DollarOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
@@ -38,16 +38,29 @@ const RefundManagement = () => {
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve')
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 15,
+    total: 0,
+  })
 
   useEffect(() => {
-    loadRefunds()
+    loadRefunds(pagination.current, pagination.pageSize)
   }, [])
 
-  const loadRefunds = async () => {
+  const loadRefunds = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/refunds')
-      setRefunds(response.data.data || [])
+      const response = await api.get('/refunds', {
+        params: { page, limit: pageSize }
+      })
+      const data = response.data.data || []
+      setRefunds(Array.isArray(data) ? data : data.list || [])
+      setPagination({
+        current: page,
+        pageSize,
+        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+      })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载退款记录失败')
     } finally {
@@ -260,9 +273,18 @@ const RefundManagement = () => {
           loading={loading}
           rowKey="id"
           pagination={{
-            pageSize: 15,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: total => `共 ${total} 条`,
+            onChange: (page, pageSize) => {
+              loadRefunds(page, pageSize)
+            },
+            onShowSizeChange: (_, size) => {
+              loadRefunds(1, size)
+            },
           }}
           scroll={{ x: 1400 }}
         />
