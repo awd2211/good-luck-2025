@@ -1,0 +1,289 @@
+/* 分享按钮样式 */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.share-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.share-button:active {
+  transform: translateY(0);
+}
+
+.share-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.share-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* 分享弹窗 */
+.share-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.share-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.share-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.share-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 32px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+/* 平台按钮网格 */
+.share-platforms {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 500px) {
+  .share-platforms {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.platform-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.platform-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.platform-btn svg {
+  width: 32px;
+  height: 32px;
+}
+
+.platform-btn span {
+  color: #333;
+}
+
+/* 各平台特定颜色 */
+.platform-btn.facebook:hover {
+  border-color: #1877F2;
+  background: #1877F2;
+}
+
+.platform-btn.facebook:hover svg,
+.platform-btn.facebook:hover span {
+  color: white;
+}
+
+.platform-btn.facebook svg {
+  color: #1877F2;
+}
+
+.platform-btn.twitter:hover {
+  border-color: #1DA1F2;
+  background: #1DA1F2;
+}
+
+.platform-btn.twitter:hover svg,
+.platform-btn.twitter:hover span {
+  color: white;
+}
+
+.platform-btn.twitter svg {
+  color: #1DA1F2;
+}
+
+.platform-btn.linkedin:hover {
+  border-color: #0A66C2;
+  background: #0A66C2;
+}
+
+.platform-btn.linkedin:hover svg,
+.platform-btn.linkedin:hover span {
+  color: white;
+}
+
+.platform-btn.linkedin svg {
+  color: #0A66C2;
+}
+
+.platform-btn.whatsapp:hover {
+  border-color: #25D366;
+  background: #25D366;
+}
+
+.platform-btn.whatsapp:hover svg,
+.platform-btn.whatsapp:hover span {
+  color: white;
+}
+
+.platform-btn.whatsapp svg {
+  color: #25D366;
+}
+
+.platform-btn.telegram:hover {
+  border-color: #0088cc;
+  background: #0088cc;
+}
+
+.platform-btn.telegram:hover svg,
+.platform-btn.telegram:hover span {
+  color: white;
+}
+
+.platform-btn.telegram svg {
+  color: #0088cc;
+}
+
+.platform-btn.line:hover {
+  border-color: #00B900;
+  background: #00B900;
+}
+
+.platform-btn.line:hover svg,
+.platform-btn.line:hover span {
+  color: white;
+}
+
+.platform-btn.line svg {
+  color: #00B900;
+}
+
+.platform-btn.email:hover {
+  border-color: #EA4335;
+  background: #EA4335;
+}
+
+.platform-btn.email:hover svg,
+.platform-btn.email:hover span {
+  color: white;
+}
+
+.platform-btn.email svg {
+  color: #EA4335;
+}
+
+.platform-btn.copy-link:hover {
+  border-color: #6366f1;
+  background: #6366f1;
+}
+
+.platform-btn.copy-link:hover svg,
+.platform-btn.copy-link:hover span {
+  color: white;
+}
+
+.platform-btn.copy-link svg {
+  color: #6366f1;
+}
+
+/* 响应式设计 */
+@media (max-width: 500px) {
+  .share-modal {
+    padding: 20px;
+  }
+
+  .share-modal-header h3 {
+    font-size: 20px;
+  }
+
+  .platform-btn {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  .platform-btn svg {
+    width: 28px;
+    height: 28px;
+  }
+}

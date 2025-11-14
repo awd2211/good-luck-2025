@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import './App.css';
 import MainLayout from './layouts/MainLayout';
+import ToastContainer from './components/ToastContainer';
 
 // 懒加载页面组件
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -24,6 +25,7 @@ const PaymentResultPage = lazy(() => import('./pages/PaymentResultPage'));
 const FortuneInputPage = lazy(() => import('./pages/FortuneInputPage'));
 const FortuneResultPage = lazy(() => import('./pages/FortuneResultPage'));
 const MyFortunesPage = lazy(() => import('./pages/MyFortunesPage'));
+const NotificationCenterPage = lazy(() => import('./pages/NotificationCenterPage'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -52,6 +54,7 @@ const LoadingFallback = () => (
 function App() {
   return (
     <Router>
+      <ToastContainer />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* 需要底部导航的页面 */}
@@ -70,6 +73,7 @@ function App() {
           <Route path="/coupons" element={<CouponsPage />} />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/history" element={<BrowseHistoryPage />} />
+          <Route path="/notifications" element={<NotificationCenterPage />} />
           <Route path="/user-agreement" element={<UserAgreementPage />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/articles" element={<ArticlesPage />} />

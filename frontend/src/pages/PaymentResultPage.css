@@ -1,0 +1,197 @@
+.payment-result-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.result-container {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 30px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.result-content {
+  text-align: center;
+}
+
+.result-content h2 {
+  font-size: 24px;
+  margin: 20px 0 12px;
+  font-weight: 600;
+}
+
+.result-content p {
+  color: #666;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
+/* Processing状态 */
+.spinner {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  border: 6px solid #f3f3f3;
+  border-top: 6px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success状态 */
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: #4caf50;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: white;
+  animation: scaleIn 0.5s ease-out;
+}
+
+.result-content.success h2 {
+  color: #4caf50;
+}
+
+/* Fail状态 */
+.fail-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+  background: #f44336;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: white;
+  animation: shake 0.5s ease-out;
+}
+
+.result-content.fail h2 {
+  color: #f44336;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+/* 详细信息 */
+.detail-info {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.detail-row span:first-child {
+  color: #666;
+}
+
+.detail-row .mono {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #333;
+}
+
+/* 按钮 */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.btn-primary,
+.btn-secondary {
+  flex: 1;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: #666;
+}
+
+.btn-secondary:hover {
+  background: #e9ecef;
+}
+
+/* 移动端适配 */
+@media (max-width: 600px) {
+  .result-container {
+    padding: 30px 20px;
+  }
+
+  .result-content h2 {
+    font-size: 20px;
+  }
+
+  .success-icon,
+  .fail-icon,
+  .spinner {
+    width: 60px;
+    height: 60px;
+  }
+
+  .success-icon,
+  .fail-icon {
+    font-size: 36px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+}

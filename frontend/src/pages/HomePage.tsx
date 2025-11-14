@@ -34,6 +34,7 @@ const HomePage = () => {
     type: 'info' | 'warning' | 'success' | 'error'
   }>>([])
   const [showNotifications, setShowNotifications] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   // 加载算命服务列表
   useEffect(() => {
@@ -41,7 +42,10 @@ const HomePage = () => {
     loadCategories()
     loadBanners()
     loadNotifications()
-  }, [])
+    if (user) {
+      loadUnreadCount()
+    }
+  }, [user])
 
   // 横幅自动轮播
   useEffect(() => {
@@ -101,6 +105,23 @@ const HomePage = () => {
     }
   }
 
+  const loadUnreadCount = async () => {
+    if (!user) return
+    try {
+      const response = await fetch('/api/notifications/unread-count', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      })
+      const data = await response.json()
+      if (data.success) {
+        setUnreadCount(data.data.count || 0)
+      }
+    } catch (error) {
+      console.error('加载未读数量失败:', error)
+    }
+  }
+
   // 筛选搜索结果
   const filteredItems = useMemo(() => {
     if (!searchQuery.trim()) return fortunes
@@ -154,6 +175,14 @@ const HomePage = () => {
             </button>
           )}
         </div>
+        {user && (
+          <div className="notification-bell" onClick={() => navigate('/notifications')}>
+            <span className="bell-icon">🔔</span>
+            {unreadCount > 0 && (
+              <span className="notification-count">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
+          </div>
+        )}
         {user ? (
           <div className="user-info" onClick={() => navigate('/profile')}>
             <div className="user-avatar">

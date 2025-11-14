@@ -1,24 +1,28 @@
 import api from './api'
 import type { ApiResponse } from '../types'
 
-export type PaymentMethod = 'alipay' | 'wechat' | 'balance'
+export type PaymentMethod = 'paypal' | 'stripe' | 'balance'
 
 export const PaymentMethod = {
-  ALIPAY: 'alipay' as const,
-  WECHAT: 'wechat' as const,
+  PAYPAL: 'paypal' as const,
+  STRIPE: 'stripe' as const,
   BALANCE: 'balance' as const,
 }
 
 // 创建支付
-export const createPayment = (orderId: string, method: PaymentMethod) => {
+export const createPayment = (params: {
+  order_id: string
+  payment_method: string
+  amount: number
+  return_url?: string
+  cancel_url?: string
+}) => {
   return api.post<ApiResponse<{
-    payment_id: string
-    payment_url?: string  // 支付宝/微信支付跳转链接
-    qr_code?: string      // 支付二维码
-  }>>('/payments', {
-    order_id: orderId,
-    payment_method: method,
-  })
+    transaction_id: string
+    payment_url?: string  // PayPal/Stripe支付跳转链接
+    client_secret?: string  // Stripe客户端密钥
+    status: string
+  }>>('/payments', params)
 }
 
 // 查询支付状态
