@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { OrderStatus } from '../types'
 import * as orderService from '../services/orderService'
 import { SkeletonList } from '../components/Skeleton'
@@ -30,7 +30,7 @@ const OrdersPage = () => {
         params.status = activeTab
       }
       const response = await orderService.getOrders(params)
-      setOrders(response.data || [])
+      setOrders(response.data.data || [])
     } catch (error) {
       console.error('获取订单失败:', error)
     } finally {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import * as reviewService from '../services/reviewService'
@@ -167,7 +167,7 @@ const FortuneDetail = () => {
   const fetchReviews = async () => {
     try {
       const response = await reviewService.getReviews(type!)
-      setReviews(response.data || [])
+      setReviews(response.data.data || [])
     } catch (error) {
       console.error('获取评价失败:', error)
     }
@@ -176,7 +176,7 @@ const FortuneDetail = () => {
   const checkFavoriteStatus = async () => {
     try {
       const response = await favoriteService.checkFavorite(type!)
-      setIsFavorite(response.data?.isFavorite || false)
+      setIsFavorite(response.data.data?.is_favorite || false)
     } catch (error) {
       console.error('检查收藏状态失败:', error)
     }

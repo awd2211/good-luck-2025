@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import { SkeletonList } from '../components/Skeleton'
@@ -25,7 +25,7 @@ const FavoritesPage = () => {
     setLoading(true)
     try {
       const response = await favoriteService.getFavorites()
-      setFavorites(response.data || [])
+      setFavorites(response.data.data || [])
     } catch (error) {
       console.error('获取收藏失败:', error)
     } finally {

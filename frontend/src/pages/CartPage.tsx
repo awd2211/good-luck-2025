@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import { SkeletonList } from '../components/Skeleton'
 import './CartPage.css'
@@ -8,7 +8,7 @@ import './CartPage.css'
 const CartPage = () => {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { items, totalAmount, updateQuantity, removeItem, isLoading } = useCart()
+  const { items, updateQuantity, removeItem, isLoading } = useCart()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   useEffect(() => {

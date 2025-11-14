@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import * as couponService from '../services/couponService'
 import { SkeletonList } from '../components/Skeleton'
 import './CouponsPage.css'
@@ -26,10 +26,10 @@ const CouponsPage = () => {
     try {
       if (activeTab === 'available') {
         const response = await couponService.getAvailableCoupons()
-        setAvailableCoupons(response.data || [])
+        setAvailableCoupons(response.data.data || [])
       } else {
         const response = await couponService.getMyCoupons()
-        setMyCoupons(response.data || [])
+        setMyCoupons(response.data.data || [])
       }
     } catch (error) {
       console.error('获取优惠券失败:', error)
