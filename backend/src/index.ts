@@ -11,6 +11,7 @@ import statsRoutes from './routes/stats';
 import auditRoutes from './routes/audit';
 import bannersRoutes from './routes/banners';
 import notificationsRoutes from './routes/notifications';
+import notificationTemplatesRoutes from './routes/notificationTemplates';
 import refundsRoutes from './routes/refunds';
 import feedbacksRoutes from './routes/feedbacks';
 import reviewsRoutes from './routes/reviews';
@@ -41,16 +42,20 @@ import userFortuneListRoutes from './routes/user/fortuneList';
 import userOrdersRoutes from './routes/user/orders';
 import userCouponsRoutes from './routes/user/coupons';
 import userReviewsRoutes from './routes/user/reviews';
-import userPaymentsRoutes from './routes/user/payments';
+// import userPaymentsRoutes from './routes/user/payments';
 import userDailyHoroscopesRoutes from './routes/user/dailyHoroscopes';
 import userPoliciesRoutes from './routes/user/policies';
 import userArticlesRoutes from './routes/user/articles';
 import userFortuneResultsRoutes from './routes/user/fortuneResults';
+import userNotificationsRoutes from './routes/user/notifications';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { authenticate as auth } from './middleware/auth';
+import { authenticateUser as userAuth } from './middleware/userAuth';
 import { getRedisClient, closeRedis } from './config/redis';
 import { metricsCollector } from './middleware/metricsCollector';
 import { performHealthCheck } from './services/healthService';
+import { startNotificationScheduler } from './services/notificationScheduler';
 
 // 验证配置
 try {
@@ -62,6 +67,9 @@ try {
 
 // 初始化Redis连接
 getRedisClient();
+
+// 启动通知定时发送调度器
+startNotificationScheduler();
 
 const app = express();
 const PORT = config.app.port;
@@ -111,11 +119,12 @@ app.use('/api/fortunes', userFortuneListRoutes);// 算命服务列表
 app.use('/api/orders', userOrdersRoutes);       // 用户订单
 app.use('/api/coupons', userCouponsRoutes);     // 用户优惠券
 app.use('/api/reviews', userReviewsRoutes);     // 用户评价
-app.use('/api/payments', userPaymentsRoutes);   // 支付
+// app.use('/api/payments', userPaymentsRoutes);   // 支付
 app.use('/api/daily-horoscopes', userDailyHoroscopesRoutes);  // 每日运势
 app.use('/api/policies', userPoliciesRoutes);   // 用户协议和隐私政策
 app.use('/api/articles', userArticlesRoutes);   // 文章
 app.use('/api/fortune-results', userFortuneResultsRoutes);  // 算命结果
+app.use('/api/notifications', userAuth, userNotificationsRoutes);  // 用户通知
 
 // 算命计算API（公开或用户端使用）
 app.use('/api/fortune', fortuneRoutes);
@@ -128,6 +137,7 @@ app.use('/api/manage/stats', statsRoutes);                  // 统计数据
 app.use('/api/manage/audit', auditRoutes);                  // 审计日志
 app.use('/api/manage/banners', bannersRoutes);              // 轮播图管理
 app.use('/api/manage/notifications', notificationsRoutes);  // 通知管理
+app.use('/api/manage/notification-templates', auth, notificationTemplatesRoutes);  // 通知模板管理
 app.use('/api/manage/refunds', refundsRoutes);              // 退款管理
 app.use('/api/manage/feedbacks', feedbacksRoutes);          // 反馈管理
 app.use('/api/manage/reviews', reviewsRoutes);              // 评价管理
