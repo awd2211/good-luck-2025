@@ -224,7 +224,7 @@ process.on('unhandledRejection', (reason) => {
   console.error('❌ 未处理的 Promise 拒绝:', reason);
 });
 
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 后端服务运行在 http://localhost:${PORT}`);
   console.log(`📝 环境: ${config.app.nodeEnv}`);
   console.log(`🔐 JWT配置: ${config.app.isProduction ? '生产模式（必须设置JWT_SECRET）' : '开发模式'}`);
