@@ -19,6 +19,11 @@ const UserAgreementPage = lazy(() => import('./pages/UserAgreementPage'));
 const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
 const ArticlesPage = lazy(() => import('./pages/ArticlesPage'));
 const ArticleDetailPage = lazy(() => import('./pages/ArticleDetailPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const PaymentResultPage = lazy(() => import('./pages/PaymentResultPage'));
+const FortuneInputPage = lazy(() => import('./pages/FortuneInputPage'));
+const FortuneResultPage = lazy(() => import('./pages/FortuneResultPage'));
+const MyFortunesPage = lazy(() => import('./pages/MyFortunesPage'));
 
 // 加载中组件
 const LoadingFallback = () => (
@@ -69,6 +74,11 @@ function App() {
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/articles/:id" element={<ArticleDetailPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/payment-result" element={<PaymentResultPage />} />
+          <Route path="/fortune/:id/input" element={<FortuneInputPage />} />
+          <Route path="/fortune-result/:resultId" element={<FortuneResultPage />} />
+          <Route path="/my-fortunes" element={<MyFortunesPage />} />
         </Routes>
       </Suspense>
     </Router>

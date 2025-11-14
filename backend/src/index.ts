@@ -28,6 +28,7 @@ import aiModelsRoutes from './routes/aiModels';
 import attributionRoutes from './routes/attribution';
 import paymentConfigsRoutes from './routes/manage/paymentConfigs';
 import paymentMethodsRoutes from './routes/manage/paymentMethods';
+import paymentTransactionsRoutes from './routes/manage/paymentTransactions';
 // 公开API路由
 import publicBannersRoutes from './routes/public/banners';
 import publicNotificationsRoutes from './routes/public/notifications';
@@ -44,6 +45,7 @@ import userPaymentsRoutes from './routes/user/payments';
 import userDailyHoroscopesRoutes from './routes/user/dailyHoroscopes';
 import userPoliciesRoutes from './routes/user/policies';
 import userArticlesRoutes from './routes/user/articles';
+import userFortuneResultsRoutes from './routes/user/fortuneResults';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getRedisClient, closeRedis } from './config/redis';
@@ -113,6 +115,7 @@ app.use('/api/payments', userPaymentsRoutes);   // 支付
 app.use('/api/daily-horoscopes', userDailyHoroscopesRoutes);  // 每日运势
 app.use('/api/policies', userPoliciesRoutes);   // 用户协议和隐私政策
 app.use('/api/articles', userArticlesRoutes);   // 文章
+app.use('/api/fortune-results', userFortuneResultsRoutes);  // 算命结果
 
 // 算命计算API（公开或用户端使用）
 app.use('/api/fortune', fortuneRoutes);
@@ -141,6 +144,7 @@ app.use('/api/manage/ai-models', aiModelsRoutes);                    // AI模型
 app.use('/api/manage/attribution', attributionRoutes);               // 归因统计
 app.use('/api/manage/payment-configs', paymentConfigsRoutes);        // 支付配置管理
 app.use('/api/manage/payment-methods', paymentMethodsRoutes);        // 支付方式管理
+app.use('/api/manage/payment-transactions', paymentTransactionsRoutes);  // 支付交易记录
 
 // 根路径 - API信息
 app.get('/', (_req, res) => {

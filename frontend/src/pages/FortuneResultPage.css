@@ -1,0 +1,302 @@
+.fortune-result-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.fortune-result-page .header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: white;
+}
+
+.fortune-result-page .back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.fortune-result-page .header h1 {
+  font-size: 28px;
+  margin: 60px 0 10px 0;
+}
+
+.fortune-result-page .header .date {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.fortune-result-page .result-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.fortune-result-page .result-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.fortune-result-page .result-card h2 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.fortune-result-page .info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.fortune-result-page .info-item .label {
+  color: #666;
+  min-width: 80px;
+}
+
+.fortune-result-page .info-item .value {
+  color: #333;
+  font-weight: 500;
+}
+
+.fortune-result-page .bazi-display {
+  margin-top: 20px;
+}
+
+.fortune-result-page .bazi-pillars {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 16px;
+}
+
+.fortune-result-page .pillar {
+  text-align: center;
+}
+
+.fortune-result-page .tiangan,
+.fortune-result-page .dizhi {
+  width: 60px;
+  height: 60px;
+  line-height: 60px;
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.fortune-result-page .tiangan {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.fortune-result-page .dizhi {
+  background: linear-gradient(135deg, #f093fb, #f5576c);
+}
+
+.fortune-result-page .pillar-label {
+  font-size: 12px;
+  color: #999;
+  margin-top: 4px;
+}
+
+.fortune-result-page .score-circle {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.fortune-result-page .score-value {
+  font-size: 48px;
+  font-weight: bold;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.fortune-result-page .score-label {
+  font-size: 16px;
+  color: #999;
+  margin-top: -10px;
+}
+
+.fortune-result-page .fortune-item {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.fortune-result-page .fortune-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.fortune-result-page .fortune-content {
+  flex: 1;
+}
+
+.fortune-result-page .fortune-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.fortune-result-page .fortune-text {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.fortune-result-page .lucky-item {
+  margin-bottom: 16px;
+}
+
+.fortune-result-page .lucky-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.fortune-result-page .lucky-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fortune-result-page .lucky-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  color: #333;
+  border-radius: 20px;
+  font-size: 14px;
+}
+
+.fortune-result-page .compatibility-score {
+  margin: 20px 0;
+}
+
+.fortune-result-page .score-bar {
+  width: 100%;
+  height: 40px;
+  background: #f0f0f0;
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.fortune-result-page .score-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 16px;
+  color: white;
+  font-weight: bold;
+  transition: width 1s ease-out;
+}
+
+.fortune-result-page .marriage-analysis {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f9f9f9;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.fortune-result-page .name-score-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.fortune-result-page .score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.fortune-result-page .action-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.fortune-result-page .action-buttons button {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fortune-result-page .btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.fortune-result-page .btn-secondary {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea !important;
+}
+
+.fortune-result-page .action-buttons button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.fortune-result-page .loading,
+.fortune-result-page .error {
+  text-align: center;
+  padding: 100px 20px;
+  font-size: 18px;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .fortune-result-page .bazi-pillars {
+    gap: 8px;
+  }
+
+  .fortune-result-page .tiangan,
+  .fortune-result-page .dizhi {
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    font-size: 20px;
+  }
+
+  .fortune-result-page .name-score-details {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fortune-result-page .action-buttons {
+    flex-direction: column;
+  }
+}

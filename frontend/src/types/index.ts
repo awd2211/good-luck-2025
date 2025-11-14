@@ -152,6 +152,27 @@ export interface BrowseHistory {
   created_at: string
 }
 
+// 算命结果类型
+export interface FortuneResult {
+  id: string
+  result_id: string
+  order_id?: string
+  user_id: string
+  fortune_id: string
+  fortune_type: string
+  input_data: Record<string, any>
+  result_data: Record<string, any>
+  created_at: string
+  updated_at: string
+  fortune_info?: {
+    title: string
+    subtitle?: string
+    icon?: string
+    bg_color?: string
+    price: number
+  }
+}
+
 // API响应类型
 export interface ApiResponse<T = any> {
   success: boolean

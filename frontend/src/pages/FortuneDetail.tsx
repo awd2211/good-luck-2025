@@ -251,6 +251,15 @@ const FortuneDetail = () => {
     }
   }
 
+  const handleQuickCalculate = () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+    // 直接跳转到参数输入页面（免费测算）
+    navigate(`/fortune/${type}/input`)
+  }
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <span key={i} className={i < Math.floor(rating) ? 'star filled' : 'star'}>
@@ -434,9 +443,9 @@ const FortuneDetail = () => {
 
       {/* Bottom Action Bar */}
       <div className="action-bar">
-        <button className="contact-btn" onClick={() => alert('客服功能开发中...')}>
-          <span className="btn-icon">💬</span>
-          <span className="btn-text">客服</span>
+        <button className="quick-calc-btn" onClick={handleQuickCalculate}>
+          <span className="btn-icon">✨</span>
+          <span className="btn-text">免费测算</span>
         </button>
         <button className="add-cart-btn" onClick={handleAddToCart}>
           加入购物车

@@ -1,0 +1,165 @@
+.fortune-input-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  padding: 20px;
+}
+
+.fortune-input-page .header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.fortune-input-page .back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fortune-input-page .header h1 {
+  font-size: 28px;
+  color: #333;
+  margin: 60px 0 10px 0;
+}
+
+.fortune-input-page .header .subtitle {
+  font-size: 14px;
+  color: #666;
+}
+
+.fortune-input-page .form-container {
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.fortune-input-page .form-fields h3 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.fortune-input-page .form-group {
+  margin-bottom: 20px;
+}
+
+.fortune-input-page .form-group label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.fortune-input-page .form-group input,
+.fortune-input-page .form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color 0.3s;
+}
+
+.fortune-input-page .form-group input:focus,
+.fortune-input-page .form-group select:focus {
+  border-color: #ff6b6b;
+  outline: none;
+}
+
+.fortune-input-page .gender-group {
+  display: flex;
+  gap: 20px;
+}
+
+.fortune-input-page .gender-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.fortune-input-page .gender-group input[type="radio"] {
+  width: auto;
+}
+
+.fortune-input-page .person-section {
+  background: #f9f9f9;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.fortune-input-page .person-section h4 {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.fortune-input-page .form-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
+}
+
+.fortune-input-page .submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 30px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fortune-input-page .submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+}
+
+.fortune-input-page .submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fortune-input-page .loading {
+  text-align: center;
+  padding: 100px 0;
+  font-size: 18px;
+  color: #666;
+}
+
+.fortune-input-page .error-message {
+  text-align: center;
+  color: #ff6b6b;
+  font-size: 16px;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .fortune-input-page .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .fortune-input-page .form-container {
+    padding: 20px;
+  }
+
+  .fortune-input-page .header h1 {
+    font-size: 24px;
+  }
+}
