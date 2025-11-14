@@ -44,10 +44,8 @@ async function getStripeConfig(isProduction: boolean = false): Promise<StripeCon
 async function getStripeClient(isProduction: boolean = false): Promise<Stripe> {
   const config = await getStripeConfig(isProduction)
 
-  return new Stripe(config.secretKey, {
-    apiVersion: '2025-10-29.clover',
-    typescript: true,
-  })
+  // Stripe 19.x会自动使用最新的API版本
+  return new Stripe(config.secretKey)
 }
 
 /**
@@ -196,7 +194,7 @@ export async function refundStripePayment(params: {
 
     return {
       refundId: refund.id,
-      status: refund.status,
+      status: refund.status || 'unknown',
       amount: refund.amount / 100,
       currency: refund.currency.toUpperCase(),
     }

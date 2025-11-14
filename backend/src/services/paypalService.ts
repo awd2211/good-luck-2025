@@ -1,15 +1,23 @@
 /**
  * PayPal 支付服务
- * 使用 @paypal/paypal-server-sdk
+ * 使用 @paypal/paypal-server-sdk v2.0.0
  */
 
-import { client as paypalClient, orders } from '@paypal/paypal-server-sdk'
+import {
+  Client,
+  OrdersController,
+  PaymentsController,
+  OrderRequest,
+  Order,
+  Environment,
+  CheckoutPaymentIntent
+} from '@paypal/paypal-server-sdk'
 import pool from '../config/database'
 
 interface PayPalConfig {
   clientId: string
   clientSecret: string
-  mode: 'sandbox' | 'live'
+  mode: Environment
 }
 
 /**
@@ -31,25 +39,26 @@ async function getPayPalConfig(isProduction: boolean = false): Promise<PayPalCon
     throw new Error('PayPal配置不完整，请在管理后台配置Client ID和Client Secret')
   }
 
+  const mode = config.mode || (isProduction ? 'live' : 'sandbox')
   return {
     clientId: config.client_id,
     clientSecret: config.client_secret,
-    mode: config.mode || (isProduction ? 'live' : 'sandbox'),
+    mode: mode === 'live' ? Environment.Production : Environment.Sandbox,
   }
 }
 
 /**
  * 获取PayPal客户端
  */
-async function getPayPalClient(isProduction: boolean = false): Promise<PayPalClient> {
+async function getPayPalClient(isProduction: boolean = false): Promise<Client> {
   const config = await getPayPalConfig(isProduction)
 
-  return new PayPalClient({
+  return new Client({
     clientCredentialsAuthCredentials: {
       oAuthClientId: config.clientId,
       oAuthClientSecret: config.clientSecret,
     },
-    environment: config.mode === 'live' ? 'production' : 'sandbox',
+    environment: config.mode,
   })
 }
 
@@ -62,116 +71,114 @@ export async function createPayPalOrder(params: {
   orderId: string
   returnUrl: string
   cancelUrl: string
-}): Promise<{ orderId: string; approvalUrl: string }> {
-  try {
-    const client = await getPayPalClient()
+  isProduction?: boolean
+}): Promise<{
+  paypalOrderId: string
+  approvalUrl: string
+}> {
+  const client = await getPayPalClient(params.isProduction)
+  const ordersController = new OrdersController(client)
 
-    const request = {
-      body: {
-        intent: 'CAPTURE' as const,
-        purchaseUnits: [
-          {
-            referenceId: params.orderId,
-            amount: {
-              currencyCode: params.currency as any,
-              value: params.amount.toFixed(2),
-            },
-          },
-        ],
-        applicationContext: {
-          returnUrl: params.returnUrl,
-          cancelUrl: params.cancelUrl,
-          brandName: '算命平台',
-          landingPage: 'BILLING' as const,
-          userAction: 'PAY_NOW' as const,
+  const orderRequest: OrderRequest = {
+    intent: CheckoutPaymentIntent.Capture,
+    purchaseUnits: [
+      {
+        referenceId: params.orderId,
+        amount: {
+          currencyCode: params.currency,
+          value: params.amount.toFixed(2),
         },
       },
-    }
+    ],
+    applicationContext: {
+      returnUrl: params.returnUrl,
+      cancelUrl: params.cancelUrl,
+    },
+  }
 
-    const response = await client.orders.ordersCreate(request)
+  const response = await ordersController.createOrder({
+    body: orderRequest,
+    prefer: 'return=representation',
+  })
 
-    if (response.statusCode !== 200 && response.statusCode !== 201) {
-      throw new Error(`PayPal创建订单失败: ${response.statusCode}`)
-    }
+  const order = response.body as Order
 
-    const order = response.result
-    const approvalUrl = order.links?.find((link) => link.rel === 'approve')?.href
+  // 查找approval URL
+  const approvalLink = order.links?.find((link: any) => link.rel === 'approve')
+  if (!approvalLink || !approvalLink.href) {
+    throw new Error('PayPal未返回approval URL')
+  }
 
-    if (!approvalUrl) {
-      throw new Error('未找到PayPal支付链接')
-    }
-
-    return {
-      orderId: order.id || '',
-      approvalUrl,
-    }
-  } catch (error: any) {
-    console.error('创建PayPal订单失败:', error)
-    throw new Error(`PayPal支付创建失败: ${error.message}`)
+  return {
+    paypalOrderId: order.id || '',
+    approvalUrl: approvalLink.href,
   }
 }
 
 /**
- * 捕获PayPal订单（确认支付）
+ * 捕获PayPal订单(确认支付)
  */
 export async function capturePayPalOrder(
-  paypalOrderId: string
-): Promise<{
-  status: string
-  captureId: string
-  amount: number
-  currency: string
-}> {
-  try {
-    const client = await getPayPalClient()
+  paypalOrderId: string,
+  isProduction: boolean = false
+): Promise<Order> {
+  const client = await getPayPalClient(isProduction)
+  const ordersController = new OrdersController(client)
 
-    const response = await client.orders.ordersCapture({
-      id: paypalOrderId,
-      body: {},
-    })
+  const response = await ordersController.captureOrder({
+    id: paypalOrderId,
+    prefer: 'return=representation',
+  })
 
-    if (response.statusCode !== 200 && response.statusCode !== 201) {
-      throw new Error(`PayPal捕获订单失败: ${response.statusCode}`)
-    }
-
-    const order = response.result
-    const capture = order.purchaseUnits?.[0]?.payments?.captures?.[0]
-
-    if (!capture) {
-      throw new Error('未找到PayPal支付捕获信息')
-    }
-
-    return {
-      status: capture.status || 'UNKNOWN',
-      captureId: capture.id || '',
-      amount: parseFloat(capture.amount?.value || '0'),
-      currency: capture.amount?.currencyCode || 'USD',
-    }
-  } catch (error: any) {
-    console.error('捕获PayPal订单失败:', error)
-    throw new Error(`PayPal支付确认失败: ${error.message}`)
-  }
+  return response.body as Order
 }
 
 /**
  * 获取PayPal订单详情
  */
-export async function getPayPalOrderDetails(paypalOrderId: string): Promise<any> {
+export async function getPayPalOrderDetails(
+  paypalOrderId: string,
+  isProduction: boolean = false
+): Promise<Order> {
+  const client = await getPayPalClient(isProduction)
+  const ordersController = new OrdersController(client)
+
+  const response = await ordersController.getOrder({
+    id: paypalOrderId,
+  })
+
+  return response.body as Order
+}
+
+/**
+ * 测试PayPal配置(创建最小金额订单并立即取消)
+ */
+export async function testPayPalConfig(isProduction: boolean = false): Promise<boolean> {
   try {
-    const client = await getPayPalClient()
+    const client = await getPayPalClient(isProduction)
+    const ordersController = new OrdersController(client)
 
-    const response = await client.orders.ordersGet({
-      id: paypalOrderId,
-    })
-
-    if (response.statusCode !== 200) {
-      throw new Error(`获取PayPal订单详情失败: ${response.statusCode}`)
+    // 创建测试订单
+    const testOrder: OrderRequest = {
+      intent: CheckoutPaymentIntent.Capture,
+      purchaseUnits: [
+        {
+          amount: {
+            currencyCode: 'USD',
+            value: '0.01',
+          },
+        },
+      ],
     }
 
-    return response.result
-  } catch (error: any) {
-    console.error('获取PayPal订单详情失败:', error)
-    throw new Error(`获取PayPal订单失败: ${error.message}`)
+    await ordersController.createOrder({
+      body: testOrder,
+    })
+
+    return true
+  } catch (error) {
+    console.error('PayPal配置测试失败:', error)
+    return false
   }
 }
 
@@ -183,60 +190,43 @@ export async function refundPayPalPayment(params: {
   amount?: number
   currency?: string
   reason?: string
+  isProduction?: boolean
 }): Promise<{
   refundId: string
   status: string
   amount: number
   currency: string
 }> {
-  try {
-    const client = await getPayPalClient()
+  const client = await getPayPalClient(params.isProduction)
+  const paymentsController = new PaymentsController(client)
 
-    const request: any = {
-      id: params.captureId,
-      body: {},
+  // 准备退款请求
+  const refundRequest: any = {
+    id: params.captureId
+  }
+
+  // 如果指定了金额,则部分退款
+  if (params.amount && params.currency) {
+    refundRequest.body = {
+      amount: {
+        currencyCode: params.currency,
+        value: params.amount.toFixed(2)
+      },
+      noteToPayer: params.reason || 'Refund processed'
     }
+  }
 
-    // 如果指定了金额，则部分退款
-    if (params.amount) {
-      request.body.amount = {
-        value: params.amount.toFixed(2),
-        currencyCode: params.currency || 'USD',
-      }
-    }
+  // PayPal SDK v2的退款方法 - 使用 capturesRefund 而不是 refundsCapture
+  const response = await (paymentsController as any).capturesRefund(refundRequest)
+  const refund = response.result || response.body as any
 
-    if (params.reason) {
-      request.body.note_to_payer = params.reason
-    }
-
-    const response = await client.payments.capturesRefund(request)
-
-    if (response.statusCode !== 200 && response.statusCode !== 201) {
-      throw new Error(`PayPal退款失败: ${response.statusCode}`)
-    }
-
-    const refund = response.result
-
-    return {
-      refundId: refund.id || '',
-      status: refund.status || 'UNKNOWN',
-      amount: parseFloat(refund.amount?.value || '0'),
-      currency: refund.amount?.currencyCode || 'USD',
-    }
-  } catch (error: any) {
-    console.error('PayPal退款失败:', error)
-    throw new Error(`PayPal退款失败: ${error.message}`)
+  return {
+    refundId: refund.id,
+    status: refund.status || 'PENDING',
+    amount: parseFloat(refund.amount?.value || params.amount?.toString() || '0'),
+    currency: refund.amount?.currency_code || params.currency || 'USD'
   }
 }
 
-/**
- * 验证PayPal Webhook签名
- */
-export async function verifyPayPalWebhook(
-  headers: any,
-  body: any
-): Promise<boolean> {
-  // TODO: 实现PayPal Webhook签名验证
-  // 需要使用 webhook_id 和 webhook_secret
-  return true
-}
+// 导出用于管理后台
+export { getPayPalClient }

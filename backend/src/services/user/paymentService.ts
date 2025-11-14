@@ -114,9 +114,9 @@ export async function createPayment(params: CreatePaymentParams): Promise<Paymen
       // 更新交易记录
       await client.query(
         `UPDATE payment_transactions
-         SET provider_order_id = $1, status = $2
-         WHERE transaction_id = $3`,
-        [paypalResult.orderId, 'processing', transactionId]
+         SET provider_transaction_id = $1, status = $2, payment_url = $3
+         WHERE transaction_id = $4`,
+        [paypalResult.paypalOrderId, 'pending', paypalResult.approvalUrl, transactionId]
       )
 
       result = {
@@ -262,14 +262,12 @@ export async function confirmPayPalPayment(
       `UPDATE payment_transactions
        SET status = $1,
            provider_transaction_id = $2,
-           provider_status = $3,
-           provider_response = $4,
-           paid_at = CURRENT_TIMESTAMP
-       WHERE transaction_id = $5`,
+           completed_at = CURRENT_TIMESTAMP,
+           metadata = $3
+       WHERE transaction_id = $4`,
       [
         'completed',
-        captureResult.captureId,
-        captureResult.status,
+        captureResult.id,
         JSON.stringify(captureResult),
         transactionId,
       ]
@@ -577,13 +575,16 @@ export async function processRefund(params: {
 
     // 根据支付方式处理退款
     if (transaction.provider === 'paypal') {
+      // PayPal退款
       refundResult = await refundPayPalPayment({
         captureId: transaction.provider_transaction_id,
         amount: params.amount,
         currency: transaction.currency,
         reason: params.reason,
+        isProduction: process.env.NODE_ENV === 'production'
       })
     } else if (transaction.provider === 'stripe') {
+      // Stripe退款
       refundResult = await refundStripePayment({
         paymentIntentId: transaction.provider_transaction_id,
         amount: params.amount,
