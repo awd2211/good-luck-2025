@@ -145,3 +145,40 @@ export const getCouponStats = async (req: Request, res: Response, next: NextFunc
     next(error)
   }
 }
+
+/**
+ * 验证优惠券是否可用
+ */
+export const validateCoupon = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: '未登录',
+      })
+    }
+
+    const { couponCode, amount, fortuneType } = req.body
+
+    if (!couponCode || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供优惠券代码和订单金额',
+      })
+    }
+
+    const validation = await couponService.validateCoupon({
+      userId: req.user.id,
+      couponCode,
+      amount,
+      fortuneType
+    })
+
+    res.json({
+      success: true,
+      data: validation,
+    })
+  } catch (error) {
+    next(error)
+  }
+}

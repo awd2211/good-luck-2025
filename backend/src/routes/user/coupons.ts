@@ -42,4 +42,12 @@ router.get('/usable', authenticateUser, couponController.getUsableCoupons)
  */
 router.get('/stats', authenticateUser, couponController.getCouponStats)
 
+/**
+ * @route   POST /api/coupons/validate
+ * @desc    验证优惠券是否可用
+ * @access  Private (用户)
+ * @body    { couponCode: string, amount: number, fortuneType?: string }
+ */
+router.post('/validate', authenticateUser, couponController.validateCoupon)
+
 export default router

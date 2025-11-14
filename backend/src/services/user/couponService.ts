@@ -1,4 +1,5 @@
 import { query } from '../../config/database'
+import pool from '../../config/database'
 
 /**
  * 用户优惠券接口
@@ -406,5 +407,111 @@ export const getCouponStats = async (userId: string) => {
     unusedCount: parseInt(stats.unused_count),
     usedCount: parseInt(stats.used_count),
     expiredCount: parseInt(stats.expired_count),
+  }
+}
+
+/**
+ * 验证优惠券是否可用
+ */
+export async function validateCoupon(params: {
+  userId: string
+  couponCode: string
+  amount: number
+  fortuneType?: string
+}): Promise<{
+  valid: boolean
+  message?: string
+  discount?: number
+  finalAmount?: number
+  userCouponId?: number
+}> {
+  const { userId, couponCode, amount, fortuneType } = params
+
+  // 1. 查询用户优惠券
+  const result = await pool.query(
+    `SELECT
+      uc.id as user_coupon_id,
+      uc.status,
+      uc.expired_at,
+      c.id as coupon_id,
+      c.name,
+      c.code,
+      c.discount_type,
+      c.discount_value,
+      c.min_purchase_amount,
+      c.applicable_fortune_types
+    FROM user_coupons uc
+    JOIN coupons c ON uc.coupon_id = c.id
+    WHERE uc.user_id = $1 AND c.code = $2
+    LIMIT 1`,
+    [userId, couponCode]
+  )
+
+  if (result.rows.length === 0) {
+    return {
+      valid: false,
+      message: '优惠券不存在或未领取'
+    }
+  }
+
+  const coupon = result.rows[0]
+
+  // 2. 检查优惠券状态
+  if (coupon.status !== 'unused') {
+    return {
+      valid: false,
+      message: coupon.status === 'used' ? '优惠券已使用' : '优惠券已过期'
+    }
+  }
+
+  // 3. 检查是否过期
+  if (new Date(coupon.expired_at) < new Date()) {
+    return {
+      valid: false,
+      message: '优惠券已过期'
+    }
+  }
+
+  // 4. 检查最低消费金额
+  if (coupon.min_purchase_amount && amount < coupon.min_purchase_amount) {
+    return {
+      valid: false,
+      message: `订单金额不足,需要满${coupon.min_purchase_amount}元才能使用`
+    }
+  }
+
+  // 5. 检查适用范围(如果指定了算命类型)
+  if (fortuneType && coupon.applicable_fortune_types) {
+    try {
+      const applicableTypes = JSON.parse(coupon.applicable_fortune_types)
+      if (Array.isArray(applicableTypes) && !applicableTypes.includes(fortuneType)) {
+        return {
+          valid: false,
+          message: '该优惠券不适用于此类型的服务'
+        }
+      }
+    } catch (error) {
+      console.error('解析适用类型失败:', error)
+    }
+  }
+
+  // 6. 计算折扣金额
+  let discount = 0
+  if (coupon.discount_type === 'percentage') {
+    discount = amount * (coupon.discount_value / 100)
+  } else if (coupon.discount_type === 'fixed') {
+    discount = coupon.discount_value
+  }
+
+  // 确保折扣不超过订单金额
+  discount = Math.min(discount, amount)
+  const finalAmount = Math.max(amount - discount, 0)
+
+  return {
+    valid: true,
+    message: '优惠券可用',
+    discount,
+    finalAmount,
+    userCouponId: coupon.user_coupon_id
   }
 }
