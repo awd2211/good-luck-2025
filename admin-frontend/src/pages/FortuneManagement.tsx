@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card, Table, Tag, Space, Button, Input, Select, Modal, message, Statistic, Row, Col } from 'antd'
-import { EyeOutlined, SearchOutlined, ReloadOutlined, DollarOutlined, ShoppingOutlined, LineChartOutlined } from '@ant-design/icons'
+import { EyeOutlined, SearchOutlined, ReloadOutlined, ShoppingOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import api from '../services/apiService'
 import PermissionGuard from '../components/PermissionGuard'
-import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
+// import { usePermission } from '../hooks/usePermission' // 预留用于未来的权限控制
 
 const { Option } = Select
 
@@ -40,7 +40,7 @@ const FortuneManagement = () => {
     totalOrders: 0,
     avgAmount: 0
   })
-  const checkPermission = usePermission()
+  // const checkPermission = usePermission() // 预留用于未来的权限控制
 
   const fetchOrders = async (page = 1, pageSize = 10) => {
     setLoading(true)
@@ -335,7 +335,7 @@ const FortuneManagement = () => {
               onChange: (page, pageSize) => {
                 fetchOrders(page, pageSize)
               },
-              onShowSizeChange: (current, size) => {
+              onShowSizeChange: (_, size) => {
                 fetchOrders(1, size)
               }
             }}

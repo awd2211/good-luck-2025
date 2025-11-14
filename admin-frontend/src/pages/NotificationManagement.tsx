@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Card, Table, Button, Space, Modal, Form, Input, Select, DatePicker, message, Tag, Popconfirm, Badge } from 'antd'
-import { PlusOutlined, EditOutlined, DeleteOutlined, BellOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, Modal, Form, Input, Select, DatePicker, message, Tag, Popconfirm, Badge, Switch, Tooltip } from 'antd'
+import { PlusOutlined, EditOutlined, DeleteOutlined, BellOutlined, ClockCircleOutlined, SendOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
@@ -21,6 +21,11 @@ interface Notification {
   target: string
   start_date?: string
   end_date?: string
+  is_scheduled?: boolean
+  scheduled_time?: string
+  sent_at?: string
+  read_count?: number
+  total_sent?: number
   created_by?: string
   created_at: string
   updated_at: string
@@ -38,6 +43,7 @@ const NotificationManagement = () => {
     pageSize: 20,
     total: 0
   })
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   useEffect(() => {
     loadNotifications()
@@ -87,6 +93,8 @@ const NotificationManagement = () => {
       dateRange: notification.start_date && notification.end_date
         ? [dayjs(notification.start_date), dayjs(notification.end_date)]
         : undefined,
+      is_scheduled: notification.is_scheduled || false,
+      scheduled_time: notification.scheduled_time ? dayjs(notification.scheduled_time) : undefined,
     })
     setIsModalOpen(true)
   }
@@ -113,6 +121,10 @@ const NotificationManagement = () => {
         status: values.status,
         start_date: values.dateRange?.[0]?.format('YYYY-MM-DD HH:mm:ss'),
         end_date: values.dateRange?.[1]?.format('YYYY-MM-DD HH:mm:ss'),
+        is_scheduled: values.is_scheduled || false,
+        scheduled_time: values.is_scheduled && values.scheduled_time
+          ? values.scheduled_time.format('YYYY-MM-DD HH:mm:ss')
+          : null,
       }
 
       if (editingNotification) {
@@ -130,14 +142,53 @@ const NotificationManagement = () => {
     }
   }
 
-  const handleBatchStatus = async (ids: number[], status: string) => {
+  const handleBatchStatus = async (status: string) => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要操作的通知')
+      return
+    }
+
     try {
-      await api.post('/notifications/batch/status', { ids, status })
+      await api.post('/notifications/batch/status', {
+        ids: selectedRowKeys,
+        status
+      })
       message.success('批量操作成功')
+      setSelectedRowKeys([])
       loadNotifications()
     } catch (error: any) {
       message.error(error.response?.data?.message || '批量操作失败')
     }
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要删除的通知')
+      return
+    }
+
+    Modal.confirm({
+      title: '确认批量删除',
+      content: `确定要删除选中的 ${selectedRowKeys.length} 条通知吗？此操作不可恢复。`,
+      onOk: async () => {
+        try {
+          // 批量删除需要逐个调用删除API（如果后端没有批量删除接口）
+          await Promise.all(selectedRowKeys.map(id => api.delete(`/notifications/${id}`)))
+          message.success('批量删除成功')
+          setSelectedRowKeys([])
+          loadNotifications()
+        } catch (error: any) {
+          message.error(error.response?.data?.message || '批量删除失败')
+        }
+      }
+    })
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys)
+    },
   }
 
   const getTypeColor = (type: string) => {
@@ -244,6 +295,30 @@ const NotificationManagement = () => {
       ),
     },
     {
+      title: '发送状态',
+      key: 'sendStatus',
+      width: 180,
+      render: (_, record) => (
+        <div style={{ fontSize: '12px' }}>
+          {record.is_scheduled && !record.sent_at && (
+            <Tag icon={<ClockCircleOutlined />} color="warning">
+              定时发送 {record.scheduled_time && dayjs(record.scheduled_time).format('MM-DD HH:mm')}
+            </Tag>
+          )}
+          {record.sent_at && (
+            <Tooltip title={`已发送: ${record.total_sent || 0}人 | 已读: ${record.read_count || 0}人`}>
+              <Tag icon={<SendOutlined />} color="success">
+                已发送 {dayjs(record.sent_at).format('MM-DD HH:mm')}
+              </Tag>
+            </Tooltip>
+          )}
+          {!record.is_scheduled && !record.sent_at && (
+            <Tag color="default">立即生效</Tag>
+          )}
+        </div>
+      ),
+    },
+    {
       title: '操作',
       key: 'action',
       fixed: 'right',
@@ -285,18 +360,46 @@ const NotificationManagement = () => {
           </Space>
         }
         extra={
-          checkPermission.has(Permission.NOTIFICATION_CREATE) && (
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
-              添加通知
-            </Button>
-          )
+          <Space>
+            {checkPermission.has(Permission.NOTIFICATION_CREATE) && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
+                添加通知
+              </Button>
+            )}
+          </Space>
         }
       >
+        {selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <Space>
+              <span>已选择 {selectedRowKeys.length} 项</span>
+              {checkPermission.has(Permission.NOTIFICATION_EDIT) && (
+                <>
+                  <Button size="small" onClick={() => handleBatchStatus('active')}>
+                    批量启用
+                  </Button>
+                  <Button size="small" onClick={() => handleBatchStatus('inactive')}>
+                    批量禁用
+                  </Button>
+                </>
+              )}
+              {checkPermission.has(Permission.NOTIFICATION_DELETE) && (
+                <Button size="small" danger onClick={handleBatchDelete}>
+                  批量删除
+                </Button>
+              )}
+              <Button size="small" onClick={() => setSelectedRowKeys([])}>
+                取消选择
+              </Button>
+            </Space>
+          </div>
+        )}
         <Table
           columns={columns}
           dataSource={notifications}
           loading={loading}
           rowKey="id"
+          rowSelection={rowSelection}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
@@ -307,7 +410,7 @@ const NotificationManagement = () => {
             onChange: (page, pageSize) => {
               loadNotifications(page, pageSize)
             },
-            onShowSizeChange: (current, size) => {
+            onShowSizeChange: (_, size) => {
               loadNotifications(1, size)
             }
           }}
@@ -406,6 +509,46 @@ const NotificationManagement = () => {
 
             <Form.Item label="生效时间" name="dateRange">
               <RangePicker showTime style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Form.Item
+              label={
+                <Space>
+                  <span>定时发送</span>
+                  <Tooltip title="开启后通知将在指定时间自动发送给目标用户">
+                    <ClockCircleOutlined style={{ color: '#1890ff' }} />
+                  </Tooltip>
+                </Space>
+              }
+              name="is_scheduled"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+
+            <Form.Item
+              noStyle
+              shouldUpdate={(prevValues, currentValues) =>
+                prevValues.is_scheduled !== currentValues.is_scheduled
+              }
+            >
+              {({ getFieldValue }) =>
+                getFieldValue('is_scheduled') ? (
+                  <Form.Item
+                    label="发送时间"
+                    name="scheduled_time"
+                    rules={[{ required: true, message: '请选择发送时间' }]}
+                  >
+                    <DatePicker
+                      showTime
+                      format="YYYY-MM-DD HH:mm:ss"
+                      style={{ width: '100%' }}
+                      placeholder="选择通知发送时间"
+                      disabledDate={(current) => current && current < dayjs().startOf('day')}
+                    />
+                  </Form.Item>
+                ) : null
+              }
             </Form.Item>
           </Form>
         </Modal>

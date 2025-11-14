@@ -47,6 +47,7 @@ const ArticleManagement = () => {
     search: ''
   })
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   const fetchArticles = async (page = 1, pageSize = 20) => {
     setLoading(true)
@@ -175,14 +176,53 @@ const ArticleManagement = () => {
     })
   }
 
-  const handleBatchUpdateStatus = async (ids: number[], status: string) => {
+  const handleBatchUpdateStatus = async (status: string) => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要操作的文章')
+      return
+    }
+
     try {
-      await api.patch('/articles/batch/status', { ids, status })
+      await api.patch('/articles/batch/status', {
+        ids: selectedRowKeys,
+        status
+      })
       message.success('批量更新成功')
+      setSelectedRowKeys([])
       fetchArticles(pagination.current, pagination.pageSize)
     } catch (error: any) {
       message.error(error.response?.data?.message || '批量更新失败')
     }
+  }
+
+  const handleBatchDelete = async () => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请选择要删除的文章')
+      return
+    }
+
+    Modal.confirm({
+      title: '确认批量删除',
+      content: `确定要删除选中的 ${selectedRowKeys.length} 篇文章吗？此操作不可恢复。`,
+      onOk: async () => {
+        try {
+          // 批量删除需要逐个调用删除API
+          await Promise.all(selectedRowKeys.map(id => api.delete(`/articles/${id}`)))
+          message.success('批量删除成功')
+          setSelectedRowKeys([])
+          fetchArticles(pagination.current, pagination.pageSize)
+        } catch (error: any) {
+          message.error(error.response?.data?.message || '批量删除失败')
+        }
+      }
+    })
+  }
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (newSelectedRowKeys: React.Key[]) => {
+      setSelectedRowKeys(newSelectedRowKeys)
+    },
   }
 
   const getStatusColor = (status: string) => {
@@ -387,11 +427,34 @@ const ArticleManagement = () => {
           </Space>
         }
       >
+        {selectedRowKeys.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <Space>
+              <span>已选择 {selectedRowKeys.length} 项</span>
+              <Button size="small" onClick={() => handleBatchUpdateStatus('published')}>
+                批量发布
+              </Button>
+              <Button size="small" onClick={() => handleBatchUpdateStatus('draft')}>
+                批量转为草稿
+              </Button>
+              <Button size="small" onClick={() => handleBatchUpdateStatus('archived')}>
+                批量归档
+              </Button>
+              <Button size="small" danger onClick={handleBatchDelete}>
+                批量删除
+              </Button>
+              <Button size="small" onClick={() => setSelectedRowKeys([])}>
+                取消选择
+              </Button>
+            </Space>
+          </div>
+        )}
         <Table
           columns={columns}
           dataSource={articles}
           rowKey="id"
           loading={loading}
+          rowSelection={rowSelection}
           scroll={{ x: 1600 }}
           pagination={{
             ...pagination,
