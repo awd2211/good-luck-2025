@@ -25,12 +25,30 @@ import systemConfigsRoutes from './routes/systemConfigs';
 import dailyHoroscopesRoutes from './routes/dailyHoroscopes';
 import articlesRoutes from './routes/articles';
 import aiModelsRoutes from './routes/aiModels';
+import attributionRoutes from './routes/attribution';
+import paymentConfigsRoutes from './routes/manage/paymentConfigs';
+import paymentMethodsRoutes from './routes/manage/paymentMethods';
 // 公开API路由
 import publicBannersRoutes from './routes/public/banners';
 import publicNotificationsRoutes from './routes/public/notifications';
+// 用户端API路由
+import userAuthRoutes from './routes/user/auth';
+import userCartRoutes from './routes/user/cart';
+import userFavoriteRoutes from './routes/user/favorite';
+import userHistoryRoutes from './routes/user/history';
+import userFortuneListRoutes from './routes/user/fortuneList';
+import userOrdersRoutes from './routes/user/orders';
+import userCouponsRoutes from './routes/user/coupons';
+import userReviewsRoutes from './routes/user/reviews';
+import userPaymentsRoutes from './routes/user/payments';
+import userDailyHoroscopesRoutes from './routes/user/dailyHoroscopes';
+import userPoliciesRoutes from './routes/user/policies';
+import userArticlesRoutes from './routes/user/articles';
 import { apiLimiter } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { getRedisClient, closeRedis } from './config/redis';
+import { metricsCollector } from './middleware/metricsCollector';
+import { performHealthCheck } from './services/healthService';
 
 // 验证配置
 try {
@@ -64,6 +82,9 @@ app.use(compression());
 // JSON 解析
 app.use(express.json({ limit: '10mb' }));
 
+// API 性能指标收集
+app.use(metricsCollector);
+
 // 全局限流 - 已修复IPv6问题
 app.use('/api/', apiLimiter);
 
@@ -75,46 +96,102 @@ if (config.app.isDevelopment) {
   });
 }
 
-// 路由
-app.use('/api/auth', authRoutes);
-app.use('/api/fortune', fortuneRoutes);
-
-// 公开API（无需认证）
+// ========== 公开API（无需认证） ==========
 app.use('/api/public/banners', publicBannersRoutes);
 app.use('/api/public/notifications', publicNotificationsRoutes);
 
-// 认证API（需要JWT认证，通过角色控制权限）
-app.use('/api/users', usersRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/stats', statsRoutes);
-app.use('/api/audit', auditRoutes);
-app.use('/api/banners', bannersRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/refunds', refundsRoutes);
-app.use('/api/feedbacks', feedbacksRoutes);
-app.use('/api/reviews', reviewsRoutes);
-app.use('/api/coupons', couponsRoutes);
-app.use('/api/financial', financialRoutes);
-app.use('/api/admins', adminsRoutes);
+// ========== 用户端API (C端 - 普通用户使用) ==========
+app.use('/api/auth', userAuthRoutes);           // 用户认证（注册/登录/验证码）
+app.use('/api/cart', userCartRoutes);           // 购物车
+app.use('/api/favorites', userFavoriteRoutes);  // 收藏
+app.use('/api/history', userHistoryRoutes);     // 浏览历史
+app.use('/api/fortunes', userFortuneListRoutes);// 算命服务列表
+app.use('/api/orders', userOrdersRoutes);       // 用户订单
+app.use('/api/coupons', userCouponsRoutes);     // 用户优惠券
+app.use('/api/reviews', userReviewsRoutes);     // 用户评价
+app.use('/api/payments', userPaymentsRoutes);   // 支付
+app.use('/api/daily-horoscopes', userDailyHoroscopesRoutes);  // 每日运势
+app.use('/api/policies', userPoliciesRoutes);   // 用户协议和隐私政策
+app.use('/api/articles', userArticlesRoutes);   // 文章
 
-// 算命管理API
-app.use('/api/fortune-categories', fortuneCategoriesRoutes);
-app.use('/api/fortune-services', fortuneServicesRoutes);
-app.use('/api/fortune-templates', fortuneTemplatesRoutes);
-app.use('/api/system-configs', systemConfigsRoutes);
-app.use('/api/daily-horoscopes', dailyHoroscopesRoutes);
-app.use('/api/articles', articlesRoutes);
-app.use('/api/ai-models', aiModelsRoutes);
+// 算命计算API（公开或用户端使用）
+app.use('/api/fortune', fortuneRoutes);
 
-// 健康检查
-app.get('/health', (req, res) => {
+// ========== 管理端API (B端 - 需要管理员权限) ==========
+app.use('/api/manage/auth', authRoutes);                    // 管理员认证
+app.use('/api/manage/users', usersRoutes);                  // 用户管理
+app.use('/api/manage/orders', ordersRoutes);                // 订单管理
+app.use('/api/manage/stats', statsRoutes);                  // 统计数据
+app.use('/api/manage/audit', auditRoutes);                  // 审计日志
+app.use('/api/manage/banners', bannersRoutes);              // 轮播图管理
+app.use('/api/manage/notifications', notificationsRoutes);  // 通知管理
+app.use('/api/manage/refunds', refundsRoutes);              // 退款管理
+app.use('/api/manage/feedbacks', feedbacksRoutes);          // 反馈管理
+app.use('/api/manage/reviews', reviewsRoutes);              // 评价管理
+app.use('/api/manage/coupons', couponsRoutes);              // 优惠券管理
+app.use('/api/manage/financial', financialRoutes);          // 财务管理
+app.use('/api/manage/admins', adminsRoutes);                // 管理员管理
+app.use('/api/manage/fortune-categories', fortuneCategoriesRoutes);  // 算命分类
+app.use('/api/manage/fortune-services', fortuneServicesRoutes);      // 算命服务
+app.use('/api/manage/fortune-templates', fortuneTemplatesRoutes);    // 算命模板
+app.use('/api/manage/system-configs', systemConfigsRoutes);          // 系统配置
+app.use('/api/manage/daily-horoscopes', dailyHoroscopesRoutes);      // 每日运势
+app.use('/api/manage/articles', articlesRoutes);                     // 文章管理
+app.use('/api/manage/ai-models', aiModelsRoutes);                    // AI模型管理
+app.use('/api/manage/attribution', attributionRoutes);               // 归因统计
+app.use('/api/manage/payment-configs', paymentConfigsRoutes);        // 支付配置管理
+app.use('/api/manage/payment-methods', paymentMethodsRoutes);        // 支付方式管理
+
+// 根路径 - API信息
+app.get('/', (_req, res) => {
   res.json({
-    status: 'ok',
-    message: '服务运行正常',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    environment: config.app.nodeEnv
+    name: '算命平台 API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      public: {
+        banners: '/api/public/banners',
+        notifications: '/api/public/notifications'
+      },
+      user: {
+        auth: '/api/auth',
+        fortunes: '/api/fortunes',
+        cart: '/api/cart',
+        favorites: '/api/favorites',
+        orders: '/api/orders',
+        reviews: '/api/reviews'
+      },
+      admin: {
+        auth: '/api/manage/auth',
+        users: '/api/manage/users',
+        orders: '/api/manage/orders',
+        stats: '/api/manage/stats'
+      }
+    },
+    documentation: 'See README.md for full API documentation'
   });
+});
+
+// 健康检查（详细模式）
+app.get('/health', async (_req, res) => {
+  try {
+    const healthStatus = await performHealthCheck(true);
+
+    // 根据健康状态设置HTTP状态码
+    const statusCode = healthStatus.status === 'unhealthy' ? 503
+                     : healthStatus.status === 'degraded' ? 200
+                     : 200;
+
+    res.status(statusCode).json(healthStatus);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      message: '健康检查失败',
+      error: error instanceof Error ? error.message : '未知错误',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // 404 处理
@@ -129,7 +206,7 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('❌ 未处理的 Promise 拒绝:', reason);
 });
 
