@@ -4,10 +4,12 @@ import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import * as reviewService from '../services/reviewService'
+import * as fortuneService from '../services/fortuneService'
+import type { Fortune } from '../types'
 import './FortuneDetail.css'
 
-// Fortune service mock data (same as HomePage)
-const fortuneData: any = {
+// Fortune service mock data (fallback only)
+const fortuneDataFallback: any = {
   'birth-animal': {
     title: '生肖运势',
     subtitle: '了解你的生肖运程',
@@ -148,21 +150,53 @@ const FortuneDetail = () => {
   const { user } = useAuth()
   const { addItem } = useCart()
 
+  const [fortune, setFortune] = useState<Fortune | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isFavorite, setIsFavorite] = useState(false)
   const [reviews, setReviews] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState<'detail' | 'reviews'>('detail')
 
-  const fortune = id ? fortuneData[id] : null
+  useEffect(() => {
+    if (id) {
+      fetchFortuneDetail()
+      fetchReviews()
+    }
+  }, [id])
 
   useEffect(() => {
     if (id && user) {
       checkFavoriteStatus()
       addToBrowseHistory()
     }
-    if (id) {
-      fetchReviews()
-    }
   }, [id, user])
+
+  const fetchFortuneDetail = async () => {
+    try {
+      setLoading(true)
+      const response = await fortuneService.getFortune(id!)
+      setFortune(response.data.data || null)
+    } catch (error) {
+      console.error('获取服务详情失败:', error)
+      // Fallback to mock data if API fails
+      const fallback = fortuneDataFallback[id!]
+      if (fallback) {
+        setFortune({
+          id: id!,
+          title: fallback.title,
+          subtitle: fallback.subtitle,
+          description: fallback.description,
+          price: fallback.price.toString(),
+          icon: fallback.icon,
+          bg_color: fallback.bgColor,
+          category: 'unknown',
+          sales_count: fallback.salesCount,
+          rating: fallback.rating.toString()
+        } as Fortune)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchReviews = async () => {
     try {
@@ -215,11 +249,13 @@ const FortuneDetail = () => {
       return
     }
 
+    if (!fortune) return
+
     try {
       await addItem({
         id: id!,
         title: fortune.title,
-        description: fortune.subtitle,
+        description: fortune.subtitle || fortune.description,
         price: fortune.price,
         icon: fortune.icon,
         category: 'fortune',
@@ -236,11 +272,13 @@ const FortuneDetail = () => {
       return
     }
 
+    if (!fortune) return
+
     try {
       await addItem({
         id: id!,
         title: fortune.title,
-        description: fortune.subtitle,
+        description: fortune.subtitle || fortune.description,
         price: fortune.price,
         icon: fortune.icon,
         category: 'fortune',
@@ -260,12 +298,24 @@ const FortuneDetail = () => {
     navigate(`/fortune/${id}/input`)
   }
 
-  const renderStars = (rating: number) => {
+  const renderStars = (rating: number | string) => {
+    const ratingNum = typeof rating === 'string' ? parseFloat(rating) : rating
     return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={i < Math.floor(rating) ? 'star filled' : 'star'}>
+      <span key={i} className={i < Math.floor(ratingNum) ? 'star filled' : 'star'}>
         ★
       </span>
     ))
+  }
+
+  if (loading) {
+    return (
+      <div className="fortune-detail-page">
+        <div className="error-container">
+          <div className="error-icon">⏳</div>
+          <p>加载中...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!fortune) {
@@ -298,7 +348,7 @@ const FortuneDetail = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="fortune-hero" style={{ background: fortune.bgColor }}>
+      <div className="fortune-hero" style={{ background: fortune.bg_color || '#F9E6D5' }}>
         <div className="fortune-icon-large">{fortune.icon}</div>
         <h1 className="fortune-title">{fortune.title}</h1>
         <p className="fortune-subtitle">{fortune.subtitle}</p>
@@ -311,9 +361,9 @@ const FortuneDetail = () => {
           <span className="price-value">¥{fortune.price}</span>
         </div>
         <div className="sales-info">
-          <span className="sales-count">已售 {fortune.salesCount}</span>
+          <span className="sales-count">已售 {fortune.sales_count || 0}</span>
           <span className="rating">
-            ⭐ {fortune.rating}
+            ⭐ {fortune.rating || '0.0'}
           </span>
         </div>
       </div>
@@ -346,9 +396,16 @@ const FortuneDetail = () => {
             <section className="detail-section">
               <h3 className="section-title">服务内容</h3>
               <ul className="feature-list">
-                {fortune.features.map((feature: string, index: number) => (
+                {(fortune as any).features ? (fortune as any).features.map((feature: string, index: number) => (
                   <li key={index}>✨ {feature}</li>
-                ))}
+                )) : (
+                  <>
+                    <li>✨ 专业大师一对一解读</li>
+                    <li>✨ 详细的运势分析报告</li>
+                    <li>✨ 全方位运势详解</li>
+                    <li>✨ 幸运指引和建议</li>
+                  </>
+                )}
               </ul>
             </section>
 
