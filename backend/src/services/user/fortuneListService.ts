@@ -102,21 +102,35 @@ export const getFortuneList = async (params: {
 export const getFortuneDetail = async (fortuneId: string, userId?: string) => {
   const result = await query(
     `SELECT
-      id,
-      title,
-      subtitle,
-      category,
-      description,
-      price,
-      original_price,
-      icon,
-      bg_color,
-      sales_count,
-      rating,
-      created_at,
-      updated_at
-    FROM fortunes
-    WHERE id = $1 AND status = 'active'`,
+      fs.id,
+      fs.name as title,
+      fs.subtitle,
+      fc.code as category,
+      fc.name as category_name,
+      fs.description,
+      fs.detail_content,
+      fs.current_price as price,
+      fs.original_price,
+      fs.vip_price,
+      fs.cover_image,
+      fs.images,
+      fc.icon,
+      '#F9E6D5' as bg_color,
+      fs.order_count as sales_count,
+      fs.rating,
+      fs.review_count,
+      fs.duration,
+      fs.is_free_trial,
+      fs.trial_times,
+      fs.tags,
+      fs.is_hot,
+      fs.is_new,
+      fs.is_recommended,
+      fs.created_at,
+      fs.updated_at
+    FROM fortune_services fs
+    LEFT JOIN fortune_categories fc ON fs.category_id = fc.id
+    WHERE fs.id = $1 AND fs.status = 'active'`,
     [fortuneId]
   )
 
@@ -148,20 +162,22 @@ export const getFortuneDetail = async (fortuneId: string, userId?: string) => {
 export const getPopularFortunes = async (limit: number = 10) => {
   const result = await query(
     `SELECT
-      id,
-      title,
-      subtitle,
-      category,
-      description,
-      price,
-      original_price,
-      icon,
-      bg_color,
-      sales_count,
-      rating
-    FROM fortunes
-    WHERE status = 'active'
-    ORDER BY sales_count DESC
+      fs.id,
+      fs.name as title,
+      fs.subtitle,
+      fc.code as category,
+      fc.name as category_name,
+      fs.description,
+      fs.current_price as price,
+      fs.original_price,
+      fc.icon,
+      '#F9E6D5' as bg_color,
+      fs.order_count as sales_count,
+      fs.rating
+    FROM fortune_services fs
+    LEFT JOIN fortune_categories fc ON fs.category_id = fc.id
+    WHERE fs.status = 'active'
+    ORDER BY fs.order_count DESC
     LIMIT $1`,
     [limit]
   )
@@ -175,20 +191,22 @@ export const getPopularFortunes = async (limit: number = 10) => {
 export const getRecommendedFortunes = async (limit: number = 10) => {
   const result = await query(
     `SELECT
-      id,
-      title,
-      subtitle,
-      category,
-      description,
-      price,
-      original_price,
-      icon,
-      bg_color,
-      sales_count,
-      rating
-    FROM fortunes
-    WHERE status = 'active'
-    ORDER BY rating DESC, sales_count DESC
+      fs.id,
+      fs.name as title,
+      fs.subtitle,
+      fc.code as category,
+      fc.name as category_name,
+      fs.description,
+      fs.current_price as price,
+      fs.original_price,
+      fc.icon,
+      '#F9E6D5' as bg_color,
+      fs.order_count as sales_count,
+      fs.rating
+    FROM fortune_services fs
+    LEFT JOIN fortune_categories fc ON fs.category_id = fc.id
+    WHERE fs.status = 'active'
+    ORDER BY fs.rating DESC, fs.order_count DESC
     LIMIT $1`,
     [limit]
   )
