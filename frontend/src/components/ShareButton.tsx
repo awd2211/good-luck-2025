@@ -1,13 +1,18 @@
 /**
- * 分享按钮组件 - 集成8个社交媒体平台
+ * 分享按钮组件 - 集成9个社交媒体平台 + 二维码分享
+ * 优化功能：缓存、Toast提示、现代化UI、性能优化
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import * as shareService from '../services/shareService';
+import type { ShareType, SharePlatform } from '../services/shareService';
+import { logError } from '../utils/logger';
 import './ShareButton.css';
 
 interface ShareButtonProps {
-  shareType: 'result' | 'invite' | 'coupon' | 'service';
-  contentId?: string;
+  shareType: ShareType;
+  targetId: string;
   title: string;
   description: string;
   imageUrl?: string;
@@ -15,69 +20,86 @@ interface ShareButtonProps {
   onShare?: (platform: string) => void;
 }
 
+// 分享链接缓存（5分钟有效期）
+const shareLinkCache = new Map<string, { url: string; expires: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟
+
 const ShareButton: React.FC<ShareButtonProps> = ({
   shareType,
-  contentId,
+  targetId,
   title,
   description,
-  imageUrl,
-  url,
+  // imageUrl, // 保留用于未来扩展
+  // url, // 保留用于未来扩展
   onShare
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
 
-  // 生成分享链接
-  const generateShareLink = async () => {
+  // 缓存键
+  const cacheKey = useMemo(() => `${shareType}-${targetId}`, [shareType, targetId]);
+
+  // Toast 提示
+  const displayToast = useCallback((message: string) => {
+    setToast({ show: true, message });
+    setTimeout(() => {
+      setToast({ show: false, message: '' });
+    }, 2500);
+  }, []);
+
+  // 生成分享链接（带缓存）
+  const generateShareLink = useCallback(async (platform?: SharePlatform) => {
+    // 检查缓存
+    const cached = shareLinkCache.get(cacheKey);
+    if (cached && cached.expires > Date.now()) {
+      return cached.url;
+    }
+
     setLoading(true);
     try {
-      const response = await fetch('/api/share/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          shareType,
-          contentId,
-          title,
-          description,
-          imageUrl,
-          metadata: { originalUrl: url }
-        })
+      const response = await shareService.createShare({
+        shareType,
+        targetId,
+        platform
       });
 
-      const data = await response.json();
-      if (data.success) {
-        return data.data;
+      if (response.data.success && response.data.data) {
+        const data = response.data.data;
+        setShareId(data.shareId);
+
+        // 存入缓存
+        shareLinkCache.set(cacheKey, {
+          url: data.shareUrl,
+          expires: Date.now() + CACHE_TTL
+        });
+
+        return data.shareUrl;
       }
     } catch (error) {
-      console.error('生成分享链接失败:', error);
+      logError('生成分享链接失败', error, { shareType, targetId, platform });
+      displayToast('生成分享链接失败，请重试');
     } finally {
       setLoading(false);
     }
     return null;
-  };
+  }, [shareType, targetId, cacheKey, displayToast]);
 
   // 记录分享事件
-  const recordShareEvent = async (platform: string, shareLinkId: number) => {
+  const recordShareEvent = async (_platform: string) => {
+    if (!shareId) return;
+
     try {
-      await fetch('/api/share/event', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          shareLinkId,
-          platform,
-          deviceType: /mobile/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
-          browser: getBrowser(),
-          os: getOS()
-        })
+      await shareService.recordShareEvent({
+        shareId,
+        eventType: 'share',
+        referrer: window.location.href
       });
     } catch (error) {
-      console.error('记录分享事件失败:', error);
+      logError('记录分享事件失败', error, { shareId, eventType: 'share' });
     }
   };
 
@@ -86,10 +108,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     const shareLink = await generateShareLink();
     if (!shareLink) return;
 
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink.share_url)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareLink)}`;
     window.open(fbUrl, '_blank', 'width=600,height=400');
 
-    await recordShareEvent('facebook', shareLink.id);
+    await recordShareEvent('facebook');
     onShare?.('facebook');
   };
 
@@ -100,11 +122,11 @@ const ShareButton: React.FC<ShareButtonProps> = ({
 
     const text = `${title} - ${description}`;
     const hashtags = 'FortuneTelling,Divination';
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareLink.share_url)}&hashtags=${hashtags}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareLink)}&hashtags=${hashtags}`;
 
     window.open(twitterUrl, '_blank', 'width=600,height=400');
 
-    await recordShareEvent('twitter', shareLink.id);
+    await recordShareEvent('twitter');
     onShare?.('twitter');
   };
 
@@ -113,26 +135,26 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     const shareLink = await generateShareLink();
     if (!shareLink) return;
 
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink.share_url)}`;
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareLink)}`;
     window.open(linkedInUrl, '_blank', 'width=600,height=400');
 
-    await recordShareEvent('linkedin', shareLink.id);
+    await recordShareEvent('linkedin');
     onShare?.('linkedin');
   };
 
   // WhatsApp分享
   const shareToWhatsApp = async () => {
-    const shareLink = await generateShareLink();
+    const shareLink = await generateShareLink('wechat' as SharePlatform); // WeChat类似WhatsApp
     if (!shareLink) return;
 
-    const text = `${title}\n${description}\n${shareLink.share_url}`;
+    const text = `${title}\n${description}\n${shareLink}`;
     const whatsappUrl = /mobile/i.test(navigator.userAgent)
       ? `whatsapp://send?text=${encodeURIComponent(text)}`
       : `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
     window.open(whatsappUrl, '_blank');
 
-    await recordShareEvent('whatsapp', shareLink.id);
+    await recordShareEvent('whatsapp');
     onShare?.('whatsapp');
   };
 
@@ -142,11 +164,11 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     if (!shareLink) return;
 
     const text = `${title}\n${description}`;
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareLink.share_url)}&text=${encodeURIComponent(text)}`;
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(shareLink)}&text=${encodeURIComponent(text)}`;
 
     window.open(telegramUrl, '_blank');
 
-    await recordShareEvent('telegram', shareLink.id);
+    await recordShareEvent('telegram');
     onShare?.('telegram');
   };
 
@@ -155,10 +177,10 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     const shareLink = await generateShareLink();
     if (!shareLink) return;
 
-    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareLink.share_url)}`;
+    const lineUrl = `https://social-plugins.line.me/lineit/share?url=${encodeURIComponent(shareLink)}`;
     window.open(lineUrl, '_blank');
 
-    await recordShareEvent('line', shareLink.id);
+    await recordShareEvent('line');
     onShare?.('line');
   };
 
@@ -168,29 +190,59 @@ const ShareButton: React.FC<ShareButtonProps> = ({
     if (!shareLink) return;
 
     const subject = encodeURIComponent(title);
-    const body = encodeURIComponent(`${description}\n\nCheck it out here: ${shareLink.share_url}`);
+    const body = encodeURIComponent(`${description}\n\nCheck it out here: ${shareLink}`);
     const emailUrl = `mailto:?subject=${subject}&body=${body}`;
 
     window.location.href = emailUrl;
 
-    await recordShareEvent('email', shareLink.id);
+    await recordShareEvent('email');
     onShare?.('email');
   };
 
-  // 复制链接
-  const copyLink = async () => {
+  // 抖音/TikTok分享
+  const shareToTikTok = async () => {
     const shareLink = await generateShareLink();
     if (!shareLink) return;
 
-    try {
-      await navigator.clipboard.writeText(shareLink.share_url);
-      alert('链接已复制到剪贴板！');
+    const text = `${title} - ${description}`;
+    // 抖音网页版分享API（移动端会自动打开App）
+    const tiktokUrl = `https://www.tiktok.com/share?url=${encodeURIComponent(shareLink)}&title=${encodeURIComponent(text)}`;
 
-      await recordShareEvent('copy_link', shareLink.id);
+    window.open(tiktokUrl, '_blank');
+    displayToast('已打开抖音分享');
+
+    await recordShareEvent('tiktok');
+    onShare?.('tiktok');
+  };
+
+  // 复制链接（带Toast提示）
+  const copyLink = async () => {
+    const shareLink = await generateShareLink('link');
+    if (!shareLink) return;
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      displayToast('✓ 链接已复制到剪贴板！');
+
+      await recordShareEvent('copy_link');
       onShare?.('copy_link');
     } catch (error) {
-      console.error('复制失败:', error);
+      logError('复制链接失败', error, { shareLink });
+      displayToast('复制失败，请手动复制');
     }
+  };
+
+  // 显示二维码
+  const showQRCode = async () => {
+    const shareLink = await generateShareLink('qrcode' as SharePlatform);
+    if (!shareLink) return;
+
+    setQrCodeUrl(shareLink);
+    setShowQRModal(true);
+    displayToast('二维码已生成');
+
+    await recordShareEvent('qrcode');
+    onShare?.('qrcode');
   };
 
   // 打开分享弹窗
@@ -265,38 +317,63 @@ const ShareButton: React.FC<ShareButtonProps> = ({
                 <span>Email</span>
               </button>
 
+              <button className="platform-btn tiktok" onClick={shareToTikTok}>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                </svg>
+                <span>抖音</span>
+              </button>
+
               <button className="platform-btn copy-link" onClick={copyLink}>
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
                 </svg>
                 <span>复制链接</span>
               </button>
+
+              <button className="platform-btn qrcode" onClick={showQRCode}>
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM15 19h2v2h-2zM17 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM19 19h2v2h-2z"/>
+                </svg>
+                <span>二维码</span>
+              </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 二维码弹窗 */}
+      {showQRModal && (
+        <div className="share-modal-overlay" onClick={() => setShowQRModal(false)}>
+          <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="qr-modal-content">
+              <h3>扫码分享</h3>
+              <QRCodeSVG
+                value={qrCodeUrl}
+                size={256}
+                level="H"
+                includeMargin={true}
+              />
+              <p>使用手机扫描二维码访问</p>
+              <button className="qr-close-btn" onClick={() => setShowQRModal(false)}>
+                关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast 提示 */}
+      {toast.show && (
+        <div className="share-toast">
+          <svg className="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          {toast.message}
         </div>
       )}
     </>
   );
 };
-
-// 辅助函数
-function getBrowser(): string {
-  const ua = navigator.userAgent;
-  if (ua.includes('Chrome')) return 'Chrome';
-  if (ua.includes('Safari')) return 'Safari';
-  if (ua.includes('Firefox')) return 'Firefox';
-  if (ua.includes('Edge')) return 'Edge';
-  return 'Unknown';
-}
-
-function getOS(): string {
-  const ua = navigator.userAgent;
-  if (ua.includes('Windows')) return 'Windows';
-  if (ua.includes('Mac')) return 'macOS';
-  if (ua.includes('Linux')) return 'Linux';
-  if (ua.includes('Android')) return 'Android';
-  if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
-  return 'Unknown';
-}
 
 export default ShareButton;

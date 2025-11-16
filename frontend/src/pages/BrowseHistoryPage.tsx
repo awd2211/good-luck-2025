@@ -4,6 +4,9 @@ import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import { SkeletonList } from '../components/Skeleton'
+import { showToast } from '../components/ToastContainer'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from '../components/ConfirmDialog'
 import './BrowseHistoryPage.css'
 
 const BrowseHistoryPage = () => {
@@ -12,6 +15,7 @@ const BrowseHistoryPage = () => {
   const { addItem } = useCart()
   const [history, setHistory] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { confirm, isOpen, confirmState } = useConfirm()
 
   useEffect(() => {
     if (!user) {
@@ -25,36 +29,68 @@ const BrowseHistoryPage = () => {
     setLoading(true)
     try {
       const response = await favoriteService.getBrowseHistory()
-      setHistory(response.data.data || [])
+      // 后端返回的是 { items, pagination }
+      const historyData = response.data.data
+      setHistory(historyData?.items || [])
     } catch (error) {
       console.error('获取浏览历史失败:', error)
+      setHistory([])
     } finally {
       setLoading(false)
     }
   }
 
   const handleClearHistory = async () => {
-    if (!window.confirm('确定要清空浏览历史吗？')) return
+    const confirmed = await confirm({
+      title: '清空浏览历史',
+      message: '确定要清空所有浏览历史吗？此操作不可恢复。',
+      confirmText: '清空',
+      cancelText: '取消',
+      variant: 'danger'
+    })
+
+    if (!confirmed) return
 
     try {
       await favoriteService.clearBrowseHistory()
       setHistory([])
+      showToast({ title: '成功', content: '浏览历史已清空', type: 'success' })
     } catch (error) {
-      alert('操作失败，请重试')
+      showToast({ title: '错误', content: '操作失败，请重试', type: 'error' })
     }
   }
 
   const handleAddToCart = async (item: any) => {
     try {
-      await addItem(item.fortune)
-      alert('已添加到购物车')
+      // 浏览历史返回的是平铺结构，需要构造 Fortune 对象
+      const fortune = {
+        id: item.fortune_id,
+        title: item.title,
+        subtitle: item.subtitle,
+        category: item.category,
+        description: item.description,
+        price: item.price,
+        original_price: item.original_price,
+        icon: item.icon,
+        bg_color: item.bg_color,
+        rating: item.rating,
+        sales_count: item.sales_count,
+        status: 'active' as const
+      }
+      await addItem(fortune)
+      showToast({ title: '成功', content: '已添加到购物车', type: 'success' })
     } catch (error) {
-      alert('添加失败，请重试')
+      showToast({ title: '错误', content: '添加失败，请重试', type: 'error' })
     }
   }
 
   const groupByDate = (items: any[]) => {
     const groups: { [key: string]: any[] } = {}
+
+    // 确保 items 是数组
+    if (!Array.isArray(items)) {
+      return groups
+    }
 
     items.forEach(item => {
       const date = new Date(item.created_at).toLocaleDateString('zh-CN', {
@@ -79,8 +115,19 @@ const BrowseHistoryPage = () => {
   }
 
   return (
-    <div className="browse-history-page">
-      <div className="history-header">
+    <>
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={confirmState?.title}
+        message={confirmState?.message || ''}
+        confirmText={confirmState?.confirmText}
+        cancelText={confirmState?.cancelText}
+        variant={confirmState?.variant}
+        onConfirm={confirmState?.onConfirm || (() => {})}
+        onCancel={confirmState?.onCancel || (() => {})}
+      />
+      <div className="browse-history-page">
+        <div className="history-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           ‹ 返回
         </button>
@@ -108,19 +155,19 @@ const BrowseHistoryPage = () => {
                     <div
                       key={item.id}
                       className="history-card"
-                      onClick={() => navigate(`/fortune/${item.fortune.id}`)}
+                      onClick={() => navigate(`/fortune/${item.fortune_id}`)}
                     >
                       <div
                         className="fortune-icon"
-                        style={{ background: item.fortune.bgColor || '#f5f5f5' }}
+                        style={{ background: item.bg_color || '#f5f5f5' }}
                       >
-                        {item.fortune.icon || '🔮'}
+                        {item.icon || '🔮'}
                       </div>
                       <div className="fortune-info">
-                        <h3 className="fortune-title">{item.fortune.title}</h3>
-                        <p className="fortune-desc">{item.fortune.description}</p>
+                        <h3 className="fortune-title">{item.title}</h3>
+                        <p className="fortune-desc">{item.description}</p>
                         <div className="fortune-footer">
-                          <span className="fortune-price">¥{item.fortune.price}</span>
+                          <span className="fortune-price">¥{item.price}</span>
                           <span className="view-time">
                             {new Date(item.created_at).toLocaleTimeString('zh-CN', {
                               hour: '2-digit',
@@ -155,6 +202,7 @@ const BrowseHistoryPage = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

@@ -49,13 +49,6 @@ const FloatingActionButton = () => {
     setIsOpen(false)
   }
 
-  const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
-  }
-
   return (
     <>
       {/* FAB Menu */}
@@ -92,15 +85,6 @@ const FloatingActionButton = () => {
           </span>
         </button>
       </div>
-
-      {/* Scroll to Top Button */}
-      <button
-        className="scroll-to-top"
-        onClick={scrollToTop}
-        aria-label="回到顶部"
-      >
-        <span className="fab-icon">↑</span>
-      </button>
 
       {/* Overlay */}
       {isOpen && (
