@@ -16,27 +16,41 @@ export const createShare = async (req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, message: '未登录' });
     }
 
-    const { shareType, contentId, contentType, title, description, imageUrl, metadata, expiresInDays } = req.body;
+    // 前端发送: { shareType, targetId, platform }
+    // 需要转换为后端格式: { shareType, contentId, contentType, ... }
+    const { shareType, targetId, platform, title, description, imageUrl, metadata, expiresInDays } = req.body;
 
-    if (!shareType) {
-      return res.status(400).json({ success: false, message: '缺少分享类型' });
+    if (!shareType || !targetId) {
+      return res.status(400).json({ success: false, message: '缺少必要参数' });
     }
+
+    // 映射前端的 shareType 到后端数据库枚举值
+    const typeMapping: Record<string, string> = {
+      'fortune': 'result',
+      'fortune_result': 'result',
+      'article': 'service',
+      'service': 'service'
+    };
 
     const shareLink = await shareService.createShareLink({
       userId,
-      shareType,
-      contentId,
-      contentType,
+      shareType: typeMapping[shareType] || shareType,
+      contentId: targetId,  // 前端的 targetId 对应后端的 contentId
+      contentType: platform || 'link',  // 使用 platform 作为 contentType
       title,
       description,
       imageUrl,
-      metadata,
+      metadata: metadata || { platform },  // 保存 platform 到 metadata
       expiresInDays: expiresInDays || 365 // 默认1年有效期
     });
 
+    // 返回前端期望的格式
     res.json({
       success: true,
-      data: shareLink
+      data: {
+        shareId: shareLink.share_code,  // 使用 share_code 作为 shareId
+        shareUrl: shareLink.share_url   // 完整分享URL
+      }
     });
   } catch (error) {
     next(error);
@@ -54,33 +68,39 @@ export const recordShare = async (req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ success: false, message: '未登录' });
     }
 
-    const {
-      shareLinkId,
-      platform,
-      shareChannel,
-      deviceType,
-      browser,
-      os,
-      country,
-      city,
-      ipAddress
-    } = req.body;
+    // 前端发送: { shareId, eventType, referrer }
+    // 需要转换为后端格式
+    const { shareId, eventType, referrer } = req.body;
 
-    if (!shareLinkId || !platform) {
+    if (!shareId || !eventType) {
       return res.status(400).json({ success: false, message: '缺少必要参数' });
     }
 
+    // 根据 share_code 查找 share_link_id
+    const { query } = await import('../config/database');
+    const linkResult = await query(
+      'SELECT id FROM share_links WHERE share_code = $1',
+      [shareId]
+    );
+
+    if (linkResult.rows.length === 0) {
+      return res.status(404).json({ success: false, message: '分享链接不存在' });
+    }
+
+    const shareLinkId = linkResult.rows[0].id;
+
+    // 记录事件
     const event = await shareService.recordShareEvent({
       shareLinkId,
       userId,
-      platform,
-      shareChannel,
-      deviceType,
-      browser,
-      os,
-      country,
-      city,
-      ipAddress: ipAddress || req.ip
+      platform: eventType,  // 使用 eventType 作为 platform
+      shareChannel: referrer,
+      deviceType: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'desktop',
+      browser: req.headers['user-agent'],
+      os: req.headers['user-agent'],
+      country: undefined,
+      city: undefined,
+      ipAddress: req.ip
     });
 
     res.json({
