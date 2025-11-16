@@ -5,6 +5,9 @@ import { useCart } from '../contexts/CartContext'
 import PaymentMethodSelector from '../components/PaymentMethodSelector'
 import { createOrder } from '../services/orderService'
 import { createPayment } from '../services/paymentService'
+import storage from '../utils/storage'
+import { showToast } from '../components/ToastContainer'
+import { logError } from '../utils/logger'
 import './CheckoutPage.css'
 
 interface CartItem {
@@ -19,6 +22,10 @@ interface CartItem {
   quantity: number
 }
 
+interface LocationState {
+  cartItemIds?: string[]
+}
+
 const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -31,7 +38,8 @@ const CheckoutPage = () => {
   const [discount, setDiscount] = useState(0)
 
   // 从购物车页面传来的选中商品ID
-  const cartItemIds = (location.state as any)?.cartItemIds || []
+  const locationState = location.state as LocationState | null
+  const cartItemIds = locationState?.cartItemIds || []
 
   // 筛选出选中的商品
   const checkoutItems: CartItem[] = items.filter(item =>
@@ -58,7 +66,7 @@ const CheckoutPage = () => {
   // 应用优惠券
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      alert('请输入优惠券代码')
+      showToast({ title: '提示', content: '请输入优惠券代码', type: 'warning' })
       return
     }
 
@@ -67,7 +75,7 @@ const CheckoutPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${storage.get('token')}`
         },
         body: JSON.stringify({
           couponCode: couponCode.trim(),
@@ -79,14 +87,14 @@ const CheckoutPage = () => {
 
       if (result.success && result.data.valid) {
         setDiscount(result.data.discount || 0)
-        alert(`优惠券已应用!可优惠 $${result.data.discount}`)
+        showToast({ title: '成功', content: `优惠券已应用!可优惠 $${result.data.discount}`, type: 'success' })
       } else {
-        alert(result.data.message || '优惠券无效')
+        showToast({ title: '失败', content: result.data.message || '优惠券无效', type: 'error' })
         setDiscount(0)
       }
     } catch (error) {
-      console.error('验证优惠券失败:', error)
-      alert('验证优惠券失败,请稍后重试')
+      logError('验证优惠券失败', error, { couponCode, amount: subtotal })
+      showToast({ title: '错误', content: '验证优惠券失败,请稍后重试', type: 'error' })
       setDiscount(0)
     }
   }
@@ -94,7 +102,7 @@ const CheckoutPage = () => {
   // 提交订单并支付
   const handleSubmitOrder = async () => {
     if (!selectedMethod) {
-      alert('请选择支付方式')
+      showToast({ title: '提示', content: '请选择支付方式', type: 'warning' })
       return
     }
 
@@ -156,9 +164,10 @@ const CheckoutPage = () => {
         }
       }
 
-    } catch (error: any) {
-      console.error('提交订单失败:', error)
-      alert(error.message || '提交订单失败，请重试')
+    } catch (error: unknown) {
+      logError('提交订单失败', error, { selectedMethod, total, cartItemIds })
+      const errorMessage = error instanceof Error ? error.message : '提交订单失败，请重试'
+      showToast({ title: '错误', content: errorMessage, type: 'error' })
       setIsProcessing(false)
     }
   }
@@ -183,10 +192,10 @@ const CheckoutPage = () => {
           <div className="items-list">
             {checkoutItems.map(item => (
               <div key={item.id} className="checkout-item">
-                <img src={item.fortune.icon} alt={item.fortune.title} />
+                <img src={item.icon} alt={item.title} />
                 <div className="item-info">
-                  <h3>{item.fortune.title}</h3>
-                  <p>{item.fortune.description}</p>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
                   <div className="item-meta">
                     <span className="price">¥{item.price}</span>
                     <span className="quantity">x{item.quantity}</span>

@@ -1,19 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import * as notificationService from '../services/notificationService';
+import type { Notification } from '../services/notificationService';
+import { useConfirm } from '../hooks/useConfirm';
+import ConfirmDialog from '../components/ConfirmDialog';
 import './NotificationCenterPage.css';
-
-interface Notification {
-  id: number;
-  title: string;
-  content: string;
-  type: 'info' | 'warning' | 'success' | 'error';
-  priority: number;
-  is_read: boolean;
-  is_clicked: boolean;
-  created_at: string;
-  link_url?: string;
-}
 
 const NotificationCenterPage = () => {
   const navigate = useNavigate();
@@ -22,6 +14,7 @@ const NotificationCenterPage = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const { confirm, isOpen, confirmState } = useConfirm();
 
   useEffect(() => {
     if (!user) {
@@ -34,19 +27,13 @@ const NotificationCenterPage = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (filter === 'unread') params.append('unread_only', 'true');
-      if (selectedType !== 'all') params.append('type', selectedType);
+      const params: any = {};
+      if (filter === 'unread') params.is_read = false;
+      if (selectedType !== 'all') params.type = selectedType;
 
-      const response = await fetch(`/api/notifications/user?${params.toString()}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setNotifications(data.data || []);
+      const response = await notificationService.getUserNotifications(params);
+      if (response.data.success) {
+        setNotifications(response.data.data || []);
       }
     } catch (error) {
       console.error('加载通知失败:', error);
@@ -57,12 +44,7 @@ const NotificationCenterPage = () => {
 
   const markAsRead = async (notificationId: number) => {
     try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await notificationService.markAsRead(notificationId);
 
       // 更新本地状态
       setNotifications(prev =>
@@ -77,12 +59,7 @@ const NotificationCenterPage = () => {
 
   const markAllAsRead = async () => {
     try {
-      await fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await notificationService.markAllAsRead();
 
       // 更新本地状态
       setNotifications(prev =>
@@ -94,15 +71,18 @@ const NotificationCenterPage = () => {
   };
 
   const deleteNotification = async (notificationId: number) => {
-    if (!window.confirm('确定要删除这条通知吗？')) return;
+    const confirmed = await confirm({
+      title: '删除通知',
+      message: '确定要删除这条通知吗？',
+      confirmText: '删除',
+      cancelText: '取消',
+      variant: 'danger'
+    });
+
+    if (!confirmed) return;
 
     try {
-      await fetch(`/api/notifications/${notificationId}/delete`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await notificationService.deleteNotification(notificationId);
 
       // 从列表中移除
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
@@ -118,12 +98,7 @@ const NotificationCenterPage = () => {
     }
 
     try {
-      await fetch(`/api/notifications/${notification.id}/click`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      await notificationService.recordClick(notification.id);
     } catch (error) {
       console.error('记录点击失败:', error);
     }
@@ -155,7 +130,18 @@ const NotificationCenterPage = () => {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="notification-center">
+    <>
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={confirmState?.title}
+        message={confirmState?.message || ''}
+        confirmText={confirmState?.confirmText}
+        cancelText={confirmState?.cancelText}
+        variant={confirmState?.variant}
+        onConfirm={confirmState?.onConfirm || (() => {})}
+        onCancel={confirmState?.onCancel || (() => {})}
+      />
+      <div className="notification-center">
       <div className="notification-header">
         <div className="header-left">
           <button className="back-button" onClick={() => navigate(-1)}>
@@ -301,6 +287,7 @@ const NotificationCenterPage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

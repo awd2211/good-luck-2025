@@ -1,9 +1,83 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import { SkeletonList } from '../components/Skeleton'
+import SwipeableListItem from '../components/SwipeableListItem'
+import { showToast } from '../components/ToastContainer'
+import { logError } from '../utils/logger'
 import './CartPage.css'
+
+// 定义购物车项的类型
+interface CartItemType {
+  id: string
+  fortune_id: string
+  title: string
+  description: string
+  icon: string
+  price: number
+  quantity: number
+}
+
+// 购物车项组件 - 使用 React.memo 优化渲染
+interface CartItemProps {
+  item: CartItemType
+  isSelected: boolean
+  onToggleSelect: (id: string) => void
+  onDelete: (id: string, title: string) => void
+  onUpdateQuantity: (id: string, quantity: number) => void
+  onNavigate: (fortuneId: string) => void
+}
+
+const CartItem = memo(({ item, isSelected, onToggleSelect, onDelete, onUpdateQuantity, onNavigate }: CartItemProps) => {
+  return (
+    <SwipeableListItem
+      key={item.id}
+      onDelete={() => onDelete(item.id, item.title)}
+    >
+      <div className="cart-item">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggleSelect(item.id)}
+          className="item-checkbox"
+        />
+
+        <div className="item-image" onClick={() => onNavigate(item.fortune_id)}>
+          <img src={item.icon} alt={item.title} />
+        </div>
+
+        <div className="item-info">
+          <h3 onClick={() => onNavigate(item.fortune_id)}>
+            {item.title}
+          </h3>
+          <p className="item-desc">{item.description}</p>
+          <div className="item-bottom">
+            <span className="item-price">¥{item.price}</span>
+            <div className="quantity-control">
+              <button
+                onClick={() => {
+                  if (item.quantity > 1) {
+                    onUpdateQuantity(item.id, item.quantity - 1)
+                  }
+                }}
+                disabled={item.quantity <= 1}
+              >
+                -
+              </button>
+              <span>{item.quantity}</span>
+              <button
+                onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </SwipeableListItem>
+  )
+})
 
 const CartPage = () => {
   const navigate = useNavigate()
@@ -17,37 +91,50 @@ const CartPage = () => {
     }
   }, [user, navigate])
 
-  // 全选/取消全选
-  const toggleSelectAll = () => {
+  // 全选/取消全选 - 使用 useCallback 优化
+  const toggleSelectAll = useCallback(() => {
     if (selectedIds.length === items.length) {
       setSelectedIds([])
     } else {
       setSelectedIds(items.map(item => item.id))
     }
-  }
+  }, [selectedIds.length, items])
 
-  // 单选
-  const toggleSelect = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(selectedId => selectedId !== id))
-    } else {
-      setSelectedIds([...selectedIds, id])
+  // 单选 - 使用 useCallback 优化
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(selectedId => selectedId !== id)
+      } else {
+        return [...prev, id]
+      }
+    })
+  }, [])
+
+  // 计算选中商品的总价 - 使用 useMemo 优化
+  const selectedTotal = useMemo(() => {
+    return items
+      .filter(item => selectedIds.includes(item.id))
+      .reduce((sum, item) => sum + item.price * item.quantity, 0)
+  }, [items, selectedIds])
+
+  // 删除单个商品 - 使用 useCallback 优化
+  const handleDeleteItem = useCallback(async (id: string, title: string) => {
+    try {
+      await removeItem(id)
+      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id))
+      showToast({ title: '删除成功', content: `已删除「${title}」`, type: 'success' })
+    } catch (error) {
+      logError('删除购物车商品失败', error, { id, title })
+      showToast({ title: '删除失败', content: '请重试', type: 'error' })
+      throw error
     }
-  }
+  }, [removeItem])
 
-  // 计算选中商品的总价
-  const selectedTotal = items
-    .filter(item => selectedIds.includes(item.id))
-    .reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-  // 删除选中
-  const handleDeleteSelected = async () => {
+  // 删除选中 - 使用 useCallback 优化
+  const handleDeleteSelected = useCallback(async () => {
     if (selectedIds.length === 0) {
-      alert('请先选择要删除的商品')
-      return
-    }
-
-    if (!window.confirm(`确定要删除选中的${selectedIds.length}个商品吗？`)) {
+      showToast({ title: '提示', content: '请先选择要删除的商品', type: 'warning' })
       return
     }
 
@@ -55,21 +142,27 @@ const CartPage = () => {
       for (const id of selectedIds) {
         await removeItem(id)
       }
+      showToast({ title: '删除成功', content: `已删除${selectedIds.length}个商品`, type: 'success' })
       setSelectedIds([])
     } catch (error) {
-      console.error('删除失败:', error)
-      alert('删除失败，请重试')
+      logError('批量删除购物车商品失败', error, { count: selectedIds.length })
+      showToast({ title: '删除失败', content: '请重试', type: 'error' })
     }
-  }
+  }, [selectedIds, removeItem])
 
-  // 结算
-  const handleCheckout = () => {
+  // 结算 - 使用 useCallback 优化
+  const handleCheckout = useCallback(() => {
     if (selectedIds.length === 0) {
-      alert('请先选择要结算的商品')
+      showToast({ title: '提示', content: '请先选择要结算的商品', type: 'warning' })
       return
     }
     navigate('/checkout', { state: { cartItemIds: selectedIds } })
-  }
+  }, [selectedIds, navigate])
+
+  // 导航到详情页 - 使用 useCallback 优化
+  const handleNavigateToDetail = useCallback((fortuneId: string) => {
+    navigate(`/fortune/${fortuneId}`)
+  }, [navigate])
 
   if (!user) {
     return null
@@ -127,57 +220,15 @@ const CartPage = () => {
         </div>
 
         {items.map(item => (
-          <div key={item.id} className="cart-item">
-            <input
-              type="checkbox"
-              checked={selectedIds.includes(item.id)}
-              onChange={() => toggleSelect(item.id)}
-              className="item-checkbox"
-            />
-
-            <div className="item-image" onClick={() => navigate(`/fortune/${item.fortune.id}`)}>
-              <img src={item.fortune.icon} alt={item.fortune.title} />
-            </div>
-
-            <div className="item-info">
-              <h3 onClick={() => navigate(`/fortune/${item.fortune.id}`)}>
-                {item.fortune.title}
-              </h3>
-              <p className="item-desc">{item.fortune.description}</p>
-              <div className="item-bottom">
-                <span className="item-price">¥{item.price}</span>
-                <div className="quantity-control">
-                  <button
-                    onClick={() => {
-                      if (item.quantity > 1) {
-                        updateQuantity(item.id, item.quantity - 1)
-                      }
-                    }}
-                    disabled={item.quantity <= 1}
-                  >
-                    -
-                  </button>
-                  <span>{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <button
-              className="remove-btn"
-              onClick={() => {
-                if (window.confirm('确定要删除这个商品吗？')) {
-                  removeItem(item.id)
-                }
-              }}
-            >
-              ×
-            </button>
-          </div>
+          <CartItem
+            key={item.id}
+            item={item}
+            isSelected={selectedIds.includes(item.id)}
+            onToggleSelect={toggleSelect}
+            onDelete={handleDeleteItem}
+            onUpdateQuantity={updateQuantity}
+            onNavigate={handleNavigateToDetail}
+          />
         ))}
       </div>
 

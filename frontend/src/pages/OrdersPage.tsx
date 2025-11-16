@@ -4,6 +4,10 @@ import { useAuth } from '../hooks/useAuth'
 import { OrderStatus } from '../types'
 import * as orderService from '../services/orderService'
 import { SkeletonList } from '../components/Skeleton'
+import { EmptyOrders } from '../components/EmptyState'
+import { useConfirm } from '../hooks/useConfirm'
+import ConfirmDialog from '../components/ConfirmDialog'
+import { showToast } from '../components/ToastContainer'
 import './OrdersPage.css'
 
 const OrdersPage = () => {
@@ -13,6 +17,7 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<string>(searchParams.get('status') || 'all')
+  const { confirm, isOpen, confirmState } = useConfirm()
 
   useEffect(() => {
     if (!user) {
@@ -30,9 +35,12 @@ const OrdersPage = () => {
         params.status = activeTab
       }
       const response = await orderService.getOrders(params)
-      setOrders(response.data.data || [])
+      // 后端返回的是 { items, pagination }
+      const orderData = response.data.data
+      setOrders(orderData?.items || [])
     } catch (error) {
       console.error('获取订单失败:', error)
+      setOrders([])
     } finally {
       setLoading(false)
     }
@@ -44,6 +52,26 @@ const OrdersPage = () => {
       setSearchParams({})
     } else {
       setSearchParams({ status })
+    }
+  }
+
+  const handleCancelOrder = async (orderId: string) => {
+    const confirmed = await confirm({
+      title: '取消订单',
+      message: '确定要取消订单吗？',
+      confirmText: '取消订单',
+      cancelText: '返回',
+      variant: 'danger'
+    })
+
+    if (!confirmed) return
+
+    try {
+      await orderService.cancelOrder(orderId)
+      showToast({ title: '成功', content: '订单已取消', type: 'success' })
+      fetchOrders()
+    } catch (error) {
+      showToast({ title: '错误', content: '取消订单失败，请重试', type: 'error' })
     }
   }
 
@@ -83,7 +111,18 @@ const OrdersPage = () => {
   }
 
   return (
-    <div className="orders-page">
+    <>
+      <ConfirmDialog
+        isOpen={isOpen}
+        title={confirmState?.title}
+        message={confirmState?.message || ''}
+        confirmText={confirmState?.confirmText}
+        cancelText={confirmState?.cancelText}
+        variant={confirmState?.variant}
+        onConfirm={confirmState?.onConfirm || (() => {})}
+        onCancel={confirmState?.onCancel || (() => {})}
+      />
+      <div className="orders-page">
       <div className="orders-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
           ‹ 返回
@@ -152,9 +191,7 @@ const OrdersPage = () => {
                       className="btn-secondary"
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (window.confirm('确定要取消订单吗？')) {
-                          orderService.cancelOrder(order.id).then(() => fetchOrders())
-                        }
+                        handleCancelOrder(order.id)
                       }}
                     >
                       取消订单
@@ -174,16 +211,11 @@ const OrdersPage = () => {
             ))}
           </div>
         ) : (
-          <div className="empty-orders">
-            <div className="empty-icon">📦</div>
-            <p>还没有订单</p>
-            <button onClick={() => navigate('/')} className="go-shopping-btn">
-              去逛逛
-            </button>
-          </div>
+          <EmptyOrders onGoShopping={() => navigate('/')} />
         )}
       </div>
     </div>
+    </>
   )
 }
 
