@@ -1,5 +1,9 @@
 import axios, { AxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
+import storage from '../utils/storage';
+import { devLog } from '../utils/devLog';
+import { logError } from '../utils/logger';
+import { showToast } from '../components/ToastContainer';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -25,22 +29,22 @@ axiosRetry(api, {
       (error.response?.status ? error.response.status >= 500 : false);
   },
   onRetry: (retryCount, error) => {
-    console.log(`⚠️  请求失败，正在重试 (${retryCount}/3)...`, error.message);
+    devLog(`⚠️  请求失败，正在重试 (${retryCount}/3)...`, error.message);
   }
 });
 
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    // 从localStorage获取token（如果有认证功能）
-    const token = localStorage.getItem('token');
+    // 从storage获取token（如果有认证功能）
+    const token = storage.get('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
-    console.error('❌ 请求拦截器错误:', error);
+    logError('请求拦截器错误', error);
     return Promise.reject(error);
   }
 );
@@ -60,95 +64,43 @@ api.interceptors.response.use(
 
       switch (status) {
         case 400:
-          console.error('❌ 请求参数错误:', data.message || data.errors);
+          logError('请求参数错误', error, { message: data.message || data.errors });
           break;
         case 401:
-          console.error('❌ 未授权，请重新登录');
+          logError('未授权，请重新登录', error);
           // 清除token并跳转登录页
-          localStorage.removeItem('token');
+          storage.remove('token');
           // window.location.href = '/login';
           break;
         case 403:
-          console.error('❌ 权限不足');
+          logError('权限不足', error);
           break;
         case 404:
-          console.error('❌ 请求的资源不存在');
+          logError('请求的资源不存在', error);
           break;
         case 429:
-          console.error('❌ 请求过于频繁，请稍后再试');
-          alert('请求过于频繁，请稍后再试');
+          logError('请求过于频繁', error);
+          showToast({ title: '错误', content: '请求过于频繁，请稍后再试', type: 'warning' });
           break;
         case 500:
         case 502:
         case 503:
         case 504:
-          console.error('❌ 服务器错误，请稍后重试');
+          logError('服务器错误', error, { status });
           break;
         default:
-          console.error('❌ 未知错误:', status, data);
+          logError('未知错误', error, { status, data });
       }
     } else if (error.request) {
       // 请求已发出但没有收到响应
-      console.error('❌ 网络错误，请检查网络连接');
+      logError('网络错误，请检查网络连接', error);
     } else {
       // 其他错误
-      console.error('❌ 请求配置错误:', error.message);
+      logError('请求配置错误', error);
     }
 
     return Promise.reject(error);
   }
 );
-
-// 生肖运势
-export const getBirthFortune = async (data: {
-  birthYear: number;
-  birthMonth: number;
-  birthDay: number;
-  birthHour?: number;
-}) => {
-  const response = await api.post('/fortune/birth-animal', data);
-  return response.data;
-};
-
-// 八字精批
-export const getBaziAnalysis = async (data: {
-  birthYear: number;
-  birthMonth: number;
-  birthDay: number;
-  birthHour: number;
-  gender: string;
-}) => {
-  const response = await api.post('/fortune/bazi', data);
-  return response.data;
-};
-
-// 流年运势
-export const getFlowYearFortune = async (data: {
-  birthYear: number;
-  targetYear: number;
-}) => {
-  const response = await api.post('/fortune/flow-year', data);
-  return response.data;
-};
-
-// 姓名详批
-export const getNameAnalysis = async (data: {
-  name: string;
-  birthYear: number;
-  birthMonth: number;
-  birthDay: number;
-}) => {
-  const response = await api.post('/fortune/name', data);
-  return response.data;
-};
-
-// 婚姻分析
-export const getMarriageAnalysis = async (data: {
-  person1: { name: string; birthYear: number; birthMonth: number; birthDay: number };
-  person2: { name: string; birthYear: number; birthMonth: number; birthDay: number };
-}) => {
-  const response = await api.post('/fortune/marriage', data);
-  return response.data;
-};
 
 export default api;

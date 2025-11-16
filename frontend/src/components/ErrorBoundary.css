@@ -1,0 +1,156 @@
+.error-boundary {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  padding: 20px;
+}
+
+.error-boundary-content {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 32px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+  20%, 40%, 60%, 80% { transform: translateX(10px); }
+}
+
+.error-boundary h1 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.error-message {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.error-details {
+  text-align: left;
+  margin: 24px 0;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.error-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #ff6b6b;
+  padding: 8px;
+  user-select: none;
+}
+
+.error-details summary:hover {
+  color: #ff5252;
+}
+
+.error-stack {
+  margin-top: 16px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e0e0e0;
+}
+
+.error-stack strong {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  color: #ff6b6b;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-actions button {
+  padding: 12px 32px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 140px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: white;
+  color: #666;
+  border: 2px solid #ddd;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+  .error-boundary-content {
+    padding: 32px 20px;
+  }
+
+  .error-icon {
+    font-size: 48px;
+  }
+
+  .error-boundary h1 {
+    font-size: 24px;
+  }
+
+  .error-message {
+    font-size: 14px;
+  }
+
+  .error-actions {
+    flex-direction: column;
+  }
+
+  .error-actions button {
+    width: 100%;
+  }
+}

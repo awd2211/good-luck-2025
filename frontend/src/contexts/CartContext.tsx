@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import type { CartItem, Fortune } from '../types'
 import * as cartApi from '../services/cartService'
 import { useAuth } from '../hooks/useAuth'
+import { logError } from '../utils/logger'
 
 interface CartContextType {
   items: CartItem[]
@@ -24,8 +25,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false)
 
   // 计算购物车统计信息
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
-  const totalAmount = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const itemCount = Array.isArray(items) ? items.reduce((sum, item) => sum + item.quantity, 0) : 0
+  const totalAmount = Array.isArray(items) ? items.reduce((sum, item) => sum + item.price * item.quantity, 0) : 0
 
   // 用户登录后加载购物车
   useEffect(() => {
@@ -43,9 +44,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true)
     try {
       const response = await cartApi.getCart()
-      setItems(response.data.data || [])
+      // 后端返回的是 CartResponse { items, count, total }
+      const cartData = response.data.data
+      if (cartData && cartData.items) {
+        setItems(cartData.items)
+      } else {
+        setItems([])
+      }
     } catch (error) {
-      console.error('获取购物车失败:', error)
+      logError('获取购物车失败', error)
+      setItems([]) // 出错时设置为空数组
     } finally {
       setIsLoading(false)
     }
@@ -60,7 +68,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await cartApi.addToCart(fortune.id, quantity)
       await refreshCart()
     } catch (error) {
-      console.error('添加到购物车失败:', error)
+      logError('添加到购物车失败', error, { fortuneId: fortune.id, quantity })
       throw error
     }
   }
@@ -72,7 +80,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await cartApi.updateCartItem(itemId, quantity)
       await refreshCart()
     } catch (error) {
-      console.error('更新购物车失败:', error)
+      logError('更新购物车失败', error, { itemId, quantity })
       throw error
     }
   }
@@ -84,7 +92,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await cartApi.removeFromCart(itemId)
       await refreshCart()
     } catch (error) {
-      console.error('删除购物车项失败:', error)
+      logError('删除购物车项失败', error, { itemId })
       throw error
     }
   }
@@ -96,7 +104,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       await cartApi.clearCart()
       setItems([])
     } catch (error) {
-      console.error('清空购物车失败:', error)
+      logError('清空购物车失败', error)
       throw error
     }
   }
