@@ -288,7 +288,12 @@ const CSPerformance: React.FC = () => {
             columns={rankingColumns}
             dataSource={ranking}
             rowKey="agentId"
-            pagination={{ pageSize: 20 }}
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`
+            }}
             loading={loading}
           />
         </Card>

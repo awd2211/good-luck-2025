@@ -366,7 +366,12 @@ const AIBotConfiguration: React.FC = () => {
             dataSource={configs}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 10 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `共 ${total} 条`
+            }}
           />
         </Card>
       </Space>

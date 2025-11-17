@@ -187,30 +187,36 @@ const SessionTransferManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '会话ID',
       dataIndex: 'session_id',
       key: 'session_id',
-      width: 100
+      width: 100,
+      sorter: (a, b) => a.session_id - b.session_id
     },
     {
       title: '转出客服',
       dataIndex: 'from_agent_name',
       key: 'from_agent_name',
-      render: (name: string | null) => name || <Tag color="default">系统</Tag>
+      render: (name: string | null) => name || <Tag color="default">系统</Tag>,
+      sorter: (a, b) => (a.from_agent_name || '').localeCompare(b.from_agent_name || '', 'zh-CN')
     },
     {
       title: '接收客服',
       dataIndex: 'to_agent_name',
-      key: 'to_agent_name'
+      key: 'to_agent_name',
+      sorter: (a, b) => a.to_agent_name.localeCompare(b.to_agent_name, 'zh-CN')
     },
     {
       title: '转接类型',
       dataIndex: 'transfer_type',
       key: 'transfer_type',
-      render: (type: string) => getTypeTag(type)
+      render: (type: string) => getTypeTag(type),
+      sorter: (a, b) => a.transfer_type.localeCompare(b.transfer_type, 'zh-CN')
     },
     {
       title: '状态',
@@ -223,13 +229,15 @@ const SessionTransferManagement = () => {
       dataIndex: 'transfer_reason',
       key: 'transfer_reason',
       ellipsis: true,
-      render: (reason: string | null) => reason || '-'
+      render: (reason: string | null) => reason || '-',
+      sorter: (a, b) => (a.transfer_reason || '').localeCompare(b.transfer_reason || '', 'zh-CN')
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (time: string) => new Date(time).toLocaleString('zh-CN')
+      render: (time: string) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     },
     {
       title: '操作',
@@ -403,6 +411,7 @@ const SessionTransferManagement = () => {
             pageSize: pagination.pageSize,
             total: pagination.total,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => {
               setPagination(prev => ({

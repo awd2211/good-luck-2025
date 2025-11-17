@@ -203,7 +203,9 @@ const CustomerNoteManagement: React.FC = () => {
     {
       title: 'ID',
       dataIndex: 'id',
-      width: 80
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '客户ID',
@@ -213,7 +215,8 @@ const CustomerNoteManagement: React.FC = () => {
         <Tooltip title={userId}>
           <UserOutlined /> {userId.substring(0, 8)}...
         </Tooltip>
-      )
+      ),
+      sorter: (a, b) => a.user_id.localeCompare(b.user_id, 'zh-CN')
     },
     {
       title: '备注内容',
@@ -224,7 +227,8 @@ const CustomerNoteManagement: React.FC = () => {
         <Tooltip title={content}>
           <span>{content}</span>
         </Tooltip>
-      )
+      ),
+      sorter: (a, b) => a.content.localeCompare(b.content, 'zh-CN')
     },
     {
       title: '重要',
@@ -247,13 +251,15 @@ const CustomerNoteManagement: React.FC = () => {
           <span>{name || '未知'}</span>
           <Tag>{record.creator_role}</Tag>
         </Space>
-      )
+      ),
+      sorter: (a, b) => (a.creator_name || '').localeCompare(b.creator_name || '', 'zh-CN')
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm')
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     },
     {
       title: '操作',
@@ -439,6 +445,7 @@ const CustomerNoteManagement: React.FC = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`
           }}
           onChange={(newPagination) => {

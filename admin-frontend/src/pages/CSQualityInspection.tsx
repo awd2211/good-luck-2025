@@ -414,6 +414,7 @@ const CSQualityInspection: React.FC = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`
           }}
           onChange={(newPagination) => {

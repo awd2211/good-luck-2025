@@ -228,18 +228,22 @@ const EmailSendHistoryPage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '场景',
       dataIndex: 'scenario_name',
       key: 'scenario_name',
       width: 120,
+      sorter: (a, b) => a.scenario_name.localeCompare(b.scenario_name, 'zh-CN')
     },
     {
       title: '收件人',
       dataIndex: 'recipient_email',
       key: 'recipient_email',
       width: 200,
+      sorter: (a, b) => a.recipient_email.localeCompare(b.recipient_email, 'zh-CN')
     },
     {
       title: '主题',
@@ -247,6 +251,7 @@ const EmailSendHistoryPage: React.FC = () => {
       key: 'subject',
       ellipsis: true,
       width: 250,
+      sorter: (a, b) => a.subject.localeCompare(b.subject, 'zh-CN')
     },
     {
       title: '状态',
@@ -268,6 +273,7 @@ const EmailSendHistoryPage: React.FC = () => {
       key: 'provider',
       width: 100,
       render: (provider: string | null) => provider || '-',
+      sorter: (a, b) => (a.provider || '').localeCompare(b.provider || '', 'zh-CN')
     },
     {
       title: '发送时间',
@@ -275,6 +281,7 @@ const EmailSendHistoryPage: React.FC = () => {
       key: 'sent_at',
       width: 180,
       render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime()
     },
     {
       title: '操作',
@@ -435,6 +442,7 @@ const EmailSendHistoryPage: React.FC = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => {
               loadHistoryList(page, pageSize);

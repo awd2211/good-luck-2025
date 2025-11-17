@@ -214,21 +214,25 @@ const ArticleManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 60
+      width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '标题',
       dataIndex: 'title',
       key: 'title',
       width: 250,
-      ellipsis: true
+      ellipsis: true,
+      sorter: (a, b) => a.title.localeCompare(b.title, 'zh-CN')
     },
     {
       title: '分类',
       dataIndex: 'category',
       key: 'category',
       width: 100,
-      render: (text) => <Tag color="blue">{text}</Tag>
+      render: (text) => <Tag color="blue">{text}</Tag>,
+      sorter: (a, b) => (a.category || '').localeCompare(b.category || '', 'zh-CN')
     },
     {
       title: '标签',
@@ -278,20 +282,23 @@ const ArticleManagement = () => {
       title: '作者',
       dataIndex: 'author',
       key: 'author',
-      width: 100
+      width: 100,
+      sorter: (a, b) => (a.author || '').localeCompare(b.author || '', 'zh-CN')
     },
     {
       title: '排序',
       dataIndex: 'sort_order',
       key: 'sort_order',
-      width: 80
+      width: 80,
+      sorter: (a, b) => a.sort_order - b.sort_order
     },
     {
       title: '更新时间',
       dataIndex: 'updated_at',
       key: 'updated_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString('zh-CN')
+      render: (time) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
     },
     {
       title: '操作',
@@ -425,7 +432,8 @@ const ArticleManagement = () => {
           pagination={{
             ...pagination,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条记录`,
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => {
               fetchArticles(page, pageSize)
             }
