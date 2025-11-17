@@ -127,12 +127,15 @@ const CSSatisfactionStatistics: React.FC = () => {
     {
       title: '客服',
       dataIndex: 'displayName',
-      key: 'displayName'
+      key: 'displayName',
+      sorter: (a, b) => (a.displayName || '').localeCompare(b.displayName || '', 'zh-CN'),
     },
     {
       title: '平均评分',
       dataIndex: 'avgRating',
       key: 'avgRating',
+      sorter: (a, b) => (a.avgRating || 0) - (b.avgRating || 0),
+      defaultSortOrder: 'descend',
       render: (rating: number) => (
         <Space>
           <StarOutlined style={{ color: '#faad14' }} />
@@ -143,7 +146,8 @@ const CSSatisfactionStatistics: React.FC = () => {
     {
       title: '评价数',
       dataIndex: 'count',
-      key: 'count'
+      key: 'count',
+      sorter: (a, b) => (a.count || 0) - (b.count || 0),
     },
     {
       title: '评分进度',
@@ -163,13 +167,15 @@ const CSSatisfactionStatistics: React.FC = () => {
       title: '会话ID',
       dataIndex: 'sessionId',
       key: 'sessionId',
-      width: 100
+      width: 100,
+      sorter: (a, b) => (a.sessionId || 0) - (b.sessionId || 0),
     },
     {
       title: '评分',
       dataIndex: 'rating',
       key: 'rating',
       width: 80,
+      sorter: (a, b) => (a.rating || 0) - (b.rating || 0),
       render: (rating: number) => (
         <Tag color={rating <= 2 ? 'red' : 'orange'}>
           {rating} 星
@@ -183,6 +189,7 @@ const CSSatisfactionStatistics: React.FC = () => {
       ellipsis: {
         showTitle: false
       },
+      sorter: (a, b) => (a.comment || '').localeCompare(b.comment || '', 'zh-CN'),
       render: (comment: string) => (
         <Tooltip placement="topLeft" title={comment}>
           {comment || '无'}
@@ -194,6 +201,13 @@ const CSSatisfactionStatistics: React.FC = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
+      sorter: (a, b) => {
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      },
+      defaultSortOrder: 'descend',
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm')
     }
   ];

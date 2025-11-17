@@ -876,12 +876,14 @@ const ChannelsTab = () => {
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '显示名称',
       dataIndex: 'display_name',
       key: 'display_name',
       width: 150,
+      sorter: (a, b) => a.display_name.localeCompare(b.display_name, 'zh-CN'),
     },
     {
       title: '渠道类型',
@@ -891,12 +893,14 @@ const ChannelsTab = () => {
       render: (type: string) => (
         <Tag color={getChannelTypeColor(type)}>{getChannelTypeText(type)}</Tag>
       ),
+      sorter: (a, b) => a.channel_type.localeCompare(b.channel_type, 'zh-CN'),
     },
     {
       title: '排序',
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 80,
+      sorter: (a, b) => a.sort_order - b.sort_order,
     },
     {
       title: '颜色',
@@ -923,6 +927,7 @@ const ChannelsTab = () => {
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN'),
     },
     {
       title: '状态',
@@ -937,6 +942,7 @@ const ChannelsTab = () => {
           }
         />
       ),
+      sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
     },
     {
       title: '创建时间',
@@ -944,6 +950,7 @@ const ChannelsTab = () => {
       key: 'created_at',
       width: 180,
       render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
       title: '操作',
@@ -1168,6 +1175,7 @@ const UTMTemplatesTab = () => {
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '基础URL',
@@ -1175,24 +1183,28 @@ const UTMTemplatesTab = () => {
       key: 'base_url',
       width: 200,
       ellipsis: true,
+      sorter: (a, b) => a.base_url.localeCompare(b.base_url, 'zh-CN'),
     },
     {
       title: 'UTM Source',
       dataIndex: 'utm_source',
       key: 'utm_source',
       width: 120,
+      sorter: (a, b) => (a.utm_source || '').localeCompare(b.utm_source || '', 'zh-CN'),
     },
     {
       title: 'UTM Medium',
       dataIndex: 'utm_medium',
       key: 'utm_medium',
       width: 120,
+      sorter: (a, b) => (a.utm_medium || '').localeCompare(b.utm_medium || '', 'zh-CN'),
     },
     {
       title: 'UTM Campaign',
       dataIndex: 'utm_campaign',
       key: 'utm_campaign',
       width: 150,
+      sorter: (a, b) => (a.utm_campaign || '').localeCompare(b.utm_campaign || '', 'zh-CN'),
     },
     {
       title: '生成的URL',
@@ -1457,18 +1469,21 @@ const PromotionCodesTab = () => {
       key: 'code',
       width: 150,
       render: (code: string) => <Tag color="blue">{code}</Tag>,
+      sorter: (a, b) => a.code.localeCompare(b.code, 'zh-CN'),
     },
     {
       title: '关联渠道',
       dataIndex: 'channel_name',
       key: 'channel_name',
       width: 150,
+      sorter: (a, b) => (a.channel_name || '').localeCompare(b.channel_name || '', 'zh-CN'),
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN'),
     },
     {
       title: '使用次数',
@@ -1478,6 +1493,7 @@ const PromotionCodesTab = () => {
       render: (count: number) => (
         <Text style={{ color: count > 0 ? '#52c41a' : '#999' }}>{count}</Text>
       ),
+      sorter: (a, b) => a.usage_count - b.usage_count,
     },
     {
       title: '有效期',
@@ -1737,12 +1753,14 @@ const ConversionEventsTab = () => {
       dataIndex: 'display_name',
       key: 'display_name',
       width: 150,
+      sorter: (a, b) => a.display_name.localeCompare(b.display_name, 'zh-CN'),
     },
     {
       title: '事件标识',
       dataIndex: 'name',
       key: 'name',
       width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '事件类型',
@@ -1752,6 +1770,7 @@ const ConversionEventsTab = () => {
       render: (type: string) => (
         <Tag color={getEventTypeColor(type)}>{getEventTypeText(type)}</Tag>
       ),
+      sorter: (a, b) => a.event_type.localeCompare(b.event_type, 'zh-CN'),
     },
     {
       title: '价值计算方式',
@@ -1759,6 +1778,7 @@ const ConversionEventsTab = () => {
       key: 'value_calculation',
       width: 150,
       render: (type: string) => getValueCalculationText(type),
+      sorter: (a, b) => a.value_calculation.localeCompare(b.value_calculation, 'zh-CN'),
     },
     {
       title: '固定价值',
@@ -1771,18 +1791,21 @@ const ConversionEventsTab = () => {
         }
         return `¥${value}`
       },
+      sorter: (a, b) => (a.fixed_value || 0) - (b.fixed_value || 0),
     },
     {
       title: '排序',
       dataIndex: 'sort_order',
       key: 'sort_order',
       width: 80,
+      sorter: (a, b) => a.sort_order - b.sort_order,
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
       ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN'),
     },
     {
       title: '状态',
@@ -1797,6 +1820,7 @@ const ConversionEventsTab = () => {
           }
         />
       ),
+      sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
     },
     {
       title: '操作',
@@ -2257,24 +2281,28 @@ const ModelComparisonTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       title: '渠道',
       dataIndex: 'channel',
       key: 'channel',
+      sorter: (a, b) => a.channel.localeCompare(b.channel, 'zh-CN'),
     },
     {
       title: '首次点击',
       dataIndex: 'first_click',
       key: 'first_click',
       render: (value: number) => value.toLocaleString(),
+      sorter: (a, b) => a.first_click - b.first_click,
     },
     {
       title: '末次点击',
       dataIndex: 'last_click',
       key: 'last_click',
       render: (value: number) => value.toLocaleString(),
+      sorter: (a, b) => a.last_click - b.last_click,
     },
     {
       title: '线性归因',
       dataIndex: 'linear',
       key: 'linear',
       render: (value: number) => value.toLocaleString(),
+      sorter: (a, b) => a.linear - b.linear,
     },
   ]
 
@@ -2342,6 +2370,7 @@ const RoiAnalysisTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       key: 'channel',
       fixed: 'left',
       width: 150,
+      sorter: (a, b) => a.channel.localeCompare(b.channel, 'zh-CN'),
     },
     {
       title: '收入',
@@ -2784,6 +2813,7 @@ const UserQualityTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       key: 'channel',
       fixed: 'left',
       width: 150,
+      sorter: (a, b) => a.channel.localeCompare(b.channel, 'zh-CN'),
     },
     {
       title: '复购率',
@@ -2953,6 +2983,7 @@ const CustomReportsTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '创建时间',
@@ -2960,6 +2991,7 @@ const CustomReportsTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       key: 'created_at',
       width: 180,
       render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     },
     {
       title: '更新时间',
@@ -2967,6 +2999,7 @@ const CustomReportsTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       key: 'updated_at',
       width: 180,
       render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime(),
     },
     {
       title: '操作',

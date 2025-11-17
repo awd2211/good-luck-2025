@@ -144,6 +144,7 @@ const PaymentTransactions: React.FC = () => {
       key: 'transaction_id',
       width: 180,
       render: (text: string) => <span style={{ fontFamily: 'monospace' }}>{text}</span>,
+      sorter: (a, b) => a.transaction_id.localeCompare(b.transaction_id, 'zh-CN')
     },
     {
       title: '订单ID',
@@ -151,6 +152,7 @@ const PaymentTransactions: React.FC = () => {
       key: 'order_id',
       width: 180,
       render: (text: string) => <span style={{ fontFamily: 'monospace' }}>{text}</span>,
+      sorter: (a, b) => a.order_id.localeCompare(b.order_id, 'zh-CN')
     },
     {
       title: '金额',
@@ -163,12 +165,14 @@ const PaymentTransactions: React.FC = () => {
           {amount.toFixed(2)}
         </span>
       ),
+      sorter: (a, b) => a.amount - b.amount
     },
     {
       title: '支付方式',
       dataIndex: 'payment_method',
       key: 'payment_method',
       width: 100,
+      sorter: (a, b) => a.payment_method.localeCompare(b.payment_method, 'zh-CN')
     },
     {
       title: '提供商',
@@ -176,6 +180,7 @@ const PaymentTransactions: React.FC = () => {
       key: 'provider',
       width: 100,
       render: (provider: string) => getProviderTag(provider),
+      sorter: (a, b) => a.provider.localeCompare(b.provider, 'zh-CN')
     },
     {
       title: '状态',
@@ -190,6 +195,8 @@ const PaymentTransactions: React.FC = () => {
       key: 'created_at',
       width: 180,
       render: (text: string) => dayjs(text).format('YYYY-MM-DD HH:mm:ss'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      defaultSortOrder: 'descend'
     },
     {
       title: '操作',

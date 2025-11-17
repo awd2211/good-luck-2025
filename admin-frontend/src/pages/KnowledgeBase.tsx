@@ -276,15 +276,30 @@ const KnowledgeBase: React.FC = () => {
   };
 
   const categoryColumns: ColumnsType<Category> = [
-    { title: 'ID', dataIndex: 'id', width: 80 },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+    },
     { title: '图标', dataIndex: 'icon', width: 80, render: (icon) => <span style={{ fontSize: 24 }}>{icon || '📁'}</span> },
-    { title: '分类名称', dataIndex: 'name' },
-    { title: '描述', dataIndex: 'description', ellipsis: true },
+    {
+      title: '分类名称',
+      dataIndex: 'name',
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN'),
+    },
     {
       title: '状态',
       dataIndex: 'is_active',
       width: 100,
-      render: (isActive) => <Tag color={isActive ? 'green' : 'default'}>{isActive ? '启用' : '禁用'}</Tag>
+      render: (isActive) => <Tag color={isActive ? 'green' : 'default'}>{isActive ? '启用' : '禁用'}</Tag>,
+      sorter: (a, b) => Number(a.is_active) - Number(b.is_active),
     },
     {
       title: '操作',
@@ -299,17 +314,44 @@ const KnowledgeBase: React.FC = () => {
   ];
 
   const articleColumns: ColumnsType<Article> = [
-    { title: 'ID', dataIndex: 'id', width: 80 },
-    { title: '标题', dataIndex: 'title', ellipsis: true },
-    { title: '摘要', dataIndex: 'summary', ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: '标题',
+      dataIndex: 'title',
+      ellipsis: true,
+      sorter: (a, b) => a.title.localeCompare(b.title, 'zh-CN'),
+    },
+    {
+      title: '摘要',
+      dataIndex: 'summary',
+      ellipsis: true,
+      sorter: (a, b) => (a.summary || '').localeCompare(b.summary || '', 'zh-CN'),
+    },
     {
       title: '标签',
       dataIndex: 'tags',
       width: 200,
       render: (tags: string[]) => tags?.map(tag => <Tag key={tag}>{tag}</Tag>)
     },
-    { title: '浏览', dataIndex: 'view_count', width: 80, render: (count) => <><EyeOutlined /> {count}</> },
-    { title: '有用', dataIndex: 'helpful_count', width: 80, render: (count) => <><LikeOutlined /> {count}</> },
+    {
+      title: '浏览',
+      dataIndex: 'view_count',
+      width: 80,
+      render: (count) => <><EyeOutlined /> {count}</>,
+      sorter: (a, b) => a.view_count - b.view_count,
+    },
+    {
+      title: '有用',
+      dataIndex: 'helpful_count',
+      width: 80,
+      render: (count) => <><LikeOutlined /> {count}</>,
+      sorter: (a, b) => a.helpful_count - b.helpful_count,
+    },
     {
       title: '状态',
       width: 120,
@@ -333,21 +375,42 @@ const KnowledgeBase: React.FC = () => {
   ];
 
   const faqColumns: ColumnsType<FAQ> = [
-    { title: 'ID', dataIndex: 'id', width: 80 },
-    { title: '问题', dataIndex: 'question', ellipsis: true },
-    { title: '回答', dataIndex: 'answer', ellipsis: true },
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
+      title: '问题',
+      dataIndex: 'question',
+      ellipsis: true,
+      sorter: (a, b) => a.question.localeCompare(b.question, 'zh-CN'),
+    },
+    {
+      title: '回答',
+      dataIndex: 'answer',
+      ellipsis: true,
+      sorter: (a, b) => a.answer.localeCompare(b.answer, 'zh-CN'),
+    },
     {
       title: '标签',
       dataIndex: 'tags',
       width: 150,
       render: (tags: string[]) => tags?.map(tag => <Tag key={tag}>{tag}</Tag>)
     },
-    { title: '浏览', dataIndex: 'view_count', width: 80 },
+    {
+      title: '浏览',
+      dataIndex: 'view_count',
+      width: 80,
+      sorter: (a, b) => a.view_count - b.view_count,
+    },
     {
       title: '发布',
       dataIndex: 'is_published',
       width: 80,
-      render: (published) => <Tag color={published ? 'green' : 'default'}>{published ? '是' : '否'}</Tag>
+      render: (published) => <Tag color={published ? 'green' : 'default'}>{published ? '是' : '否'}</Tag>,
+      sorter: (a, b) => Number(a.is_published) - Number(b.is_published),
     },
     {
       title: '操作',
@@ -404,6 +467,9 @@ const KnowledgeBase: React.FC = () => {
                 current: articlePagination.current,
                 pageSize: articlePagination.pageSize,
                 total: articlePagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条`,
                 onChange: (page, pageSize) => setArticlePagination(prev => ({ ...prev, current: page, pageSize: pageSize || 20 }))
               }}
             />
@@ -422,6 +488,9 @@ const KnowledgeBase: React.FC = () => {
                 current: faqPagination.current,
                 pageSize: faqPagination.pageSize,
                 total: faqPagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条`,
                 onChange: (page, pageSize) => setFaqPagination(prev => ({ ...prev, current: page, pageSize: pageSize || 20 }))
               }}
             />
