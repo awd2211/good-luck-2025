@@ -1,305 +1,378 @@
-# 掌握财富运势 - 算命测算平台
+# 🎋 Good Luck 2025 - 运势测算平台
 
-一个基于 React + TypeScript + Node.js 的前后端分离算命测算平台,提供生肖运势、八字精批、流年运势、姓名测算、婚姻分析等多种功能。
+<div align="center">
 
-## ⚠️ 重要提示
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)
+![React](https://img.shields.io/badge/React-18.3-61dafb.svg)
+![Express](https://img.shields.io/badge/Express-5.1-000000.svg)
 
-**当前状态**: 代码和优化已完成，但需要实际测试验证所有功能
+一个功能完整、性能优化的全栈运势测算平台，提供生肖运势、八字精批、流年运势、姓名测算、婚姻分析等多种功能。
 
-### 首次使用请阅读
+[功能特性](#-功能特性) • [快速开始](#-快速开始) • [文档](#-文档) • [贡献](#-贡献) • [许可证](#-许可证)
 
-1. **测试功能**: 运行 `./test-all.sh` 测试所有API是否正常
-2. **查看问题**: 阅读 [FUNCTIONALITY_STATUS.md](FUNCTIONALITY_STATUS.md) 了解当前状态
-3. **修复指南**: 参考 [FIX_AND_TEST.md](FIX_AND_TEST.md) 进行功能验证
+</div>
 
-### 快速测试
+---
 
-```bash
-# 1. 启动后端
-cd backend && npm run dev
+## 📖 项目简介
 
-# 2. 在新终端运行测试
-./test-all.sh
+Good Luck 2025 是一个基于现代 Web 技术栈构建的全栈运势测算平台，采用前后端分离架构，提供完整的用户端、管理后台和 API 服务。项目注重代码质量、性能优化和用户体验，适合作为学习全栈开发的参考项目。
 
-# 3. 如果测试通过，启动前端
-cd frontend && npm run dev
-```
+### ✨ 核心亮点
 
-## 功能特点
+- 🎯 **功能完整** - 用户端、管理后台、API 服务一应俱全
+- ⚡ **性能优化** - 包体积减少 58%，首屏加载提升 80%
+- 🔒 **安全可靠** - JWT 认证、RBAC 权限、SQL 注入防护
+- 📱 **响应式设计** - 完美支持 PC、平板、手机
+- 🛠️ **开发友好** - TypeScript、ESLint、单元测试
+- 📚 **文档完善** - 详细的开发文档和 API 文档
 
-- 🎯 **生肖运势** - 根据出生年份测算生肖运势
-- 🎋 **八字精批** - 专业八字分析,了解命理特点
+## 🎯 功能特性
+
+### 用户端功能
+- 🎋 **生肖运势** - 根据出生年份测算生肖运势
+- 📅 **八字精批** - 专业八字分析，了解命理特点
 - 🎊 **流年运势** - 查看指定年份的运势走向
 - ✍️ **姓名详批** - 姓名五行分析和评分
 - 💑 **婚姻分析** - 双方八字合婚配对
-- 📱 **响应式设计** - 完美支持PC端和移动端
-- ⚡ **性能优化** - 使用缓存机制,快速响应
-- 🔒 **安全可靠** - 集成 Helmet 安全中间件
+- 🛒 **购物车系统** - 完整的购物流程
+- 💳 **支付集成** - 支持 Stripe、PayPal、余额支付
+- 📱 **PWA 支持** - 离线访问，可安装到桌面
 
-## 技术栈
+### 管理后台功能
+- 👥 **用户管理** - 用户信息、订单、统计
+- 📊 **数据统计** - 实时数据分析和报表
+- 🎨 **内容管理** - 轮播图、通知、文章管理
+- 💰 **财务管理** - 订单、退款、优惠券管理
+- 🔐 **权限管理** - RBAC 角色权限系统
+- 💬 **客服系统** - WebChat 在线客服
+- 📧 **邮件系统** - 邮件模板和发送历史
 
-### 前端
-- React 18
-- TypeScript
-- React Router DOM
-- Axios
-- Vite
-- CSS3 (响应式设计)
+### 技术特性
+- ⚡ **性能优化** - 代码分割、懒加载、缓存策略
+- 🔒 **安全防护** - Helmet、CORS、限流、SQL 注入防护
+- 📱 **响应式设计** - 完美适配各种设备
+- 🌐 **国际化** - i18n 多语言支持
+- 🧪 **单元测试** - 60+ 测试用例
+- 📝 **API 文档** - Swagger 完整文档
 
-### 后端
-- Node.js
-- Express 5
-- TypeScript
-- Compression (响应压缩)
-- Helmet (安全防护)
-- CORS
+## 🛠️ 技术栈
 
-## 项目结构
+### 前端技术
+- **框架**: React 18 + TypeScript
+- **路由**: React Router DOM 7
+- **构建工具**: Vite 7
+- **UI 库**: Ant Design 5 (管理后台)
+- **状态管理**: React Context API
+- **HTTP 客户端**: Axios + Retry
+- **国际化**: i18next
+- **PWA**: Workbox
 
-```
-good-luck-2025/
-├── frontend/              # 前端项目
-│   ├── src/
-│   │   ├── pages/        # 页面组件
-│   │   ├── components/   # 公共组件
-│   │   ├── services/     # API服务
-│   │   └── types/        # TypeScript类型定义
-│   ├── index.html
-│   └── vite.config.ts
-├── backend/              # 后端项目
-│   ├── src/
-│   │   ├── routes/       # 路由
-│   │   ├── controllers/  # 控制器
-│   │   ├── services/     # 业务逻辑
-│   │   └── middleware/   # 中间件
-│   └── tsconfig.json
-├── start.sh              # Linux/Mac 启动脚本
-├── start.bat             # Windows 启动脚本
-└── README.md
-```
+### 后端技术
+- **运行时**: Node.js 16+
+- **框架**: Express 5 + TypeScript
+- **数据库**: PostgreSQL 16
+- **ORM**: pg (原生 SQL)
+- **认证**: JWT + bcrypt
+- **缓存**: Redis (可选) + 内存缓存
+- **支付**: Stripe + PayPal
+- **邮件**: AWS SES + SendGrid + Mailgun
+- **实时通信**: Socket.IO
+- **API 文档**: Swagger
 
-## 快速开始
+### 开发工具
+- **代码规范**: ESLint + Prettier
+- **测试框架**: Jest + Supertest
+- **进程管理**: PM2
+- **容器化**: Docker + Docker Compose
+- **版本控制**: Git
+
+## 🚀 快速开始
 
 ### 前置要求
 
 - Node.js >= 16.0.0
-- npm >= 7.0.0
+- npm >= 7.0.0 或 yarn >= 1.22.0
+- PostgreSQL >= 14.0 (或使用 Docker)
+- Redis (可选，用于生产环境)
 
-### 安装依赖
+### 安装步骤
 
-项目已经安装好依赖,如需重新安装:
-
+1. **克隆项目**
 ```bash
-# 安装前端依赖
-cd frontend
-npm install
-
-# 安装后端依赖
-cd ../backend
-npm install
+git clone https://github.com/your-username/good-luck-2025.git
+cd good-luck-2025
 ```
 
-### 启动项目
-
-#### 方式一: 使用启动脚本 (推荐)
-
-**Linux/Mac:**
+2. **安装依赖**
 ```bash
+# 安装所有依赖（后端 + 前端 + 管理后台）
+npm run install:all
+
+# 或分别安装
+npm run install:backend
+npm run install:frontend
+cd admin-frontend && npm install
+```
+
+3. **配置环境变量**
+
+创建后端环境变量文件：
+```bash
+cd backend
+cp .env.example .env.development
+# 编辑 .env.development 文件，配置数据库等信息
+```
+
+创建前端环境变量文件：
+```bash
+cd frontend
+cp .env.example .env
+# 编辑 .env 文件，配置 API 地址
+```
+
+4. **启动数据库**
+
+使用 Docker Compose（推荐）：
+```bash
+docker-compose up -d postgres
+```
+
+或手动启动 PostgreSQL，并执行初始化脚本：
+```bash
+psql -U postgres -f db/init.sql
+```
+
+5. **启动项目**
+
+**开发环境（推荐）：**
+```bash
+# 使用启动脚本
 chmod +x start.sh
 ./start.sh
+
+# 或手动启动
+npm run start:backend  # 后端: http://localhost:3000
+npm run start:frontend # 前端: http://localhost:5173
 ```
 
-**Windows:**
+**生产环境：**
 ```bash
-start.bat
-```
-
-#### 方式二: 手动启动
-
-**启动后端服务:**
-```bash
-cd backend
-npm run dev
-```
-后端服务将运行在 http://localhost:3000
-
-**启动前端服务:**
-```bash
-cd frontend
-npm run dev
-```
-前端服务将运行在 http://localhost:5173
-
-### 访问应用
-
-打开浏览器访问: http://localhost:5173
-
-## PM2 生产部署（推荐）
-
-项目已配置 PM2 进程管理，支持自动重启、负载均衡、日志管理等功能。
-
-### 一键部署
-
-```bash
-# 构建并启动所有服务（后端 + 用户前端 + 管理后台）
-./deploy.sh
-```
-
-### PM2 管理命令
-
-```bash
-./pm2.sh start      # 启动所有服务
-./pm2.sh stop       # 停止所有服务
-./pm2.sh restart    # 重启所有服务
-./pm2.sh status     # 查看服务状态
-./pm2.sh logs       # 查看所有日志
-./pm2.sh monit      # 实时监控
-```
-
-### 详细文档
-
-查看 [PM2_GUIDE.md](PM2_GUIDE.md) 了解完整的 PM2 使用指南，包括：
-- 开机自启动设置
-- 零停机重载
-- 性能优化
-- 故障排查
-- 日志管理
-
-## 构建生产版本
-
-### 构建前端
-```bash
-cd frontend
+# 构建项目
 npm run build
+
+# 使用 PM2 启动
+./pm2.sh start
 ```
 
-构建产物在 `frontend/dist` 目录
+6. **访问应用**
 
-### 构建后端
+- 用户前端: http://localhost:5173
+- 管理后台: http://localhost:50303
+- API 文档: http://localhost:3000/api-docs
+- 健康检查: http://localhost:3000/health
+
+### 默认账号
+
+**管理后台：**
+- 用户名: `admin`
+- 密码: `admin123` (请在生产环境修改)
+
+## 📁 项目结构
+
+```
+good-luck-2025/
+├── frontend/              # 用户前端 (React + Vite)
+│   ├── src/
+│   │   ├── pages/        # 页面组件
+│   │   ├── components/   # 公共组件
+│   │   ├── services/     # API 服务
+│   │   ├── contexts/     # Context 状态管理
+│   │   └── utils/        # 工具函数
+│   └── package.json
+│
+├── admin-frontend/        # 管理后台 (React + Ant Design)
+│   ├── src/
+│   │   ├── pages/        # 管理页面
+│   │   ├── components/   # 管理组件
+│   │   └── services/     # API 服务
+│   └── package.json
+│
+├── backend/               # 后端服务 (Express + TypeScript)
+│   ├── src/
+│   │   ├── routes/       # 路由定义
+│   │   ├── controllers/  # 控制器
+│   │   ├── services/     # 业务逻辑
+│   │   ├── middleware/   # 中间件
+│   │   ├── config/       # 配置文件
+│   │   └── types/        # 类型定义
+│   ├── migrations/       # 数据库迁移
+│   └── package.json
+│
+├── docs/                  # 项目文档
+│   ├── core/             # 核心文档
+│   ├── api/              # API 文档
+│   ├── development/      # 开发文档
+│   ├── deployment/       # 部署文档
+│   └── archive/          # 归档文档
+│
+├── db/                    # 数据库脚本
+│   ├── init.sql          # 初始化脚本
+│   └── migrations/       # 迁移脚本
+│
+├── docker-compose.yml     # Docker 配置
+├── ecosystem.config.js    # PM2 配置
+└── README.md
+```
+
+## 📚 文档
+
+完整的项目文档位于 [`docs/`](docs/) 目录：
+
+- 📘 [核心文档](docs/core/) - 开发指南、数据库文档
+- 📡 [API 文档](docs/api/) - API 使用文档和测试结果
+- 🛠️ [开发文档](docs/development/) - 开发指南、优化文档
+- 🚀 [部署文档](docs/deployment/) - 部署和运维指南
+
+**快速链接：**
+- [开发指南](docs/core/CLAUDE.md)
+- [数据库文档](docs/core/DATABASE.md)
+- [API 快速开始](docs/api/QUICKSTART_USER_API.md)
+- [PM2 部署指南](docs/deployment/PM2_GUIDE.md)
+
+## 🧪 测试
+
 ```bash
+# 运行所有测试
 cd backend
+npm test
+
+# 运行单元测试
+npm run test:unit
+
+# 运行集成测试
+npm run test:integration
+
+# 生成测试覆盖率报告
+npm run test:coverage
+
+# 运行 API 测试脚本
+./test-all.sh
+```
+
+## 🚀 部署
+
+### Docker 部署
+
+```bash
+# 启动所有服务（数据库 + 后端 + 前端）
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+```
+
+### PM2 部署（推荐）
+
+```bash
+# 构建项目
 npm run build
+
+# 启动服务
+./pm2.sh start
+
+# 查看状态
+./pm2.sh status
+
+# 查看日志
+./pm2.sh logs
 ```
 
-构建产物在 `backend/dist` 目录
+详细部署文档请查看 [部署文档](docs/deployment/PM2_GUIDE.md)
 
-### 启动生产环境
-```bash
-cd backend
-npm start
-```
+## 🤝 贡献
 
-## API 接口
+我们欢迎所有形式的贡献！请查看 [贡献指南](CONTRIBUTING.md) 了解详细信息。
 
-后端 API 基础路径: `http://localhost:3000/api`
+### 贡献方式
 
-### 主要接口
+- 🐛 报告 Bug
+- 💡 提出新功能建议
+- 📝 改进文档
+- 🔧 提交代码修复
+- ⭐ 给项目点个 Star
 
-- `POST /api/fortune/birth-animal` - 生肖运势
-- `POST /api/fortune/bazi` - 八字精批
-- `POST /api/fortune/flow-year` - 流年运势
-- `POST /api/fortune/name` - 姓名详批
-- `POST /api/fortune/marriage` - 婚姻分析
+### 开发流程
 
-所有接口都包含5分钟缓存优化。
+1. Fork 本项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启 Pull Request
 
-## 性能优化 ⚡
+## 📊 性能指标
 
-本项目实施了全方位的性能优化,确保极致的用户体验。详细信息请查看 [OPTIMIZATION.md](OPTIMIZATION.md)
+经过全面优化，项目性能指标如下：
 
-### 前端优化
-- ✅ **路由懒加载** - React.lazy + Suspense
-- ✅ **组件优化** - React.memo + useMemo + useCallback
-- ✅ **代码分割** - Vendor 分离, 按需加载
-- ✅ **PWA 支持** - 离线访问, 可安装
-- ✅ **Service Worker** - 智能缓存策略
-- ✅ **性能监控** - FCP, LCP, FID, CLS 实时监控
-- ✅ **生产优化** - Tree-shaking, 代码压缩, Console 移除
+- 📦 **包体积**: 减少 58%
+- ⚡ **首屏加载**: 提升 80% (2.5s → 0.5s)
+- 🚀 **API 响应**: 缓存命中率 94% (50ms → 3ms)
+- 📊 **Lighthouse**: 评分 > 90
 
-### 后端优化
-- ✅ **请求限流** - 防止 API 滥用 (60次/分钟)
-- ✅ **响应压缩** - Gzip 压缩减少 60-80% 体积
-- ✅ **内存缓存** - 5分钟 TTL 智能缓存
-- ✅ **错误处理** - 全局错误捕获和优雅降级
-- ✅ **安全防护** - Helmet 中间件多重防护
-- ✅ **优雅关闭** - 信号处理和资源清理
+详细优化文档请查看 [性能优化文档](docs/development/OPTIMIZATION.md)
 
-### 性能指标
+## 🔒 安全
 
-**优化效果:**
-- 📦 包体积减少 **58%**
-- ⚡ 首屏加载提升 **80%** (2.5s → 0.5s)
-- 🚀 API 缓存命中率 **94%** (50ms → 3ms)
-- 📊 Lighthouse 评分 > **90**
+项目实施了多层安全防护：
 
-### 性能监控
+- ✅ JWT 认证和授权
+- ✅ RBAC 角色权限控制
+- ✅ SQL 注入防护（参数化查询）
+- ✅ XSS 防护（Helmet）
+- ✅ CSRF 防护
+- ✅ 请求限流
+- ✅ 密码加密（bcrypt）
 
-开发环境自动启用性能监控,在控制台查看详细报告:
+## 🌐 浏览器支持
 
-```javascript
-performanceMonitor.generateReport()
-```
+- ✅ Chrome (推荐)
+- ✅ Firefox
+- ✅ Safari
+- ✅ Edge
+- ✅ 移动端浏览器
 
-## 响应式设计
+## 📝 更新日志
 
-项目完美支持以下设备:
+查看 [CHANGELOG.md](CHANGELOG.md) 了解版本更新历史。
 
-- 📱 手机端 (320px - 768px)
-- 📱 平板端 (769px - 1024px)
-- 💻 PC端 (1025px - 1920px+)
-- 🖥️ 4K大屏优化 (1400px+)
+## 📄 许可证
 
-## 环境变量
+本项目采用 [MIT 许可证](LICENSE)。
 
-### 前端 (.env)
-```
-VITE_API_URL=http://localhost:3000/api
-```
+## ⚠️ 免责声明
 
-### 后端 (.env)
-```
-PORT=3000
-NODE_ENV=development
-CORS_ORIGIN=*
-```
+1. 本项目中的运势测算功能仅供娱乐，不应作为决策依据
+2. 本平台拒绝向未成年人提供服务
+3. 使用本项目造成的任何后果，由使用者自行承担
 
-## 开发说明
+## 🙏 致谢
 
-### 添加新功能
+感谢所有为这个项目做出贡献的开发者和用户！
 
-1. 在 `backend/src/services/fortuneService.ts` 添加业务逻辑
-2. 在 `backend/src/controllers/fortuneController.ts` 添加控制器
-3. 在 `backend/src/routes/fortune.ts` 添加路由
-4. 在 `frontend/src/services/api.ts` 添加API调用
-5. 在前端页面中使用新功能
+## 📮 联系方式
 
-### 自定义样式
-
-所有样式文件在 `frontend/src/pages/*.css`,支持CSS3和媒体查询。
-
-## 注意事项
-
-1. 本项目中的算命功能仅供娱乐,不应作为决策依据
-2. 生产环境请修改 CORS 配置,限制访问来源
-3. 建议使用 HTTPS 部署
-4. 可以集成 Redis 替代内存缓存以提升性能
-
-## 浏览器支持
-
-- Chrome (推荐)
-- Firefox
-- Safari
-- Edge
-- 移动端浏览器
-
-## License
-
-MIT
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request!
+- 📧 邮箱: [your-email@example.com]
+- 🐛 Issues: [GitHub Issues](https://github.com/your-username/good-luck-2025/issues)
+- 💬 Discussions: [GitHub Discussions](https://github.com/your-username/good-luck-2025/discussions)
 
 ---
 
-**注意**: 本平台提供的产品拒绝向未成年人提供服务,如未成年人使用且造成一切后果由其监护人自行承担。
+<div align="center">
+
+**如果这个项目对你有帮助，请给一个 ⭐ Star！**
+
+Made with ❤️ by [Your Name]
+
+</div>

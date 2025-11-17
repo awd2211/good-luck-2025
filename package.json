@@ -1,7 +1,7 @@
 {
   "name": "good-luck-2025",
   "version": "1.0.0",
-  "description": "掌握财富运势 - 算命测算平台",
+  "description": "掌握财富运势 - 运势测算平台",
   "private": true,
   "scripts": {
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
