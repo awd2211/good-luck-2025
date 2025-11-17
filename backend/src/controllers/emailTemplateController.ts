@@ -1,38 +1,53 @@
 /**
- * 邮件模板控制器
+ * 邮件模板控制器（完整版）
  */
 
 import { Request, Response } from 'express'
-import { query } from '../config/database'
+import * as emailTemplateService from '../services/emailTemplateService'
 
 /**
- * 获取所有邮件模板
+ * 获取所有邮件模板（分页）
+ * @openapi
+ * /api/manage/email-templates:
+ *   get:
+ *     tags: [Admin - Email Templates]
+ *     summary: 获取所有邮件模板（分页）
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [admin, user, system, marketing]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: 获取成功
  */
-export const getEmailTemplates = async (req: Request, res: Response) => {
+export const getAllTemplates = async (req: Request, res: Response) => {
   try {
-    const { template_type, enabled } = req.query
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 20
+    const category = req.query.category as string
+    const search = req.query.search as string
 
-    let sql = 'SELECT * FROM email_templates WHERE 1=1'
-    const params: any[] = []
-    let paramIndex = 1
-
-    if (template_type) {
-      sql += ` AND template_type = $${paramIndex++}`
-      params.push(template_type)
-    }
-
-    if (enabled !== undefined) {
-      sql += ` AND enabled = $${paramIndex++}`
-      params.push(enabled === 'true')
-    }
-
-    sql += ' ORDER BY is_system DESC, created_at DESC'
-
-    const result = await query(sql, params)
+    const result = await emailTemplateService.getAllTemplates(page, limit, category, search)
 
     res.json({
       success: true,
-      data: result.rows,
+      data: result,
     })
   } catch (error: any) {
     console.error('获取邮件模板失败:', error)
@@ -44,31 +59,28 @@ export const getEmailTemplates = async (req: Request, res: Response) => {
 }
 
 /**
- * 获取单个邮件模板
+ * 根据ID获取模板
  */
-export const getEmailTemplate = async (req: Request, res: Response) => {
+export const getTemplateById = async (req: Request, res: Response) => {
   try {
-    const { key } = req.params
+    const id = parseInt(req.params.id)
 
-    const result = await query(
-      'SELECT * FROM email_templates WHERE template_key = $1',
-      [key]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
+    if (!id) {
+      return res.status(400).json({
         success: false,
-        message: '邮件模板不存在',
+        message: '无效的模板ID',
       })
     }
 
+    const template = await emailTemplateService.getTemplateById(id)
+
     res.json({
       success: true,
-      data: result.rows[0],
+      data: template,
     })
   } catch (error: any) {
     console.error('获取邮件模板失败:', error)
-    res.status(500).json({
+    res.status(error.message === '模板不存在' ? 404 : 500).json({
       success: false,
       message: error.message || '获取邮件模板失败',
     })
@@ -78,57 +90,28 @@ export const getEmailTemplate = async (req: Request, res: Response) => {
 /**
  * 创建邮件模板
  */
-export const createEmailTemplate = async (req: Request, res: Response) => {
+export const createTemplate = async (req: Request, res: Response) => {
   try {
-    const {
-      template_key,
-      template_name,
-      template_type,
-      subject,
-      html_content,
-      variables,
-      description,
-      enabled,
-    } = req.body
+    const templateData = req.body
+    const createdBy = (req as any).admin?.username || 'unknown'
 
-    const adminId = (req as any).admin?.id || 'unknown'
-
-    // 检查模板键是否已存在
-    const existing = await query(
-      'SELECT id FROM email_templates WHERE template_key = $1',
-      [template_key]
-    )
-
-    if (existing.rows.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: '模板键已存在',
-      })
+    // 验证必填字段
+    const requiredFields = ['template_key', 'name', 'category', 'subject', 'html_content']
+    for (const field of requiredFields) {
+      if (!templateData[field]) {
+        return res.status(400).json({
+          success: false,
+          message: `缺少必填字段: ${field}`,
+        })
+      }
     }
 
-    const result = await query(
-      `INSERT INTO email_templates
-       (template_key, template_name, template_type, subject, html_content, variables, description, enabled, created_by, updated_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-       RETURNING *`,
-      [
-        template_key,
-        template_name,
-        template_type,
-        subject,
-        html_content,
-        variables || [],
-        description,
-        enabled !== false,
-        adminId,
-        adminId,
-      ]
-    )
+    const template = await emailTemplateService.createTemplate(templateData, createdBy)
 
     res.json({
       success: true,
       message: '邮件模板创建成功',
-      data: result.rows[0],
+      data: template,
     })
   } catch (error: any) {
     console.error('创建邮件模板失败:', error)
@@ -142,58 +125,24 @@ export const createEmailTemplate = async (req: Request, res: Response) => {
 /**
  * 更新邮件模板
  */
-export const updateEmailTemplate = async (req: Request, res: Response) => {
+export const updateTemplate = async (req: Request, res: Response) => {
   try {
-    const { key } = req.params
-    const {
-      template_name,
-      template_type,
-      subject,
-      html_content,
-      variables,
-      description,
-      enabled,
-    } = req.body
+    const id = parseInt(req.params.id)
+    const templateData = req.body
 
-    const adminId = (req as any).admin?.id || 'unknown'
-
-    // 检查是否为系统模板
-    const existing = await query(
-      'SELECT is_system FROM email_templates WHERE template_key = $1',
-      [key]
-    )
-
-    if (existing.rows.length === 0) {
-      return res.status(404).json({
+    if (!id) {
+      return res.status(400).json({
         success: false,
-        message: '邮件模板不存在',
+        message: '无效的模板ID',
       })
     }
 
-    // 系统模板只能修改内容，不能修改键和类型
-    const isSystem = existing.rows[0].is_system
-
-    const result = await query(
-      `UPDATE email_templates SET
-       template_name = $1,
-       ${!isSystem ? 'template_type = $2,' : ''}
-       subject = $${isSystem ? '2' : '3'},
-       html_content = $${isSystem ? '3' : '4'},
-       variables = $${isSystem ? '4' : '5'},
-       description = $${isSystem ? '5' : '6'},
-       enabled = $${isSystem ? '6' : '7'},
-       updated_by = $${isSystem ? '7' : '8'}
-       WHERE template_key = $${isSystem ? '8' : '9'}
-       RETURNING *`,
-      isSystem
-        ? [template_name, subject, html_content, variables || [], description, enabled !== false, adminId, key]
-        : [template_name, template_type, subject, html_content, variables || [], description, enabled !== false, adminId, key]
-    )
+    const template = await emailTemplateService.updateTemplate(id, templateData)
 
     res.json({
       success: true,
       message: '邮件模板更新成功',
-      data: result.rows[0],
+      data: template,
     })
   } catch (error: any) {
     console.error('更新邮件模板失败:', error)
@@ -207,31 +156,18 @@ export const updateEmailTemplate = async (req: Request, res: Response) => {
 /**
  * 删除邮件模板
  */
-export const deleteEmailTemplate = async (req: Request, res: Response) => {
+export const deleteTemplate = async (req: Request, res: Response) => {
   try {
-    const { key } = req.params
+    const id = parseInt(req.params.id)
 
-    // 检查是否为系统模板
-    const existing = await query(
-      'SELECT is_system FROM email_templates WHERE template_key = $1',
-      [key]
-    )
-
-    if (existing.rows.length === 0) {
-      return res.status(404).json({
+    if (!id) {
+      return res.status(400).json({
         success: false,
-        message: '邮件模板不存在',
+        message: '无效的模板ID',
       })
     }
 
-    if (existing.rows[0].is_system) {
-      return res.status(403).json({
-        success: false,
-        message: '系统模板不能删除',
-      })
-    }
-
-    await query('DELETE FROM email_templates WHERE template_key = $1', [key])
+    await emailTemplateService.deleteTemplate(id)
 
     res.json({
       success: true,
@@ -247,49 +183,165 @@ export const deleteEmailTemplate = async (req: Request, res: Response) => {
 }
 
 /**
- * 预览邮件模板
+ * 预览模板
  */
-export const previewEmailTemplate = async (req: Request, res: Response) => {
+export const previewTemplate = async (req: Request, res: Response) => {
   try {
-    const { html_content, variables } = req.body
+    const id = parseInt(req.params.id)
+    const { variables } = req.body
 
-    if (!html_content) {
+    if (!id) {
       return res.status(400).json({
         success: false,
-        message: '请提供html_content',
+        message: '无效的模板ID',
       })
     }
 
-    // 替换示例变量
-    let previewHtml = html_content
-
-    const exampleData: Record<string, string> = {
-      username: '张三',
-      email: 'user@example.com',
-      resetUrl: 'http://localhost:50303/reset-password?token=example_token_12345',
-      testTime: new Date().toLocaleString('zh-CN'),
-      token: '123456',
-    }
-
-    if (variables && Array.isArray(variables)) {
-      variables.forEach((varName: string) => {
-        const value = exampleData[varName] || `[${varName}]`
-        const regex = new RegExp(`{{${varName}}}`, 'g')
-        previewHtml = previewHtml.replace(regex, value)
+    if (!variables || typeof variables !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: '请提供变量数据（JSON对象）',
       })
     }
+
+    const result = await emailTemplateService.previewTemplate(id, variables)
 
     res.json({
       success: true,
-      data: {
-        html: previewHtml,
-      },
+      data: result,
     })
   } catch (error: any) {
     console.error('预览邮件模板失败:', error)
     res.status(500).json({
       success: false,
       message: error.message || '预览邮件模板失败',
+    })
+  }
+}
+
+/**
+ * 发送测试邮件
+ */
+export const sendTestEmail = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id)
+    const { toEmail, variables } = req.body
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: '无效的模板ID',
+      })
+    }
+
+    if (!toEmail) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供收件邮箱',
+      })
+    }
+
+    if (!variables || typeof variables !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: '请提供变量数据（JSON对象）',
+      })
+    }
+
+    const result = await emailTemplateService.sendTestTemplateEmail(id, toEmail, variables)
+
+    res.json({
+      success: true,
+      message: '测试邮件发送成功',
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('发送测试邮件失败:', error)
+    res.status(500).json({
+      success: false,
+      message: error.message || '发送测试邮件失败',
+    })
+  }
+}
+
+/**
+ * 获取模板统计
+ */
+export const getTemplateStats = async (req: Request, res: Response) => {
+  try {
+    const stats = await emailTemplateService.getTemplateStats()
+
+    res.json({
+      success: true,
+      data: stats,
+    })
+  } catch (error: any) {
+    console.error('获取模板统计失败:', error)
+    res.status(500).json({
+      success: false,
+      message: error.message || '获取模板统计失败',
+    })
+  }
+}
+
+/**
+ * 获取邮件发送记录
+ */
+export const getEmailLogs = async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1
+    const limit = parseInt(req.query.limit as string) || 50
+    const status = req.query.status as string
+    const templateKey = req.query.template_key as string
+
+    const result = await emailTemplateService.getEmailLogs(page, limit, status, templateKey)
+
+    res.json({
+      success: true,
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('获取邮件发送记录失败:', error)
+    res.status(500).json({
+      success: false,
+      message: error.message || '获取邮件发送记录失败',
+    })
+  }
+}
+
+/**
+ * 批量发送邮件
+ */
+export const sendBatchEmails = async (req: Request, res: Response) => {
+  try {
+    const { template_key, recipients } = req.body
+
+    if (!template_key) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供模板标识',
+      })
+    }
+
+    if (!Array.isArray(recipients) || recipients.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供收件人列表',
+      })
+    }
+
+    const result = await emailTemplateService.sendBatchEmails(template_key, recipients)
+
+    res.json({
+      success: true,
+      message: `批量发送完成：成功 ${result.success} 条，失败 ${result.failed} 条`,
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('批量发送邮件失败:', error)
+    res.status(500).json({
+      success: false,
+      message: error.message || '批量发送邮件失败',
     })
   }
 }

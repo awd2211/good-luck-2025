@@ -1,44 +1,68 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
-import * as authApi from '../services/authService'
-import './LoginPage.css'  // 复用登录页样式
+import * as emailAuthApi from '../services/emailAuthService'
+import './LoginPage.css'
 
 const RegisterPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
-  const { register } = useAuth()
-  const [phone, setPhone] = useState('')
-  const [code, setCode] = useState('')
+  const { login: authLogin } = useAuth()
+
+  const [email, setEmail] = useState('')
+  const [nickname, setNickname] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [nickname, setNickname] = useState('')
-  const [countdown, setCountdown] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agreed, setAgreed] = useState(false)
+  const [passwordStrength, setPasswordStrength] = useState<{
+    level: number
+    text: string
+    color: string
+  }>({ level: 0, text: '', color: '#ddd' })
 
-  // 发送验证码
-  const handleSendCode = async () => {
-    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
-      setError('请输入正确的手机号')
-      return
+  // 计算密码强度
+  const calculatePasswordStrength = (pwd: string) => {
+    if (!pwd) {
+      return { level: 0, text: '', color: '#ddd' }
     }
 
-    try {
-      await authApi.sendVerificationCode(phone)
-      setCountdown(60)
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } catch (err: any) {
-      setError(err.response?.data?.message || '发送验证码失败')
+    let strength = 0
+    const checks = {
+      length: pwd.length >= 8,
+      hasLower: /[a-z]/.test(pwd),
+      hasUpper: /[A-Z]/.test(pwd),
+      hasNumber: /\d/.test(pwd),
+      hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(pwd),
     }
+
+    // 计算强度分数
+    if (checks.length) strength += 20
+    if (pwd.length >= 12) strength += 10
+    if (checks.hasLower) strength += 20
+    if (checks.hasUpper) strength += 20
+    if (checks.hasNumber) strength += 15
+    if (checks.hasSpecial) strength += 15
+
+    // 根据分数返回等级
+    if (strength < 40) {
+      return { level: 1, text: t('register.weak'), color: '#ff4d4f' }
+    } else if (strength < 60) {
+      return { level: 2, text: t('register.medium'), color: '#faad14' }
+    } else if (strength < 80) {
+      return { level: 3, text: t('register.strong'), color: '#52c41a' }
+    } else {
+      return { level: 4, text: t('register.veryStrong'), color: '#1890ff' }
+    }
+  }
+
+  // 密码输入处理
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setPassword(newPassword)
+    setPasswordStrength(calculatePasswordStrength(newPassword))
   }
 
   // 注册
@@ -46,43 +70,62 @@ const RegisterPage = () => {
     e.preventDefault()
     setError('')
 
-    // 验证
-    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
-      setError('请输入正确的手机号')
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email || !emailRegex.test(email)) {
+      setError(t('register.invalidEmail'))
       return
     }
 
-    if (!code || code.length !== 6) {
-      setError('请输入6位验证码')
+    // 验证昵称
+    if (!nickname || nickname.length < 2 || nickname.length > 20) {
+      setError(t('register.nicknameLengthError'))
       return
     }
 
+    // 验证密码
     if (!password || password.length < 6) {
-      setError('密码至少6位')
+      setError(t('register.passwordMinLength'))
       return
     }
 
     if (password !== confirmPassword) {
-      setError('两次密码输入不一致')
+      setError(t('register.passwordMismatch'))
       return
     }
 
+    // 验证协议
     if (!agreed) {
-      setError('请阅读并同意用户协议和隐私政策')
+      setError(t('register.agreeRequired'))
       return
     }
 
-    setLoading(true)
     try {
-      await register({
-        phone,
-        code,
+      setLoading(true)
+      const response = await emailAuthApi.registerWithEmail(
+        email,
+        nickname,
         password,
-        nickname: nickname || undefined,
-      })
-      navigate('/')
+        '' // 不使用验证码
+      )
+
+      if (response.success) {
+        // 保存token和用户信息
+        localStorage.setItem('token', response.data.token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // 更新认证上下文
+        authLogin(response.data.token, response.data.user)
+
+        // 跳转到首页
+        navigate('/')
+      } else {
+        setError(response.message || t('register.registerFailed'))
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || '注册失败，请稍后重试')
+      const errorMsg = err.response?.data?.message || t('register.registerFailed')
+      setError(errorMsg)
+      console.error('注册失败:', err)
     } finally {
       setLoading(false)
     }
@@ -92,100 +135,135 @@ const RegisterPage = () => {
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>欢迎注册</h1>
-          <p>注册算命平台，开启命运探索之旅</p>
+          <h1>{t('register.welcome')}</h1>
+          <p>{t('register.subtitle')}</p>
         </div>
 
         <form onSubmit={handleRegister} className="login-form">
+          {/* 邮箱 */}
           <div className="form-group">
-            <label>手机号 *</label>
+            <label>{t('register.email')}</label>
             <input
-              type="tel"
-              placeholder="请输入手机号"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={11}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('register.emailPlaceholder')}
+              required
             />
           </div>
 
+          {/* 昵称 */}
           <div className="form-group">
-            <label>验证码 *</label>
-            <div className="code-input-wrapper">
-              <input
-                type="text"
-                placeholder="请输入验证码"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                maxLength={6}
-              />
-              <button
-                type="button"
-                onClick={handleSendCode}
-                disabled={countdown > 0}
-                className="send-code-btn"
-              >
-                {countdown > 0 ? `${countdown}s` : '发送验证码'}
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>昵称</label>
+            <label>{t('register.nickname')}</label>
             <input
               type="text"
-              placeholder="请输入昵称（选填）"
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
+              placeholder={t('register.nicknamePlaceholder')}
+              minLength={2}
               maxLength={20}
+              required
             />
           </div>
 
+          {/* 密码 */}
           <div className="form-group">
-            <label>密码 *</label>
+            <label>{t('register.password')}</label>
             <input
               type="password"
-              placeholder="请输入密码（至少6位）"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={handlePasswordChange}
+              placeholder={t('register.passwordPlaceholder')}
+              minLength={6}
+              required
             />
+            {/* 密码强度指示器 */}
+            {password && (
+              <div style={{ marginTop: '8px' }}>
+                <div style={{
+                  display: 'flex',
+                  gap: '4px',
+                  marginBottom: '4px',
+                  height: '4px'
+                }}>
+                  {[1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      style={{
+                        flex: 1,
+                        backgroundColor: level <= passwordStrength.level
+                          ? passwordStrength.color
+                          : '#e8e8e8',
+                        borderRadius: '2px',
+                        transition: 'background-color 0.3s',
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  color: passwordStrength.color,
+                  fontWeight: 500
+                }}>
+                  {t('register.passwordStrength')}：{passwordStrength.text}
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#666',
+                  marginTop: '4px'
+                }}>
+                  {t('register.passwordTip')}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* 确认密码 */}
           <div className="form-group">
-            <label>确认密码 *</label>
+            <label>{t('register.confirmPassword')}</label>
             <input
               type="password"
-              placeholder="请再次输入密码"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder={t('register.confirmPasswordPlaceholder')}
+              minLength={6}
+              required
             />
           </div>
 
-          <div className="checkbox-group">
-            <label>
+          {/* 错误提示 */}
+          {error && <div className="error-message">{error}</div>}
+
+          {/* 协议 */}
+          <div className="agreement-section">
+            <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
               />
               <span>
-                我已阅读并同意
-                <a href="/terms" target="_blank" className="link">《用户协议》</a>
-                和
-                <a href="/privacy" target="_blank" className="link">《隐私政策》</a>
+                {t('register.agreeText')}
+                <Link to="/user-agreement" target="_blank"> {t('register.userAgreement')}</Link>
+                {t('register.and')}
+                <Link to="/privacy-policy" target="_blank"> {t('register.privacyPolicy')}</Link>
               </span>
             </label>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? '注册中...' : '注册'}
+          {/* 注册按钮 */}
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={loading}
+          >
+            {loading ? t('register.registering') : t('register.registerNow')}
           </button>
 
-          <div className="form-footer">
-            <Link to="/login" className="link">
-              已有账号？立即登录
-            </Link>
+          {/* 跳转登录 */}
+          <div className="switch-mode">
+            {t('register.hasAccount')}
+            <Link to="/login">{t('register.goToLogin')}</Link>
           </div>
         </form>
       </div>

@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import * as policyService from '../services/policyService'
 import './PolicyPage.css'
 
 const PrivacyPolicyPage = () => {
   const navigate = useNavigate()
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
-  const [updatedAt, setUpdatedAt] = useState('')
+  const [version, setVersion] = useState('')
+  const [effectiveDate, setEffectiveDate] = useState('')
 
   useEffect(() => {
     loadPolicy()
@@ -16,11 +18,12 @@ const PrivacyPolicyPage = () => {
   const loadPolicy = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/policies/privacy-policy')
-      const data = await response.json()
-      if (data.success) {
-        setContent(data.data.content)
-        setUpdatedAt(data.data.updatedAt)
+      const response = await policyService.getPrivacyPolicy()
+      if (response.data.success && response.data.data) {
+        const policy = response.data.data
+        setContent(policy.content)
+        setVersion(policy.version)
+        setEffectiveDate(policy.effectiveDate)
       }
     } catch (error) {
       console.error('加载隐私政策失败:', error)
@@ -47,11 +50,14 @@ const PrivacyPolicyPage = () => {
         ) : (
           <>
             <ReactMarkdown>{content}</ReactMarkdown>
-            {updatedAt && (
-              <div className="update-time">
-                最后更新: {new Date(updatedAt).toLocaleDateString('zh-CN')}
-              </div>
-            )}
+            <div className="policy-meta">
+              {version && <div className="policy-version">版本: {version}</div>}
+              {effectiveDate && (
+                <div className="policy-date">
+                  生效日期: {new Date(effectiveDate).toLocaleDateString('zh-CN')}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

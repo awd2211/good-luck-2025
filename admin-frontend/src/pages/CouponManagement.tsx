@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getCoupons, createCoupon, updateCoupon, deleteCoupon, updateCouponStatus } from '../services/couponService'
 
 const { RangePicker } = DatePicker
 
@@ -50,15 +50,12 @@ const CouponManagement = () => {
   const loadCoupons = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/coupons', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setCoupons(Array.isArray(data) ? data : data.list || [])
+      const response = await getCoupons({ page, limit: pageSize })
+      setCoupons(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+        total: response.data.pagination?.total || 0,
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载优惠券失败')
@@ -98,7 +95,7 @@ const CouponManagement = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/coupons/${id}`)
+      await deleteCoupon(id)
       message.success('删除成功')
       loadCoupons()
     } catch (error: any) {
@@ -108,7 +105,7 @@ const CouponManagement = () => {
 
   const handleChangeStatus = async (id: number, status: string) => {
     try {
-      await api.patch(`/coupons/${id}/status`, { status })
+      await updateCouponStatus(id, status)
       message.success('状态更新成功')
       loadCoupons()
     } catch (error: any) {
@@ -134,10 +131,10 @@ const CouponManagement = () => {
       }
 
       if (editingCoupon) {
-        await api.put(`/coupons/${editingCoupon.id}`, payload)
+        await updateCoupon(editingCoupon.id, payload)
         message.success('更新成功')
       } else {
-        await api.post('/coupons', payload)
+        await createCoupon(payload)
         message.success('创建成功')
       }
 

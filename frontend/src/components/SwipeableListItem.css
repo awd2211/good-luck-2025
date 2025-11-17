@@ -1,0 +1,81 @@
+.swipeable-list-item {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
+}
+
+.swipeable-list-item.deleting {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.swipeable-content {
+  position: relative;
+  background: #fff;
+  z-index: 2;
+  will-change: transform;
+}
+
+.swipeable-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  transition: right 0.3s ease;
+  z-index: 1;
+}
+
+.delete-button {
+  height: 100%;
+  min-width: 80px;
+  padding: 0 20px;
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity 0.2s ease;
+}
+
+.delete-button:active {
+  opacity: 0.8;
+}
+
+.delete-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-icon {
+  font-size: 18px;
+}
+
+.delete-spinner {
+  font-size: 16px;
+  display: inline-block;
+  animation: spin-delete 1s linear infinite;
+}
+
+@keyframes spin-delete {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 删除动画 */
+.swipeable-list-item.deleting .swipeable-content {
+  transform: translateX(-100%) !important;
+  transition: transform 0.3s ease !important;
+}

@@ -25,24 +25,18 @@ import {
   EyeInvisibleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import { fetchWithAuth } from '../services/apiService'
+import {
+  getPaymentConfigs,
+  createPaymentConfig,
+  updatePaymentConfig,
+  deletePaymentConfig,
+  testPaymentConfig
+} from '../services/paymentManageService'
+import type { PaymentConfig } from '../services/paymentManageService'
 
 const { Option } = Select
 const { TextArea } = Input
 const { TabPane } = Tabs
-
-interface PaymentConfig {
-  id: string
-  provider: string
-  config_key: string
-  config_value: string
-  is_production: boolean
-  is_enabled: boolean
-  description?: string
-  is_masked?: boolean
-  created_at: string
-  updated_at: string
-}
 
 const PaymentConfigManagement: React.FC = () => {
   const [configs, setConfigs] = useState<PaymentConfig[]>([])
@@ -62,12 +56,11 @@ const PaymentConfigManagement: React.FC = () => {
     setLoading(true)
     try {
       const isProduction = environment === 'production'
-      const response = await fetchWithAuth(
-        `/payment-configs?provider=${activeTab}&is_production=${isProduction}`
-      )
-      if (response.success) {
-        setConfigs(response.data)
-      }
+      const response = await getPaymentConfigs({
+        provider: activeTab,
+        is_production: isProduction
+      })
+      setConfigs(response.data.data || [])
     } catch (error) {
       console.error('获取支付配置失败:', error)
       message.error('获取支付配置失败')
@@ -95,13 +88,9 @@ const PaymentConfigManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetchWithAuth(`/payment-configs/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.success) {
-        message.success('删除成功')
-        fetchConfigs()
-      }
+      await deletePaymentConfig(id)
+      message.success('删除成功')
+      fetchConfigs()
     } catch (error) {
       console.error('删除失败:', error)
       message.error('删除失败')
@@ -114,27 +103,16 @@ const PaymentConfigManagement: React.FC = () => {
 
       if (editingConfig) {
         // 更新
-        const response = await fetchWithAuth(`/payment-configs/${editingConfig.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(values),
-        })
-        if (response.success) {
-          message.success('更新成功')
-          setModalVisible(false)
-          fetchConfigs()
-        }
+        await updatePaymentConfig(editingConfig.id, values)
+        message.success('更新成功')
       } else {
         // 创建
-        const response = await fetchWithAuth('/payment-configs', {
-          method: 'POST',
-          body: JSON.stringify(values),
-        })
-        if (response.success) {
-          message.success('创建成功')
-          setModalVisible(false)
-          fetchConfigs()
-        }
+        await createPaymentConfig(values)
+        message.success('创建成功')
       }
+
+      setModalVisible(false)
+      fetchConfigs()
     } catch (error) {
       console.error('保存失败:', error)
       message.error('保存失败')
@@ -143,22 +121,15 @@ const PaymentConfigManagement: React.FC = () => {
 
   const handleTestConfig = async () => {
     try {
-      const response = await fetchWithAuth('/payment-configs/test', {
-        method: 'POST',
-        body: JSON.stringify({
-          provider: activeTab,
-          is_production: environment === 'production',
-        }),
+      const response = await testPaymentConfig({
+        provider: activeTab,
+        is_production: environment === 'production',
       })
 
-      if (response.success) {
-        message.success(response.message)
-      } else {
-        message.error(response.message)
-      }
-    } catch (error) {
+      message.success(response.data.data?.message || '测试成功')
+    } catch (error: any) {
       console.error('测试失败:', error)
-      message.error('测试配置失败')
+      message.error(error.response?.data?.message || '测试配置失败')
     }
   }
 

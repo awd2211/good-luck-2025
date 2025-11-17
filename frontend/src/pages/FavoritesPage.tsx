@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import { SkeletonList } from '../components/Skeleton'
+import { EmptyFavorites } from '../components/EmptyState'
+import SwipeableListItem from '../components/SwipeableListItem'
+import { showToast } from '../components/ToastContainer'
 import './FavoritesPage.css'
 
 const FavoritesPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { addItem } = useCart()
@@ -25,31 +30,33 @@ const FavoritesPage = () => {
     setLoading(true)
     try {
       const response = await favoriteService.getFavorites()
-      setFavorites(response.data.data || [])
+      // 后端返回的是 { items, pagination }
+      const favData = response.data.data
+      setFavorites(favData?.items || [])
     } catch (error) {
       console.error('获取收藏失败:', error)
+      setFavorites([])
     } finally {
       setLoading(false)
     }
   }
 
   const handleRemove = async (fortuneId: string) => {
-    if (!window.confirm('确定要取消收藏吗？')) return
-
     try {
       await favoriteService.removeFavorite(fortuneId)
       setFavorites(favorites.filter(f => f.fortune_id !== fortuneId))
+      showToast({ title: t('favorites.unfavoriteSuccess'), content: '', type: 'success' })
     } catch (error) {
-      alert('操作失败，请重试')
+      showToast({ title: t('favorites.operationFailed'), content: t('favorites.pleaseRetry'), type: 'error' })
     }
   }
 
   const handleAddToCart = async (fortune: any) => {
     try {
       await addItem(fortune)
-      alert('已添加到购物车')
+      showToast({ title: t('common.success'), content: t('favorites.addSuccess'), type: 'success' })
     } catch (error) {
-      alert('添加失败，请重试')
+      showToast({ title: t('common.error'), content: t('favorites.addFailed'), type: 'error' })
     }
   }
 
@@ -61,9 +68,9 @@ const FavoritesPage = () => {
     <div className="favorites-page">
       <div className="favorites-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('favorites.back')}
         </button>
-        <h1>我的收藏</h1>
+        <h1>{t('favorites.title')}</h1>
         <div style={{ width: '48px' }} />
       </div>
 
@@ -73,50 +80,51 @@ const FavoritesPage = () => {
         ) : favorites.length > 0 ? (
           <div className="favorites-list">
             {favorites.map(fav => (
-              <div key={fav.id} className="favorite-card">
-                <div
-                  className="card-content"
-                  onClick={() => navigate(`/fortune/${fav.fortune.id}`)}
-                >
-                  <div className="fortune-icon" style={{ background: fav.fortune.bgColor || '#f5f5f5' }}>
-                    {fav.fortune.icon || '🔮'}
-                  </div>
-                  <div className="fortune-info">
-                    <h3 className="fortune-title">{fav.fortune.title}</h3>
-                    <p className="fortune-desc">{fav.fortune.description}</p>
-                    <div className="fortune-footer">
-                      <span className="fortune-price">¥{fav.fortune.price}</span>
-                      <span className="favorite-time">
-                        {new Date(fav.created_at).toLocaleDateString()}
-                      </span>
+              <SwipeableListItem
+                key={fav.id}
+                onDelete={() => handleRemove(fav.fortune_id)}
+                deleteText={t('favorites.unfavorite')}
+                deleteColor="#ff4d4f"
+              >
+                <div className="favorite-card">
+                  <div
+                    className="card-content"
+                    onClick={() => navigate(`/fortune/${fav.fortune.id}`)}
+                  >
+                    <div className="fortune-icon" style={{ background: fav.fortune.bgColor || '#f5f5f5' }}>
+                      {fav.fortune.icon || '🔮'}
+                    </div>
+                    <div className="fortune-info">
+                      <h3 className="fortune-title">{fav.fortune.title}</h3>
+                      <p className="fortune-desc">{fav.fortune.description}</p>
+                      <div className="fortune-footer">
+                        <span className="fortune-price">¥{fav.fortune.price}</span>
+                        <span className="favorite-time">
+                          {new Date(fav.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <div className="card-actions">
+                    <button
+                      className="btn-remove"
+                      onClick={() => handleRemove(fav.fortune_id)}
+                    >
+                      {t('favorites.unfavorite')}
+                    </button>
+                    <button
+                      className="btn-cart"
+                      onClick={() => handleAddToCart(fav.fortune)}
+                    >
+                      {t('favorites.addToCart')}
+                    </button>
+                  </div>
                 </div>
-                <div className="card-actions">
-                  <button
-                    className="btn-remove"
-                    onClick={() => handleRemove(fav.fortune_id)}
-                  >
-                    取消收藏
-                  </button>
-                  <button
-                    className="btn-cart"
-                    onClick={() => handleAddToCart(fav.fortune)}
-                  >
-                    加入购物车
-                  </button>
-                </div>
-              </div>
+              </SwipeableListItem>
             ))}
           </div>
         ) : (
-          <div className="empty-favorites">
-            <div className="empty-icon">⭐</div>
-            <p>还没有收藏</p>
-            <button onClick={() => navigate('/')} className="go-explore-btn">
-              去逛逛
-            </button>
-          </div>
+          <EmptyFavorites onGoShopping={() => navigate('/')} />
         )}
       </div>
     </div>

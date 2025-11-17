@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getReviews, replyReview, updateReviewStatus, deleteReview } from '../services/reviewService'
 
 const { TextArea } = Input
 
@@ -49,15 +49,12 @@ const ReviewManagement = () => {
   const loadReviews = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/reviews', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setReviews(Array.isArray(data) ? data : data.list || [])
+      const response = await getReviews({ page, limit: pageSize })
+      setReviews(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+        total: response.data.pagination?.total || 0,
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载评价失败')
@@ -78,7 +75,7 @@ const ReviewManagement = () => {
   const handleReplySubmit = async () => {
     try {
       const values = await form.validateFields()
-      await api.post(`/reviews/${currentReview?.id}/reply`, {
+      await replyReview(currentReview!.id, {
         reply_content: values.reply_content,
       })
       message.success('回复成功')
@@ -91,7 +88,7 @@ const ReviewManagement = () => {
 
   const handleChangeStatus = async (id: number, status: string) => {
     try {
-      await api.patch(`/reviews/${id}/status`, { status })
+      await updateReviewStatus(id, status)
       message.success('状态更新成功')
       loadReviews()
     } catch (error: any) {
@@ -101,7 +98,7 @@ const ReviewManagement = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/reviews/${id}`)
+      await deleteReview(id)
       message.success('删除成功')
       loadReviews()
     } catch (error: any) {
@@ -151,7 +148,7 @@ const ReviewManagement = () => {
       ),
     },
     {
-      title: '算命类型',
+      title: '运势类型',
       dataIndex: 'fortune_type',
       key: 'fortune_type',
       width: 120,

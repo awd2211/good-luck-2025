@@ -5,7 +5,7 @@ import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
-import { getOrders } from '../services/apiService'
+import { getOrders } from '../services/orderService'
 import dayjs from 'dayjs'
 
 interface Order {
@@ -52,12 +52,12 @@ const OrderManagement = () => {
 
       const response = await getOrders(params)
 
-      // 后端返回的是数组格式，不是{list, pagination}
-      setOrders(response.data || [])
+      // 使用新的数据结构
+      setOrders(response.data.data || [])
       setPagination({
-        current: response.pagination?.page || page,
-        pageSize: response.pagination?.pageSize || pageSize,
-        total: response.pagination?.total || 0
+        current: response.data.pagination?.page || page,
+        pageSize: response.data.pagination?.limit || pageSize,
+        total: response.data.pagination?.total || 0
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载订单列表失败')

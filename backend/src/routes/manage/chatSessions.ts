@@ -11,8 +11,53 @@ import { notifyNewSession } from '../../socket/chatServer';
 const router = Router();
 
 /**
- * 获取会话列表
- * GET /api/manage/cs/sessions
+ * @openapi
+ * /api/manage/cs/sessions:
+ *   get:
+ *     summary: 获取会话列表
+ *     description: 获取客服会话列表,支持按用户、客服、状态筛选和分页
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         description: 用户ID筛选
+ *       - in: query
+ *         name: agentId
+ *         schema:
+ *           type: integer
+ *         description: 客服ID筛选
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [waiting, active, closed]
+ *         description: 会话状态筛选
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 页码
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 每页数量
+ *     responses:
+ *       200:
+ *         description: 成功获取会话列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -51,8 +96,33 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * 获取会话详情
- * GET /api/manage/cs/sessions/:id
+ * @openapi
+ * /api/manage/cs/sessions/{id}:
+ *   get:
+ *     summary: 获取会话详情
+ *     description: 根据会话ID获取客服会话的详细信息
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     responses:
+ *       200:
+ *         description: 成功获取会话详情
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -77,8 +147,45 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 /**
- * 手动分配客服
- * POST /api/manage/cs/sessions/:id/assign
+ * @openapi
+ * /api/manage/cs/sessions/{id}/assign:
+ *   post:
+ *     summary: 手动分配客服
+ *     description: 手动将会话分配给指定客服
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - agentId
+ *             properties:
+ *               agentId:
+ *                 type: integer
+ *                 description: 客服ID
+ *     responses:
+ *       200:
+ *         description: 客服分配成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/:id/assign', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -118,8 +225,42 @@ router.post('/:id/assign', async (req: Request, res: Response, next: NextFunctio
 });
 
 /**
- * 自动分配客服
- * POST /api/manage/cs/sessions/:id/auto-assign
+ * @openapi
+ * /api/manage/cs/sessions/{id}/auto-assign:
+ *   post:
+ *     summary: 自动分配客服
+ *     description: 根据负载均衡和专长标签自动分配客服
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               specialtyTag:
+ *                 type: string
+ *                 description: 专长标签(可选)
+ *     responses:
+ *       200:
+ *         description: 客服自动分配成功或无可用客服
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/:id/auto-assign', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -160,8 +301,52 @@ router.post('/:id/auto-assign', async (req: Request, res: Response, next: NextFu
 });
 
 /**
- * 转接会话
- * POST /api/manage/cs/sessions/:id/transfer
+ * @openapi
+ * /api/manage/cs/sessions/{id}/transfer:
+ *   post:
+ *     summary: 转接会话
+ *     description: 将会话从一个客服转接到另一个客服
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fromAgentId
+ *               - toAgentId
+ *             properties:
+ *               fromAgentId:
+ *                 type: integer
+ *                 description: 原客服ID
+ *               toAgentId:
+ *                 type: integer
+ *                 description: 目标客服ID
+ *               reason:
+ *                 type: string
+ *                 description: 转接原因(可选)
+ *     responses:
+ *       200:
+ *         description: 会话转接成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/:id/transfer', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -200,8 +385,46 @@ router.post('/:id/transfer', async (req: Request, res: Response, next: NextFunct
 });
 
 /**
- * 关闭会话
- * POST /api/manage/cs/sessions/:id/close
+ * @openapi
+ * /api/manage/cs/sessions/{id}/close:
+ *   post:
+ *     summary: 关闭会话
+ *     description: 关闭客服会话并记录关闭原因
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 enum: [user_left, agent_closed, timeout, resolved, transferred]
+ *                 default: agent_closed
+ *                 description: 关闭原因
+ *     responses:
+ *       200:
+ *         description: 会话关闭成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/:id/close', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -236,8 +459,48 @@ router.post('/:id/close', async (req: Request, res: Response, next: NextFunction
 });
 
 /**
- * 获取会话消息列表
- * GET /api/manage/cs/sessions/:id/messages
+ * @openapi
+ * /api/manage/cs/sessions/{id}/messages:
+ *   get:
+ *     summary: 获取会话消息列表
+ *     description: 获取指定会话的所有消息,支持分页和历史消息加载
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 页码
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: 每页消息数量
+ *       - in: query
+ *         name: beforeMessageId
+ *         schema:
+ *           type: integer
+ *         description: 加载此消息ID之前的消息(用于历史消息加载)
+ *     responses:
+ *       200:
+ *         description: 成功获取消息列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/:id/messages', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -274,8 +537,24 @@ router.get('/:id/messages', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
- * 获取队列长度
- * GET /api/manage/cs/queue/length
+ * @openapi
+ * /api/manage/cs/sessions/queue/length:
+ *   get:
+ *     summary: 获取队列长度
+ *     description: 获取当前等待分配客服的会话队列长度
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功获取队列长度
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/queue/length', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -291,8 +570,42 @@ router.get('/queue/length', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
- * 获取会话统计信息
- * GET /api/manage/cs/sessions/stats/overview
+ * @openapi
+ * /api/manage/cs/sessions/stats/overview:
+ *   get:
+ *     summary: 获取会话统计信息
+ *     description: 获取客服会话的整体统计数据,支持按客服和时间范围筛选
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: agentId
+ *         schema:
+ *           type: integer
+ *         description: 客服ID筛选
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: 开始日期
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: 结束日期
+ *     responses:
+ *       200:
+ *         description: 成功获取统计信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/stats/overview', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -315,8 +628,52 @@ router.get('/stats/overview', async (req: Request, res: Response, next: NextFunc
 });
 
 /**
- * 用户评价会话
- * POST /api/manage/cs/sessions/:id/rate
+ * @openapi
+ * /api/manage/cs/sessions/{id}/rate:
+ *   post:
+ *     summary: 评价会话
+ *     description: 用户对客服会话进行满意度评价
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rating
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: 评分(1-5星)
+ *               feedback:
+ *                 type: string
+ *                 description: 评价反馈(可选)
+ *     responses:
+ *       200:
+ *         description: 评价提交成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/:id/rate', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -354,8 +711,62 @@ router.post('/:id/rate', async (req: Request, res: Response, next: NextFunction)
 });
 
 /**
- * 搜索消息
- * GET /api/manage/cs/messages/search
+ * @openapi
+ * /api/manage/cs/sessions/messages/search:
+ *   get:
+ *     summary: 搜索消息
+ *     description: 根据关键词搜索客服会话消息,支持多种筛选条件
+ *     tags:
+ *       - Admin - Chat Sessions
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: keyword
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 搜索关键词
+ *       - in: query
+ *         name: sessionId
+ *         schema:
+ *           type: integer
+ *         description: 会话ID筛选
+ *       - in: query
+ *         name: senderType
+ *         schema:
+ *           type: string
+ *           enum: [user, agent, system]
+ *         description: 发送者类型筛选
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: 开始日期
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: 结束日期
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 100
+ *         description: 返回结果数量限制
+ *     responses:
+ *       200:
+ *         description: 成功搜索消息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/messages/search', async (req: Request, res: Response, next: NextFunction) => {
   try {

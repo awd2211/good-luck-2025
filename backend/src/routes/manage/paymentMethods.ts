@@ -8,8 +8,56 @@ import pool from '../../config/database'
 const router = Router()
 
 /**
- * 获取所有支付方式
- * GET /api/manage/payment-methods
+ * @openapi
+ * /api/manage/payment-methods:
+ *   get:
+ *     summary: 获取支付方式列表
+ *     description: 获取所有支付方式,支持按提供商和状态筛选
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: provider
+ *         schema:
+ *           type: string
+ *           enum: [paypal, stripe, balance]
+ *         description: 支付提供商筛选
+ *       - in: query
+ *         name: is_enabled
+ *         schema:
+ *           type: boolean
+ *         description: 是否启用
+ *     responses:
+ *       200:
+ *         description: 成功获取支付方式列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       methodCode:
+ *                         type: string
+ *                       methodName:
+ *                         type: string
+ *                       provider:
+ *                         type: string
+ *                       isEnabled:
+ *                         type: boolean
+ *                       sortOrder:
+ *                         type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/', async (req, res, next) => {
   try {
@@ -61,8 +109,33 @@ router.get('/', async (req, res, next) => {
 })
 
 /**
- * 获取单个支付方式
- * GET /api/manage/payment-methods/:id
+ * @openapi
+ * /api/manage/payment-methods/{id}:
+ *   get:
+ *     summary: 获取单个支付方式
+ *     description: 根据ID获取支付方式详细信息
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 支付方式ID
+ *     responses:
+ *       200:
+ *         description: 成功获取支付方式详情
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', async (req, res, next) => {
   try {
@@ -90,8 +163,75 @@ router.get('/:id', async (req, res, next) => {
 })
 
 /**
- * 创建支付方式
- * POST /api/manage/payment-methods
+ * @openapi
+ * /api/manage/payment-methods:
+ *   post:
+ *     summary: 创建支付方式
+ *     description: 创建新的支付方式
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - method_code
+ *               - method_name
+ *             properties:
+ *               method_code:
+ *                 type: string
+ *                 description: 支付方式代码(唯一标识)
+ *                 example: "paypal_usd"
+ *               method_name:
+ *                 type: string
+ *                 description: 支付方式名称
+ *                 example: "PayPal美元支付"
+ *               provider:
+ *                 type: string
+ *                 enum: [paypal, stripe, balance]
+ *                 description: 支付提供商
+ *               icon:
+ *                 type: string
+ *                 description: 图标URL
+ *               description:
+ *                 type: string
+ *                 description: 支付方式描述
+ *               is_enabled:
+ *                 type: boolean
+ *                 default: true
+ *               sort_order:
+ *                 type: integer
+ *                 default: 0
+ *               min_amount:
+ *                 type: number
+ *                 default: 0.01
+ *               max_amount:
+ *                 type: number
+ *               fee_type:
+ *                 type: string
+ *                 enum: [none, fixed, percentage]
+ *                 default: none
+ *               fee_value:
+ *                 type: number
+ *                 default: 0
+ *               config:
+ *                 type: object
+ *                 description: 扩展配置JSON
+ *     responses:
+ *       201:
+ *         description: 支付方式创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/', async (req, res, next) => {
   try {
@@ -164,8 +304,64 @@ router.post('/', async (req, res, next) => {
 })
 
 /**
- * 更新支付方式
- * PUT /api/manage/payment-methods/:id
+ * @openapi
+ * /api/manage/payment-methods/{id}:
+ *   put:
+ *     summary: 更新支付方式
+ *     description: 更新指定的支付方式信息
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 支付方式ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               method_name:
+ *                 type: string
+ *               provider:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               is_enabled:
+ *                 type: boolean
+ *               sort_order:
+ *                 type: integer
+ *               min_amount:
+ *                 type: number
+ *               max_amount:
+ *                 type: number
+ *               fee_type:
+ *                 type: string
+ *               fee_value:
+ *                 type: number
+ *               config:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: 支付方式更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', async (req, res, next) => {
   try {
@@ -283,8 +479,55 @@ router.put('/:id', async (req, res, next) => {
 })
 
 /**
- * 批量更新支付方式排序
- * PUT /api/manage/payment-methods/batch/sort
+ * @openapi
+ * /api/manage/payment-methods/batch/sort:
+ *   put:
+ *     summary: 批量更新排序
+ *     description: 批量更新支付方式的排序顺序
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - items
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 description: 排序项数组
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - id
+ *                     - sort_order
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       description: 支付方式ID
+ *                     sort_order:
+ *                       type: integer
+ *                       description: 排序顺序
+ *                 example:
+ *                   - id: 1
+ *                     sort_order: 0
+ *                   - id: 2
+ *                     sort_order: 1
+ *     responses:
+ *       200:
+ *         description: 排序更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.put('/batch/sort', async (req, res, next) => {
   const client = await pool.connect()
@@ -325,8 +568,41 @@ router.put('/batch/sort', async (req, res, next) => {
 })
 
 /**
- * 启用/禁用支付方式
- * PATCH /api/manage/payment-methods/:id/toggle
+ * @openapi
+ * /api/manage/payment-methods/{id}/toggle:
+ *   patch:
+ *     summary: 切换启用状态
+ *     description: 切换支付方式的启用/禁用状态
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 支付方式ID
+ *     responses:
+ *       200:
+ *         description: 状态切换成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                   example: "已启用"
+ *                 data:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.patch('/:id/toggle', async (req, res, next) => {
   try {
@@ -358,8 +634,46 @@ router.patch('/:id/toggle', async (req, res, next) => {
 })
 
 /**
- * 删除支付方式
- * DELETE /api/manage/payment-methods/:id
+ * @openapi
+ * /api/manage/payment-methods/{id}:
+ *   delete:
+ *     summary: 删除支付方式
+ *     description: 删除指定的支付方式(如有交易记录则不能删除)
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 支付方式ID
+ *     responses:
+ *       200:
+ *         description: 支付方式删除成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         description: 该支付方式已有交易记录
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "该支付方式已有交易记录，不能删除。建议禁用而不是删除。"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', async (req, res, next) => {
   try {
@@ -401,8 +715,76 @@ router.delete('/:id', async (req, res, next) => {
 })
 
 /**
- * 获取支付方式统计信息
- * GET /api/manage/payment-methods/:id/stats
+ * @openapi
+ * /api/manage/payment-methods/{id}/stats:
+ *   get:
+ *     summary: 获取支付方式统计
+ *     description: 获取指定支付方式的交易统计信息
+ *     tags:
+ *       - Admin - Payment Methods
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 支付方式ID
+ *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: 统计开始日期
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: 统计结束日期
+ *     responses:
+ *       200:
+ *         description: 成功获取统计信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     method_code:
+ *                       type: string
+ *                     method_name:
+ *                       type: string
+ *                     stats:
+ *                       type: object
+ *                       properties:
+ *                         total_transactions:
+ *                           type: integer
+ *                           description: 总交易数
+ *                         completed_count:
+ *                           type: integer
+ *                           description: 成功交易数
+ *                         pending_count:
+ *                           type: integer
+ *                           description: 待处理交易数
+ *                         failed_count:
+ *                           type: integer
+ *                           description: 失败交易数
+ *                         total_amount:
+ *                           type: number
+ *                           description: 总交易金额
+ *                         avg_amount:
+ *                           type: number
+ *                           description: 平均交易金额
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id/stats', async (req, res, next) => {
   try {

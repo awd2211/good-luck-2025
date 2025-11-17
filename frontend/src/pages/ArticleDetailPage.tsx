@@ -1,21 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import ReactMarkdown from 'react-markdown'
+import * as articleService from '../services/articleService'
+import type { Article } from '../services/articleService'
+import ShareButton from '../components/ShareButton'
 import './ArticleDetailPage.css'
 
-interface Article {
-  id: number
-  title: string
-  summary: string
-  content: string
-  category: string
-  cover_image?: string
-  author: string
-  view_count: number
-  publish_time: string
-}
-
 const ArticleDetailPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { id } = useParams()
   const [article, setArticle] = useState<Article | null>(null)
@@ -30,10 +23,9 @@ const ArticleDetailPage = () => {
   const loadArticle = async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/articles/${id}`)
-      const data = await response.json()
-      if (data.success) {
-        setArticle(data.data)
+      const response = await articleService.getArticleDetail(id!)
+      if (response.data.success && response.data.data) {
+        setArticle(response.data.data)
       }
     } catch (error) {
       console.error('加载文章失败:', error)
@@ -54,16 +46,16 @@ const ArticleDetailPage = () => {
     <div className="article-detail-page">
       <div className="article-detail-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ← 返回
+          ← {t('articles.back')}
         </button>
-        <h1>文章详情</h1>
+        <h1>{t('articles.detailTitle')}</h1>
         <div></div>
       </div>
 
       <div className="article-detail-container">
         {loading ? (
           <div className="loading-container">
-            <div className="loading-spinner">加载中...</div>
+            <div className="loading-spinner">{t('articles.loading')}</div>
           </div>
         ) : article ? (
           <>
@@ -76,7 +68,7 @@ const ArticleDetailPage = () => {
               <h1 className="article-title-full">{article.title}</h1>
               <div className="article-meta-full">
                 <span className="meta-item">👤 {article.author}</span>
-                <span className="meta-item">👁️ {article.view_count} 次阅读</span>
+                <span className="meta-item">👁️ {article.view_count} {t('articles.views')}</span>
                 <span className="meta-item">📅 {formatDate(article.publish_time)}</span>
               </div>
               <p className="article-summary-full">{article.summary}</p>
@@ -84,13 +76,21 @@ const ArticleDetailPage = () => {
             <div className="article-content-full">
               <ReactMarkdown>{article.content}</ReactMarkdown>
             </div>
+            <div className="article-actions" style={{ marginTop: '32px', textAlign: 'center' }}>
+              <ShareButton
+                shareType="article"
+                targetId={id || ''}
+                title={article.title}
+                description={article.summary || ''}
+              />
+            </div>
           </>
         ) : (
           <div className="empty-state">
             <div className="empty-icon">❌</div>
-            <p>文章不存在或已被删除</p>
+            <p>{t('articles.notFound')}</p>
             <button onClick={() => navigate('/articles')} className="back-to-list-btn">
-              返回列表
+              {t('articles.backToList')}
             </button>
           </div>
         )}

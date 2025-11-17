@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { Dayjs } from 'dayjs'
-import api from '../services/apiService'
+import api from '../services/api'
 import dayjs from 'dayjs'
 
 const { TextArea } = Input
@@ -101,7 +101,7 @@ const DailyHoroscopeManagement = () => {
 
       const res = await api.get('/daily-horoscopes', { params })
       if (res.data.success) {
-        const horoscopeData = res.data.data
+        const horoscopeData = (res.data.data || res.data)
         let allData: DailyHoroscope[] = []
 
         if (Array.isArray(horoscopeData)) {

@@ -25,7 +25,7 @@ import {
   CopyOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
+import api from '../services/api'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -81,7 +81,9 @@ const EmailTemplateManagement = () => {
     try {
       const res = await api.get('/email-templates')
       if (res.data.success) {
-        setTemplates(res.data.data || [])
+        // API 返回格式: { success: true, data: { templates: [...], total, page, limit } }
+        const data = res.data.data
+        setTemplates(data?.templates || [])
       }
     } catch (error: any) {
       message.error(error.response?.data?.message || '获取邮件模板列表失败')
@@ -165,7 +167,7 @@ const EmailTemplateManagement = () => {
       })
 
       if (res.data.success) {
-        setPreviewHtml(res.data.data.html)
+        setPreviewHtml(res.data?.data?.html || '')
         setPreviewModalVisible(true)
       }
     } catch (error: any) {
@@ -236,7 +238,7 @@ const EmailTemplateManagement = () => {
       key: 'variables',
       width: 150,
       render: (variables: string[]) =>
-        variables && variables.length > 0 ? (
+        variables?.length > 0 ? (
           <Tooltip title={variables.join(', ')}>
             <Tag>{variables.length} 个变量</Tag>
           </Tooltip>

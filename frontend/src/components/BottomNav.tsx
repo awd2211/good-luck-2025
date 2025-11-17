@@ -1,8 +1,10 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useCart } from '../contexts/CartContext'
 import './BottomNav.css'
 
 const BottomNav = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { itemCount } = useCart()
@@ -12,26 +14,26 @@ const BottomNav = () => {
       path: '/',
       icon: '🏠',
       activeIcon: '🏠',
-      label: '首页',
+      label: t('nav.home'),
     },
     {
       path: '/categories',
       icon: '📂',
       activeIcon: '📂',
-      label: '分类',
+      label: t('nav.categories'),
     },
     {
       path: '/cart',
       icon: '🛒',
       activeIcon: '🛒',
-      label: '购物车',
+      label: t('nav.cart'),
       badge: itemCount,
     },
     {
       path: '/profile',
       icon: '👤',
       activeIcon: '👤',
-      label: '我的',
+      label: t('nav.profile'),
     },
   ]
 
@@ -43,7 +45,10 @@ const BottomNav = () => {
   }
 
   return (
-    <div className="bottom-nav">
+    <div
+      className="bottom-nav"
+      data-testid="bottom-nav"
+    >
       {navItems.map((item) => (
         <button
           key={item.path}

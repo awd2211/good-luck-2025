@@ -1,9 +1,10 @@
 import { Request, Response } from 'express'
 import { query } from '../config/database'
 import { redisCache } from '../config/redis'
+import configService from '../services/configService'
 
 const CACHE_KEY_PREFIX = 'articles'
-const CACHE_TTL = 300 // 5 minutes
+// CACHE_TTL已迁移到数据库配置：cache.articles.ttl（默认300秒）
 
 /**
  * 获取文章列表
@@ -22,14 +23,14 @@ export const getArticles = async (req: Request, res: Response) => {
     const offset = (Number(page) - 1) * Number(limit)
     const cacheKey = `${CACHE_KEY_PREFIX}:list:${page}:${limit}:${category || 'all'}:${status || 'all'}:${tag || 'all'}:${search || ''}`
 
-    // Check cache
-    const cached = await redisCache.get(cacheKey)
-    if (cached) {
-      return res.json({
-        success: true,
-        data: cached
-      })
-    }
+    // Check cache (temporarily disabled to fix format)
+    // const cached = await redisCache.get(cacheKey)
+    // if (cached) {
+    //   return res.json({
+    //     success: true,
+    //     data: cached
+    //   })
+    // }
 
     let whereConditions: string[] = []
     let queryParams: any[] = []
@@ -81,18 +82,22 @@ export const getArticles = async (req: Request, res: Response) => {
     )
 
     const responseData = {
-      list: result.rows,
-      total,
-      page: Number(page),
-      limit: Number(limit)
+      data: result.rows,
+      pagination: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        total_pages: Math.ceil(total / Number(limit))
+      }
     }
 
     // Cache result
-    await redisCache.set(cacheKey, responseData, CACHE_TTL)
+    const cacheTTL = await configService.get<number>('cache.articles.ttl', 300)
+    await redisCache.set(cacheKey, responseData, cacheTTL)
 
     res.json({
       success: true,
-      data: responseData
+      ...responseData
     })
   } catch (error: any) {
     console.error('Error fetching articles:', error)
@@ -134,7 +139,8 @@ export const getArticleById = async (req: Request, res: Response) => {
     }
 
     // Cache result
-    await redisCache.set(cacheKey, result.rows[0], CACHE_TTL)
+    const cacheTTL = await configService.get<number>('cache.articles.ttl', 300)
+    await redisCache.set(cacheKey, result.rows[0], cacheTTL)
 
     res.json({
       success: true,
@@ -445,7 +451,8 @@ export const getCategories = async (req: Request, res: Response) => {
     )
 
     // Cache result
-    await redisCache.set(cacheKey, result.rows, CACHE_TTL)
+    const cacheTTL = await configService.get<number>('cache.articles.ttl', 300)
+    await redisCache.set(cacheKey, result.rows, cacheTTL)
 
     res.json({
       success: true,
@@ -486,7 +493,8 @@ export const getTags = async (req: Request, res: Response) => {
     )
 
     // Cache result
-    await redisCache.set(cacheKey, result.rows, CACHE_TTL)
+    const cacheTTL = await configService.get<number>('cache.articles.ttl', 300)
+    await redisCache.set(cacheKey, result.rows, cacheTTL)
 
     res.json({
       success: true,

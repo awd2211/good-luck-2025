@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getBanners, createBanner, updateBanner, deleteBanner, updateBannerPosition } from '../services/bannerService'
 
 const { RangePicker } = DatePicker
 
@@ -46,15 +46,12 @@ const BannerManagement = () => {
   const loadBanners = async (page = pagination.current, pageSize = pagination.pageSize) => {
     setLoading(true)
     try {
-      const response = await api.get('/banners', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setBanners(Array.isArray(data) ? data : data.list || [])
+      const response = await getBanners({ page, limit: pageSize })
+      setBanners(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.pagination?.total || (Array.isArray(data) ? data.length : data.list?.length || 0)
+        total: response.data.pagination?.total || 0
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载轮播图失败')
@@ -95,7 +92,7 @@ const BannerManagement = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/banners/${id}`)
+      await deleteBanner(id)
       message.success('删除成功')
       loadBanners()
     } catch (error: any) {
@@ -114,16 +111,16 @@ const BannerManagement = () => {
         bg_color: typeof values.bg_color === 'string' ? values.bg_color : values.bg_color.toHexString(),
         text_color: typeof values.text_color === 'string' ? values.text_color : values.text_color.toHexString(),
         position: values.position,
-        status: values.status ? 'active' : 'inactive',
+        status: (values.status ? 'active' : 'inactive') as 'active' | 'inactive',
         start_date: values.dateRange?.[0]?.format('YYYY-MM-DD HH:mm:ss'),
         end_date: values.dateRange?.[1]?.format('YYYY-MM-DD HH:mm:ss'),
       }
 
       if (editingBanner) {
-        await api.put(`/banners/${editingBanner.id}`, payload)
+        await updateBanner(editingBanner.id, payload)
         message.success('更新成功')
       } else {
-        await api.post('/banners', payload)
+        await createBanner(payload)
         message.success('创建成功')
       }
 
@@ -136,7 +133,7 @@ const BannerManagement = () => {
 
   const handleChangePosition = async (id: number, direction: 'up' | 'down') => {
     try {
-      await api.patch(`/banners/${id}/position`, { direction })
+      await updateBannerPosition(id, direction)
       message.success('位置调整成功')
       loadBanners()
     } catch (error: any) {

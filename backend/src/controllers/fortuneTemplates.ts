@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 import { redisCache } from '../config/redis';
+import configService from '../services/configService';
 
 const CACHE_KEY_PREFIX = 'fortune_templates';
-const CACHE_TTL = 3600; // 1小时
+// CACHE_TTL已迁移到数据库配置：cache.fortuneTemplates.ttl（默认3600秒）
 
 /**
  * 获取算命模板列表（支持筛选和分页）
@@ -116,7 +117,8 @@ export const getFortuneTemplate = async (req: Request, res: Response) => {
     }
 
     // 缓存结果
-    await redisCache.set(cacheKey, result.rows[0], CACHE_TTL);
+    const cacheTTL = await configService.get<number>("cache.fortuneTemplates.ttl", 3600);
+    await redisCache.set(cacheKey, result.rows[0], cacheTTL);
 
     res.json({
       success: true,
@@ -158,7 +160,8 @@ export const getTemplatesByService = async (req: Request, res: Response) => {
     );
 
     // 缓存结果
-    await redisCache.set(cacheKey, result.rows, CACHE_TTL);
+    const cacheTTL = await configService.get<number>('cache.fortuneTemplates.ttl', 3600);
+    await redisCache.set(cacheKey, result.rows, cacheTTL);
 
     res.json({
       success: true,

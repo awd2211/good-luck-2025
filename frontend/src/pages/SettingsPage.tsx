@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { showToast } from '../components/ToastContainer'
 import { useConfirm } from '../hooks/useConfirm'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const SettingsPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { confirm, isOpen, confirmState } = useConfirm()
@@ -16,10 +18,10 @@ const SettingsPage = () => {
 
   const handleLogout = async () => {
     const confirmed = await confirm({
-      title: '退出登录',
-      message: '确定要退出登录吗？',
-      confirmText: '退出',
-      cancelText: '取消',
+      title: t('settings.logoutConfirmTitle'),
+      message: t('settings.logoutConfirmMessage'),
+      confirmText: t('settings.logoutConfirmButton'),
+      cancelText: t('common.cancel'),
       variant: 'danger'
     })
 
@@ -31,25 +33,25 @@ const SettingsPage = () => {
 
   const settingsSections = [
     {
-      title: '通知设置',
+      title: t('settings.notificationSettings'),
       items: [
-        { label: '订单通知', type: 'toggle', value: true },
-        { label: '营销推送', type: 'toggle', value: false },
+        { label: t('settings.orderNotification'), type: 'toggle', value: true },
+        { label: t('settings.marketingPush'), type: 'toggle', value: false },
       ]
     },
     {
-      title: '隐私设置',
+      title: t('settings.privacySettings'),
       items: [
-        { label: '个人资料可见性', type: 'select', value: '仅自己可见' },
+        { label: t('settings.profileVisibility'), type: 'select', value: t('settings.onlyMe') },
       ]
     },
     {
-      title: '其他',
+      title: t('settings.other'),
       items: [
-        { label: '清除缓存', type: 'button', action: () => showToast({ title: '成功', content: '缓存已清除', type: 'success' }) },
-        { label: '关于我们', type: 'link', path: '/about' },
-        { label: '用户协议', type: 'link', path: '/user-agreement' },
-        { label: '隐私政策', type: 'link', path: '/privacy-policy' },
+        { label: t('settings.clearCache'), type: 'button', action: () => showToast({ title: t('common.success'), content: t('settings.cacheCleared'), type: 'success' }) },
+        { label: t('settings.aboutUs'), type: 'link', path: '/about' },
+        { label: t('settings.userAgreement'), type: 'link', path: '/user-agreement' },
+        { label: t('settings.privacyPolicy'), type: 'link', path: '/privacy-policy' },
       ]
     }
   ]
@@ -83,7 +85,7 @@ const SettingsPage = () => {
         >
           ‹
         </button>
-        <h1 style={{ fontSize: '24px', margin: 0 }}>设置</h1>
+        <h1 style={{ fontSize: '24px', margin: 0 }}>{t('settings.title')}</h1>
       </div>
 
       {settingsSections.map((section, idx) => (
@@ -130,7 +132,7 @@ const SettingsPage = () => {
                   </div>
                 )}
                 {item.type === 'link' && <span style={{ color: '#999' }}>›</span>}
-                {item.type === 'button' && <span style={{ color: '#667eea' }}>执行</span>}
+                {item.type === 'button' && <span style={{ color: '#667eea' }}>{t('settings.execute')}</span>}
               </div>
             ))}
           </div>
@@ -152,7 +154,7 @@ const SettingsPage = () => {
           marginTop: '20px'
         }}
       >
-        退出登录
+        {t('settings.logout')}
       </button>
     </div>
     </>

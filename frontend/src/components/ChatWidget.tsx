@@ -1,65 +1,42 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useLocation } from 'react-router-dom';
+import * as chatService from '../services/chatService';
+import type { ChatMessage, ChatSession, ServiceHoursData } from '../services/chatService';
 import './ChatWidget.css';
 
-interface ChatMessage {
-  id: number;
-  sender_type: 'user' | 'agent' | 'system';
-  content: string;
-  created_at: string;
-}
-
-interface ChatSession {
-  id: number;
-  session_key: string;
-  status: string;
-  agent_id?: number;
-}
-
 const ChatWidget: React.FC = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showRating, setShowRating] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [comment, setComment] = useState('');
+  const [serviceHours, setServiceHours] = useState<ServiceHoursData | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  // const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null); // 预留用于"正在输入"功能
+  const socketManagerRef = useRef<chatService.ChatSocketManager | null>(null);
 
-  // 获取用户ID (从localStorage或生成临时ID)
-  const getUserId = () => {
-    let userId = localStorage.getItem('chat_user_id');
-    if (!userId) {
-      userId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('chat_user_id', userId);
-    }
-    return userId;
-  };
+  // 在客服页面时隐藏浮动聊天按钮
+  if (location.pathname === '/customer-service') {
+    return null;
+  }
 
   // 初始化聊天会话
   const initializeSession = async () => {
-    const userId = getUserId();
+    const userId = chatService.getChatUserId();
 
     try {
-      const response = await fetch('http://localhost:3000/api/chat/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          channel: 'web'
-        })
-      });
+      const response = await chatService.createChatSession(userId, 'web');
 
-      const data = await response.json();
-
-      if (data.success) {
-        setSession(data.data);
-        initializeSocket(data.data.id, userId);
-        loadMessages(data.data.id);
+      if (response.data.success && response.data.data) {
+        setSession(response.data.data);
+        initializeSocket(response.data.data.id);
+        loadMessages(response.data.data.id);
       }
     } catch (error) {
       console.error('创建会话失败:', error);
@@ -67,32 +44,28 @@ const ChatWidget: React.FC = () => {
   };
 
   // 初始化Socket.IO
-  const initializeSocket = (sessionId: number, userId: string) => {
-    const socketInstance = io('http://localhost:3000', {
-      auth: {
-        role: 'user',
-        userId
-      }
-    });
+  const initializeSocket = (sessionId: number) => {
+    if (!socketManagerRef.current) {
+      socketManagerRef.current = new chatService.ChatSocketManager();
+    }
 
-    socketInstance.on('connect', () => {
+    const manager = socketManagerRef.current;
+    manager.connect();
+    manager.joinSession(sessionId);
+
+    // 监听连接状态
+    manager.onConnect(() => {
       console.log('✅ 聊天已连接');
       setConnected(true);
-
-      // 加入会话房间
-      socketInstance.emit('user:join_session', {
-        sessionId,
-        userId
-      });
     });
 
-    socketInstance.on('disconnect', () => {
+    manager.onDisconnect(() => {
       console.log('❌ 聊天已断开');
       setConnected(false);
     });
 
     // 监听新消息
-    socketInstance.on('message:new', (message: ChatMessage) => {
+    manager.onMessage((message: ChatMessage) => {
       setMessages((prev) => [...prev, message]);
       scrollToBottom();
 
@@ -103,27 +76,19 @@ const ChatWidget: React.FC = () => {
     });
 
     // 监听客服正在输入
-    socketInstance.on('agent:typing', () => {
+    manager.onAgentTyping(() => {
       setIsTyping(true);
       setTimeout(() => setIsTyping(false), 3000);
     });
-
-    // 监听会话关闭
-    socketInstance.on('session:closed', () => {
-      console.log('会话已关闭');
-    });
-
-    setSocket(socketInstance);
   };
 
   // 加载消息历史
   const loadMessages = async (sessionId: number) => {
     try {
-      const response = await fetch(`http://localhost:3000/api/chat/messages/${sessionId}`);
-      const data = await response.json();
+      const response = await chatService.getSessionMessages(sessionId);
 
-      if (data.success) {
-        setMessages(data.data);
+      if (response.data.success && response.data.data) {
+        setMessages(response.data.data);
         scrollToBottom();
       }
     } catch (error) {
@@ -133,20 +98,12 @@ const ChatWidget: React.FC = () => {
 
   // 发送消息
   const handleSendMessage = () => {
-    if (!inputValue.trim() || !socket || !session) {
+    if (!inputValue.trim() || !socketManagerRef.current || !session) {
       return;
     }
 
-    const userId = getUserId();
-
     // 通过Socket.IO发送消息
-    socket.emit('message:send', {
-      sessionId: session.id,
-      senderType: 'user',
-      senderId: userId,
-      content: inputValue,
-      messageType: 'text'
-    });
+    socketManagerRef.current.sendMessage(inputValue);
 
     setInputValue('');
   };
@@ -156,10 +113,11 @@ const ChatWidget: React.FC = () => {
     setInputValue(e.target.value);
 
     // 发送正在输入事件
-    if (socket && session) {
-      socket.emit('user:typing', {
+    if (socketManagerRef.current && session) {
+      const socket = socketManagerRef.current.getSocket();
+      socket?.emit('user:typing', {
         sessionId: session.id,
-        userId: getUserId()
+        userId: chatService.getChatUserId()
       });
     }
   };
@@ -185,35 +143,83 @@ const ChatWidget: React.FC = () => {
     }, 100);
   };
 
-  // 关闭会话
-  const handleCloseSession = async () => {
+  // 关闭会话 - 显示评价对话框
+  const handleCloseSession = () => {
+    if (!session) return;
+    setShowRating(true);
+  };
+
+  // 提交评价
+  const handleSubmitRating = async () => {
     if (!session) return;
 
     try {
-      await fetch(`http://localhost:3000/api/chat/sessions/${session.id}/close`, {
-        method: 'POST'
+      await chatService.submitRating(session.id, {
+        rating,
+        comment: comment.trim() || undefined,
+        tags: selectedTags.length > 0 ? selectedTags : undefined
       });
 
-      setSession(null);
-      setMessages([]);
-
-      if (socket) {
-        socket.close();
-        setSocket(null);
-      }
+      // 关闭评价对话框并结束会话
+      finalizeCloseSession();
     } catch (error) {
-      console.error('关闭会话失败:', error);
+      console.error('提交评价失败:', error);
+      // 即使失败也关闭会话
+      finalizeCloseSession();
     }
   };
+
+  // 跳过评价
+  const handleSkipRating = () => {
+    finalizeCloseSession();
+  };
+
+  // 最终关闭会话
+  const finalizeCloseSession = () => {
+    setShowRating(false);
+    setRating(0);
+    setSelectedTags([]);
+    setComment('');
+    setSession(null);
+    setMessages([]);
+
+    if (socketManagerRef.current) {
+      socketManagerRef.current.disconnect();
+    }
+  };
+
+  // 切换标签选择
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  };
+
+  // 加载服务时间
+  const loadServiceHours = async () => {
+    try {
+      const response = await chatService.getServiceHours();
+      if (response.data.success && response.data.data) {
+        setServiceHours(response.data.data);
+      }
+    } catch (error) {
+      console.error('加载服务时间失败:', error);
+    }
+  };
+
+  // 组件挂载时加载服务时间
+  useEffect(() => {
+    loadServiceHours();
+  }, []);
 
   // 组件卸载时关闭连接
   useEffect(() => {
     return () => {
-      if (socket) {
-        socket.close();
+      if (socketManagerRef.current) {
+        socketManagerRef.current.disconnect();
       }
     };
-  }, [socket]);
+  }, []);
 
   // 渲染消息
   const renderMessage = (msg: ChatMessage) => {
@@ -270,7 +276,7 @@ const ChatWidget: React.FC = () => {
         <div className="chat-widget-window">
           {/* 头部 */}
           <div className="chat-widget-header">
-            <div>
+            <div className="chat-header-content">
               <div className="chat-widget-title">在线客服</div>
               <div className="chat-widget-status">
                 {connected ? (
@@ -285,6 +291,22 @@ const ChatWidget: React.FC = () => {
                   </>
                 )}
               </div>
+              {/* 服务时间 */}
+              {serviceHours && serviceHours.serviceHours.length > 0 && (
+                <div className="chat-service-hours">
+                  <span className="service-hours-icon">🕐</span>
+                  <span className="service-hours-text">
+                    {serviceHours.serviceHours[0].dayLabel}{' '}
+                    {serviceHours.serviceHours[0].startTime}-
+                    {serviceHours.serviceHours[0].endTime}
+                  </span>
+                  {!serviceHours.isAvailable && serviceHours.nextAvailableTime && (
+                    <span className="service-hours-next">
+                      {serviceHours.nextAvailableTime}开始服务
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <button className="chat-widget-close" onClick={toggleChat}>
               ×
@@ -351,7 +373,7 @@ const ChatWidget: React.FC = () => {
           </div>
 
           {/* 底部工具栏 */}
-          {session && (
+          {session && !showRating && (
             <div className="chat-widget-footer">
               <button
                 className="chat-footer-button"
@@ -360,6 +382,74 @@ const ChatWidget: React.FC = () => {
               >
                 结束咨询
               </button>
+            </div>
+          )}
+
+          {/* 满意度评价弹窗 */}
+          {showRating && (
+            <div className="chat-rating-modal">
+              <div className="chat-rating-content">
+                <h3 className="chat-rating-title">为本次服务评分</h3>
+                <p className="chat-rating-subtitle">您的反馈将帮助我们提供更好的服务</p>
+
+                {/* 星级评分 */}
+                <div className="chat-rating-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      className={`chat-rating-star ${rating >= star ? 'active' : ''}`}
+                      onClick={() => setRating(star)}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+
+                {/* 评价标签 */}
+                {rating > 0 && (
+                  <div className="chat-rating-tags">
+                    {['专业', '耐心', '高效', '友好', '热情'].map((tag) => (
+                      <button
+                        key={tag}
+                        className={`chat-rating-tag ${selectedTags.includes(tag) ? 'active' : ''}`}
+                        onClick={() => toggleTag(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* 文字评价 */}
+                {rating > 0 && (
+                  <div className="chat-rating-comment">
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="说说您的想法（可选）"
+                      rows={3}
+                      maxLength={200}
+                    />
+                  </div>
+                )}
+
+                {/* 操作按钮 */}
+                <div className="chat-rating-actions">
+                  <button
+                    className="chat-rating-skip"
+                    onClick={handleSkipRating}
+                  >
+                    跳过
+                  </button>
+                  <button
+                    className="chat-rating-submit"
+                    onClick={handleSubmitRating}
+                    disabled={rating === 0}
+                  >
+                    提交评价
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

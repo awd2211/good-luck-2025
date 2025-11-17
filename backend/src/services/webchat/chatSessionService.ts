@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { query } from '../../config/database';
 import type { ChatSession } from '../../types/webchat';
 import * as csAgentService from './csAgentService';
+import configService from '../configService';
 
 /**
  * 创建新会话
@@ -385,10 +386,11 @@ export const getSessionStatistics = async (filters?: {
 };
 
 /**
- * 自动关闭超时会话(30分钟无消息)
+ * 自动关闭超时会话（超时时间从数据库配置读取）
+ * SESSION_TIMEOUT_MINUTES 已迁移到数据库配置：cs.sessionTimeoutMinutes（默认30）
  */
 export const closeTimeoutSessions = async (): Promise<number> => {
-  const timeoutMinutes = 30;
+  const timeoutMinutes = await configService.get<number>('cs.sessionTimeoutMinutes', 30);
 
   const result = await query(
     `UPDATE chat_sessions

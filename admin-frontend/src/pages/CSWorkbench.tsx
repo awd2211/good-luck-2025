@@ -13,7 +13,12 @@ import {
   Tabs,
   Tooltip,
   Popover,
-  Modal
+  Modal,
+  Select,
+  Form,
+  Card,
+  Divider,
+  Drawer
 } from 'antd';
 import {
   SendOutlined,
@@ -21,14 +26,19 @@ import {
   ClockCircleOutlined,
   SwapOutlined,
   CloseOutlined,
-  SmileOutlined
+  SmileOutlined,
+  BellOutlined,
+  FileTextOutlined,
+  TagOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import { io, Socket } from 'socket.io-client';
-import apiService from '../services/apiService';
+import apiService from '../services/api';
 
 const { Sider, Content } = Layout;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+const { Option } = Select;
 
 interface ChatSession {
   id: number;
@@ -59,6 +69,33 @@ interface QuickReply {
   shortcut_key?: string;
 }
 
+interface PendingTransfer {
+  id: number;
+  session_id: number;
+  from_agent_id: number | null;
+  from_agent_name: string | null;
+  transfer_reason: string | null;
+  transfer_notes: string | null;
+  created_at: string;
+  user_id: string;
+}
+
+interface CSAgent {
+  id: number;
+  display_name: string;
+  is_online: boolean;
+  current_sessions_count: number;
+}
+
+interface CustomerNote {
+  id: number;
+  user_id: string;
+  content: string;
+  is_important: boolean;
+  created_by: string;
+  created_at: string;
+}
+
 const CSWorkbench: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -73,7 +110,17 @@ const CSWorkbench: React.FC = () => {
   const [inputValue, setInputValue] = useState('');
   const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
   const [showQuickReply, setShowQuickReply] = useState(false);
+
+  // 新增状态
+  const [pendingTransfers, setPendingTransfers] = useState<PendingTransfer[]>([]);
+  const [transferModalVisible, setTransferModalVisible] = useState(false);
+  const [onlineAgents, setOnlineAgents] = useState<CSAgent[]>([]);
+  const [customerNotes, setCustomerNotes] = useState<CustomerNote[]>([]);
+  const [notesDrawerVisible, setNotesDrawerVisible] = useState(false);
+  const [newNoteContent, setNewNoteContent] = useState('');
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [transferForm] = Form.useForm();
 
   // 初始化Socket.IO连接
   useEffect(() => {
@@ -90,7 +137,7 @@ const CSWorkbench: React.FC = () => {
     setAgentId(csAgentId);
 
     // 连接Socket.IO (使用正确的后端端口)
-    const socketInstance = io('http://localhost:50301', {
+    const socketInstance = io({
       auth: {
         role: 'agent',
         agentId: csAgentId
@@ -179,7 +226,7 @@ const CSWorkbench: React.FC = () => {
     if (!agentId) return;
 
     try {
-      const response = await apiService.get('/chat/quick-replies', {
+      const response = await apiService.get('/cs/quick-replies', {
         params: {
           agentId,
           isActive: true
@@ -187,10 +234,55 @@ const CSWorkbench: React.FC = () => {
       });
 
       if (response.data.success) {
-        setQuickReplies(response.data.data);
+        setQuickReplies(Array.isArray(response.data.data) ? response.data.data : []);
       }
     } catch (error: any) {
       console.error('加载快捷回复失败:', error);
+    }
+  };
+
+  // 加载待处理转接
+  const loadPendingTransfers = async () => {
+    if (!agentId) return;
+
+    try {
+      const response = await apiService.get('/session-transfers/pending');
+      if (response.data.success) {
+        setPendingTransfers(Array.isArray(response.data.data) ? response.data.data : []);
+      }
+    } catch (error: any) {
+      console.error('加载待处理转接失败:', error);
+    }
+  };
+
+  // 加载在线客服
+  const loadOnlineAgents = async () => {
+    try {
+      const response = await apiService.get('/cs/agents', {
+        params: {
+          isOnline: true,
+          page: 1,
+          limit: 100
+        }
+      });
+      if (response.data.success) {
+        const agents = Array.isArray(response.data.data) ? response.data.data : [];
+        setOnlineAgents(agents.filter((agent: CSAgent) => agent.id !== agentId));
+      }
+    } catch (error: any) {
+      console.error('加载在线客服失败:', error);
+    }
+  };
+
+  // 加载客户备注
+  const loadCustomerNotes = async (userId: string) => {
+    try {
+      const response = await apiService.get(`/customer-notes/user/${userId}`);
+      if (response.data.success) {
+        setCustomerNotes(Array.isArray(response.data.data) ? response.data.data : []);
+      }
+    } catch (error: any) {
+      console.error('加载客户备注失败:', error);
     }
   };
 
@@ -198,9 +290,13 @@ const CSWorkbench: React.FC = () => {
     if (agentId) {
       loadSessions();
       loadQuickReplies();
+      loadPendingTransfers();
 
-      // 每30秒刷新会话列表
-      const interval = setInterval(loadSessions, 30000);
+      // 每30秒刷新会话列表和待处理转接
+      const interval = setInterval(() => {
+        loadSessions();
+        loadPendingTransfers();
+      }, 30000);
       return () => clearInterval(interval);
     }
   }, [agentId]);
@@ -234,6 +330,9 @@ const CSWorkbench: React.FC = () => {
       await apiService.post(`/chat/sessions/${session.id}/read`, {
         readerType: 'agent'
       });
+
+      // 加载该用户的备注
+      loadCustomerNotes(session.user_id);
     } catch (error: any) {
       message.error('加载消息失败');
     }
@@ -282,43 +381,83 @@ const CSWorkbench: React.FC = () => {
     }
   };
 
-  // 转接会话
-  const handleTransferSession = () => {
+  // 转接会话 - 改进版
+  const handleTransferSession = async () => {
     if (!selectedSession || !agentId) return;
 
-    Modal.confirm({
-      title: '转接会话',
-      content: (
-        <div>
-          <p>请输入目标客服ID:</p>
-          <Input id="target-agent-id" type="number" placeholder="目标客服ID" />
-        </div>
-      ),
-      onOk: async () => {
-        const targetAgentId = (document.getElementById('target-agent-id') as HTMLInputElement)?.value;
+    // 加载在线客服列表
+    await loadOnlineAgents();
+    setTransferModalVisible(true);
+    transferForm.resetFields();
+  };
 
-        if (!targetAgentId) {
-          message.error('请输入目标客服ID');
-          return;
-        }
+  // 提交转接
+  const handleTransferSubmit = async () => {
+    if (!selectedSession || !agentId) return;
 
-        try {
-          const response = await apiService.post(`/cs/sessions/${selectedSession.id}/transfer`, {
-            fromAgentId: agentId,
-            toAgentId: parseInt(targetAgentId),
-            reason: '客服转接'
-          });
+    try {
+      const values = await transferForm.validateFields();
 
-          if (response.data.success) {
-            message.success('转接成功');
-            setSelectedSession(null);
-            loadSessions();
-          }
-        } catch (error: any) {
-          message.error('转接失败');
-        }
+      const response = await apiService.post('/session-transfers', {
+        sessionId: selectedSession.id,
+        fromAgentId: agentId,
+        toAgentId: values.toAgentId,
+        transferReason: values.transferReason,
+        transferNotes: values.transferNotes,
+        transferType: 'manual'
+      });
+
+      if (response.data.success) {
+        message.success('转接请求已发送');
+        setTransferModalVisible(false);
+        setSelectedSession(null);
+        loadSessions();
       }
-    });
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '转接失败');
+    }
+  };
+
+  // 接受转接
+  const handleAcceptTransfer = async (transferId: number) => {
+    try {
+      await apiService.post(`/session-transfers/${transferId}/accept`);
+      message.success('已接受转接');
+      loadPendingTransfers();
+      loadSessions();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '接受转接失败');
+    }
+  };
+
+  // 拒绝转接
+  const handleRejectTransfer = async (transferId: number) => {
+    try {
+      await apiService.post(`/session-transfers/${transferId}/reject`);
+      message.success('已拒绝转接');
+      loadPendingTransfers();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '拒绝转接失败');
+    }
+  };
+
+  // 添加客户备注
+  const handleAddNote = async () => {
+    if (!selectedSession || !newNoteContent.trim()) return;
+
+    try {
+      await apiService.post('/customer-notes', {
+        userId: selectedSession.user_id,
+        content: newNoteContent,
+        isImportant: false,
+        createdBy: agentId?.toString()
+      });
+      message.success('备注已添加');
+      setNewNoteContent('');
+      loadCustomerNotes(selectedSession.user_id);
+    } catch (error: any) {
+      message.error('添加备注失败');
+    }
   };
 
   // 滚动到底部
@@ -410,16 +549,82 @@ const CSWorkbench: React.FC = () => {
       {/* 左侧会话列表 */}
       <Sider width={320} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
         <div style={{ padding: 16, borderBottom: '1px solid #f0f0f0' }}>
-          <h3>
-            会话列表
-            <Badge
-              count={activeSessions.length}
-              style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
-            />
-          </h3>
-          <Tag color={connected ? 'success' : 'default'}>
-            {connected ? '在线' : '离线'}
-          </Tag>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>
+                会话列表
+                <Badge
+                  count={activeSessions.length}
+                  style={{ marginLeft: 8, backgroundColor: '#52c41a' }}
+                />
+              </h3>
+              <Tag color={connected ? 'success' : 'default'}>
+                {connected ? '在线' : '离线'}
+              </Tag>
+            </div>
+
+            {/* 待处理转接提醒 */}
+            {pendingTransfers.length > 0 && (
+              <Popover
+                content={
+                  <List
+                    dataSource={pendingTransfers}
+                    renderItem={(item) => (
+                      <List.Item
+                        actions={[
+                          <Button
+                            key="accept"
+                            type="link"
+                            size="small"
+                            icon={<CheckOutlined />}
+                            onClick={() => handleAcceptTransfer(item.id)}
+                          >
+                            接受
+                          </Button>,
+                          <Button
+                            key="reject"
+                            type="link"
+                            size="small"
+                            danger
+                            onClick={() => handleRejectTransfer(item.id)}
+                          >
+                            拒绝
+                          </Button>
+                        ]}
+                      >
+                        <List.Item.Meta
+                          title={`会话 ${item.session_id}`}
+                          description={
+                            <Space direction="vertical" size="small">
+                              <span>来自: {item.from_agent_name || '系统'}</span>
+                              {item.transfer_reason && <span>原因: {item.transfer_reason}</span>}
+                              <span style={{ fontSize: 12, color: '#999' }}>
+                                {new Date(item.created_at).toLocaleString()}
+                              </span>
+                            </Space>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                    style={{ maxHeight: 300, overflow: 'auto', width: 350 }}
+                  />
+                }
+                title="待处理转接"
+                trigger="click"
+              >
+                <Button
+                  type="primary"
+                  danger
+                  icon={<BellOutlined />}
+                  style={{ width: '100%' }}
+                >
+                  <Badge count={pendingTransfers.length} offset={[10, 0]}>
+                    待处理转接
+                  </Badge>
+                </Button>
+              </Popover>
+            )}
+          </Space>
         </div>
 
         <Tabs defaultActiveKey="active" style={{ padding: '0 16px' }}>
@@ -473,6 +678,14 @@ const CSWorkbench: React.FC = () => {
               </Space>
 
               <Space>
+                <Tooltip title="客户备注">
+                  <Badge count={customerNotes.length}>
+                    <Button
+                      icon={<FileTextOutlined />}
+                      onClick={() => setNotesDrawerVisible(true)}
+                    />
+                  </Badge>
+                </Tooltip>
                 <Tooltip title="转接">
                   <Button icon={<SwapOutlined />} onClick={handleTransferSession} />
                 </Tooltip>
@@ -563,6 +776,132 @@ const CSWorkbench: React.FC = () => {
           />
         )}
       </Content>
+
+      {/* 转接对话框 - 改进版 */}
+      <Modal
+        title="转接会话"
+        open={transferModalVisible}
+        onOk={handleTransferSubmit}
+        onCancel={() => setTransferModalVisible(false)}
+        width={600}
+      >
+        <Form form={transferForm} layout="vertical">
+          <Form.Item
+            name="toAgentId"
+            label="目标客服"
+            rules={[{ required: true, message: '请选择目标客服' }]}
+          >
+            <Select
+              placeholder="选择在线客服"
+              showSearch
+              optionFilterProp="children"
+            >
+              {onlineAgents.map(agent => (
+                <Option key={agent.id} value={agent.id}>
+                  <Space>
+                    <Badge status="success" />
+                    <span>{agent.display_name}</span>
+                    <Tag color="blue">当前会话: {agent.current_sessions_count}</Tag>
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="transferReason"
+            label="转接原因"
+          >
+            <Select placeholder="选择转接原因">
+              <Option value="专业领域">专业领域</Option>
+              <Option value="工作负载">工作负载过重</Option>
+              <Option value="客户要求">客户要求</Option>
+              <Option value="其他">其他</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="transferNotes"
+            label="转接备注"
+          >
+            <TextArea
+              rows={3}
+              placeholder="可选：添加转接备注，帮助接收客服更好地了解情况"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 客户备注抽屉 */}
+      <Drawer
+        title={
+          <Space>
+            <TagOutlined />
+            <span>客户备注</span>
+          </Space>
+        }
+        placement="right"
+        onClose={() => setNotesDrawerVisible(false)}
+        open={notesDrawerVisible}
+        width={400}
+      >
+        {/* 添加新备注 */}
+        <Card title="添加备注" size="small" style={{ marginBottom: 16 }}>
+          <Space.Compact style={{ width: '100%' }}>
+            <TextArea
+              value={newNoteContent}
+              onChange={(e) => setNewNoteContent(e.target.value)}
+              placeholder="输入备注内容..."
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Space.Compact>
+          <Button
+            type="primary"
+            onClick={handleAddNote}
+            disabled={!newNoteContent.trim()}
+            style={{ marginTop: 8, width: '100%' }}
+          >
+            添加
+          </Button>
+        </Card>
+
+        <Divider />
+
+        {/* 历史备注 */}
+        <div>
+          <h4>历史备注 ({customerNotes.length})</h4>
+          {customerNotes.length > 0 ? (
+            <List
+              dataSource={customerNotes}
+              renderItem={(note) => (
+                <List.Item>
+                  <List.Item.Meta
+                    avatar={note.is_important ? <TagOutlined style={{ color: '#ff4d4f' }} /> : <FileTextOutlined />}
+                    title={
+                      <Space>
+                        <span>{note.content}</span>
+                        {note.is_important && <Tag color="red">重要</Tag>}
+                      </Space>
+                    }
+                    description={
+                      <Space direction="vertical" size="small">
+                        <span style={{ fontSize: 12, color: '#999' }}>
+                          创建者: {note.created_by}
+                        </span>
+                        <span style={{ fontSize: 12, color: '#999' }}>
+                          {new Date(note.created_at).toLocaleString()}
+                        </span>
+                      </Space>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          ) : (
+            <Empty description="暂无备注" />
+          )}
+        </div>
+      </Drawer>
     </Layout>
   );
 };

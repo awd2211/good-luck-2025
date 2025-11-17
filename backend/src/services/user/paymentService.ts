@@ -15,6 +15,7 @@ import {
   confirmStripePayment,
   refundStripePayment,
 } from '../stripeService'
+import * as emailNotifications from '../emailNotificationService'
 
 interface CreatePaymentParams {
   userId: string
@@ -186,7 +187,7 @@ async function processBalancePayment(
     throw new Error('用户不存在')
   }
 
-  const balance = parseFloat(userResult.rows[0].balance)
+  const balance = userResult.rows[0].balance ? parseFloat(userResult.rows[0].balance) : 0
 
   if (balance < amount) {
     throw new Error('余额不足')
@@ -216,6 +217,37 @@ async function processBalancePayment(
        WHERE order_id = $3`,
       ['paid', 'processing', txnResult.rows[0].order_id]
     )
+
+    // 获取订单详情和用户邮箱用于发送邮件
+    const orderInfo = await client.query(
+      `SELECT o.order_id, o.fortune_name, o.amount, u.email
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       WHERE o.order_id = $1`,
+      [txnResult.rows[0].order_id]
+    )
+
+    // 发送支付成功邮件（异步，不阻塞支付流程）
+    if (orderInfo.rows.length > 0 && orderInfo.rows[0].email) {
+      const orderData = orderInfo.rows[0]
+      emailNotifications.sendPaymentSuccessEmail(
+        orderData.email,
+        orderData.order_id,
+        orderData.fortune_name,
+        orderData.amount ? parseFloat(orderData.amount) : 0,
+        'balance'
+      )
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ 支付成功邮件已发送至: ${orderData.email}`)
+          } else {
+            console.warn(`⚠️  支付成功邮件发送失败: ${result.error}`)
+          }
+        })
+        .catch(err => {
+          console.error('❌ 发送支付成功邮件时出错:', err)
+        })
+    }
   }
 
   return {
@@ -281,7 +313,38 @@ export async function confirmPayPalPayment(
       ['paid', 'processing', transaction.order_id]
     )
 
+    // 获取订单详情和用户邮箱用于发送邮件
+    const orderInfo = await client.query(
+      `SELECT o.order_id, o.fortune_name, o.amount, u.email
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       WHERE o.order_id = $1`,
+      [transaction.order_id]
+    )
+
     await client.query('COMMIT')
+
+    // 发送支付成功邮件（异步，不阻塞支付流程）
+    if (orderInfo.rows.length > 0 && orderInfo.rows[0].email) {
+      const orderData = orderInfo.rows[0]
+      emailNotifications.sendPaymentSuccessEmail(
+        orderData.email,
+        orderData.order_id,
+        orderData.fortune_name,
+        orderData.amount ? parseFloat(orderData.amount) : 0,
+        'paypal'
+      )
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ PayPal支付成功邮件已发送至: ${orderData.email}`)
+          } else {
+            console.warn(`⚠️  PayPal支付成功邮件发送失败: ${result.error}`)
+          }
+        })
+        .catch(err => {
+          console.error('❌ 发送PayPal支付成功邮件时出错:', err)
+        })
+    }
 
     return {
       success: true,
@@ -360,7 +423,38 @@ export async function confirmStripePaymentService(
       ['paid', 'processing', transaction.order_id]
     )
 
+    // 获取订单详情和用户邮箱用于发送邮件
+    const orderInfo = await client.query(
+      `SELECT o.order_id, o.fortune_name, o.amount, u.email
+       FROM orders o
+       LEFT JOIN users u ON o.user_id = u.id
+       WHERE o.order_id = $1`,
+      [transaction.order_id]
+    )
+
     await client.query('COMMIT')
+
+    // 发送支付成功邮件（异步，不阻塞支付流程）
+    if (orderInfo.rows.length > 0 && orderInfo.rows[0].email) {
+      const orderData = orderInfo.rows[0]
+      emailNotifications.sendPaymentSuccessEmail(
+        orderData.email,
+        orderData.order_id,
+        orderData.fortune_name,
+        orderData.amount ? parseFloat(orderData.amount) : 0,
+        'stripe'
+      )
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Stripe支付成功邮件已发送至: ${orderData.email}`)
+          } else {
+            console.warn(`⚠️  Stripe支付成功邮件发送失败: ${result.error}`)
+          }
+        })
+        .catch(err => {
+          console.error('❌ 发送Stripe支付成功邮件时出错:', err)
+        })
+    }
 
     return {
       success: true,

@@ -1,5 +1,6 @@
 import { query } from '../../config/database'
 import pool from '../../config/database'
+import * as emailNotifications from '../emailNotificationService'
 
 /**
  * 用户优惠券接口
@@ -155,6 +156,28 @@ export const receiveCoupon = async (userId: string, couponId: number) => {
     await query('COMMIT')
 
     const userCoupon = userCouponResult.rows[0]
+
+    // 发送优惠券领取成功邮件（异步，不阻塞领券流程）
+    const userResult = await query('SELECT email FROM users WHERE id = $1', [userId])
+    if (userResult.rows.length > 0 && userResult.rows[0].email) {
+      const userEmail = userResult.rows[0].email
+      emailNotifications.sendCouponGrantedEmail(
+        userEmail,
+        coupon.name,
+        parseFloat(coupon.value),
+        coupon.valid_until
+      )
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ 优惠券领取成功邮件已发送至: ${userEmail}`)
+          } else {
+            console.warn(`⚠️  优惠券领取成功邮件发送失败: ${result.error}`)
+          }
+        })
+        .catch(err => {
+          console.error('❌ 发送优惠券领取成功邮件时出错:', err)
+        })
+    }
 
     return {
       id: userCoupon.id,

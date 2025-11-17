@@ -1,6 +1,12 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// 根据NODE_ENV加载对应的环境变量文件
+const envFile = process.env.NODE_ENV === 'production'
+  ? '.env.production'
+  : '.env.development';
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 /**
  * 检查必需的环境变量
@@ -39,10 +45,11 @@ export const config = {
     name: optional('DB_NAME', 'fortune_db'),
     user: optional('DB_USER', 'fortune_user'),
     password: optional('DB_PASSWORD', 'fortune_pass_2025'),
-    poolMax: parseInt(optional('DB_POOL_MAX', '10')),
-    poolMin: parseInt(optional('DB_POOL_MIN', '2')),
-    idleTimeoutMillis: parseInt(optional('DB_IDLE_TIMEOUT', '30000')),
+    poolMax: parseInt(optional('DB_POOL_MAX', '20')),        // 增加到20（原10）
+    poolMin: parseInt(optional('DB_POOL_MIN', '5')),         // 增加到5（原2）
+    idleTimeoutMillis: parseInt(optional('DB_IDLE_TIMEOUT', '10000')),  // 减少到10s（原30s）
     connectionTimeoutMillis: parseInt(optional('DB_CONNECTION_TIMEOUT', '5000')),
+    statementTimeout: parseInt(optional('DB_STATEMENT_TIMEOUT', '30000')), // 新增: 30s查询超时
   },
 
   // JWT配置

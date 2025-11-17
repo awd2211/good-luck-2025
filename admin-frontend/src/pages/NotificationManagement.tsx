@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getNotifications, createNotification, updateNotification, deleteNotification, batchUpdateNotificationStatus } from '../services/notificationService'
 
 const { RangePicker } = DatePicker
 const { TextArea } = Input
@@ -52,15 +52,12 @@ const NotificationManagement = () => {
   const loadNotifications = async (page = pagination.current, pageSize = pagination.pageSize) => {
     setLoading(true)
     try {
-      const response = await api.get('/notifications', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setNotifications(Array.isArray(data) ? data : data.list || [])
+      const response = await getNotifications({ page, limit: pageSize })
+      setNotifications(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.pagination?.total || (Array.isArray(data) ? data.length : data.list?.length || 0)
+        total: response.data.pagination?.total || 0
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载通知失败')
@@ -101,7 +98,7 @@ const NotificationManagement = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/notifications/${id}`)
+      await deleteNotification(id)
       message.success('删除成功')
       loadNotifications()
     } catch (error: any) {
@@ -128,10 +125,10 @@ const NotificationManagement = () => {
       }
 
       if (editingNotification) {
-        await api.put(`/notifications/${editingNotification.id}`, payload)
+        await updateNotification(editingNotification.id, payload)
         message.success('更新成功')
       } else {
-        await api.post('/notifications', payload)
+        await createNotification(payload)
         message.success('创建成功')
       }
 
@@ -149,10 +146,7 @@ const NotificationManagement = () => {
     }
 
     try {
-      await api.post('/notifications/batch/status', {
-        ids: selectedRowKeys,
-        status
-      })
+      await batchUpdateNotificationStatus(selectedRowKeys as number[], status)
       message.success('批量操作成功')
       setSelectedRowKeys([])
       loadNotifications()
@@ -173,7 +167,7 @@ const NotificationManagement = () => {
       onOk: async () => {
         try {
           // 批量删除需要逐个调用删除API（如果后端没有批量删除接口）
-          await Promise.all(selectedRowKeys.map(id => api.delete(`/notifications/${id}`)))
+          await Promise.all(selectedRowKeys.map(id => deleteNotification(id as number)))
           message.success('批量删除成功')
           setSelectedRowKeys([])
           loadNotifications()

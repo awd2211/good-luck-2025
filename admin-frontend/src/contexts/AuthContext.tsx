@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { UserInfo, isAuthenticated, getLocalUser, saveAuthData, logout as logoutService } from '../services/authService'
+import storage from '../utils/storage'
 
 interface AuthContextType {
   user: UserInfo | null
@@ -44,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUser = (userData: UserInfo) => {
     // 更新用户信息并保存到本地存储
-    const token = localStorage.getItem('admin_token')
+    const token = storage.get('admin_token')
     if (token) {
       saveAuthData(token, userData)
     }

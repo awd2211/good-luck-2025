@@ -21,41 +21,16 @@ import {
   EyeOutlined,
   DollarOutlined,
 } from '@ant-design/icons'
-import { fetchWithAuth } from '../services/apiService'
+import {
+  getPaymentTransactions,
+  getPaymentTransactionStats
+} from '../services/paymentManageService'
+import type { PaymentTransaction, TransactionStats } from '../services/paymentManageService'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs, { Dayjs } from 'dayjs'
 
 const { RangePicker } = DatePicker
 const { Option } = Select
-
-interface PaymentTransaction {
-  id: string
-  transaction_id: string
-  user_id: string
-  order_id: string
-  amount: number
-  currency: string
-  payment_method: string
-  provider: string
-  provider_transaction_id?: string
-  status: 'pending' | 'completed' | 'failed' | 'refunded'
-  payment_url?: string
-  client_secret?: string
-  ip_address?: string
-  user_agent?: string
-  metadata?: Record<string, any>
-  created_at: string
-  completed_at?: string
-}
-
-interface TransactionStats {
-  total_count: number
-  total_amount: number
-  completed_count: number
-  pending_count: number
-  failed_count: number
-  refunded_count: number
-}
 
 const PaymentTransactions: React.FC = () => {
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([])
@@ -86,25 +61,23 @@ const PaymentTransactions: React.FC = () => {
   const fetchTransactions = async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        page: pagination.current.toString(),
-        limit: pagination.pageSize.toString(),
-      })
-
-      if (filters.status) params.append('status', filters.status)
-      if (filters.payment_method) params.append('payment_method', filters.payment_method)
-      if (filters.provider) params.append('provider', filters.provider)
-      if (filters.search) params.append('search', filters.search)
-      if (filters.date_range && filters.date_range.length === 2) {
-        params.append('start_date', filters.date_range[0].format('YYYY-MM-DD'))
-        params.append('end_date', filters.date_range[1].format('YYYY-MM-DD'))
+      const params: any = {
+        page: pagination.current,
+        limit: pagination.pageSize,
       }
 
-      const response = await fetchWithAuth(`/payment-transactions?${params.toString()}`)
-      if (response.success) {
-        setTransactions(response.data)
-        setPagination(prev => ({ ...prev, total: response.pagination?.total || 0 }))
+      if (filters.status) params.status = filters.status
+      if (filters.payment_method) params.payment_method = filters.payment_method
+      if (filters.provider) params.provider = filters.provider
+      if (filters.search) params.search = filters.search
+      if (filters.date_range?.length === 2) {
+        params.start_date = filters.date_range[0].format('YYYY-MM-DD')
+        params.end_date = filters.date_range[1].format('YYYY-MM-DD')
       }
+
+      const response = await getPaymentTransactions(params)
+      setTransactions(response.data.data || [])
+      setPagination(prev => ({ ...prev, total: response.data.pagination?.total || 0 }))
     } catch (error) {
       console.error('获取交易记录失败:', error)
       message.error('获取交易记录失败')
@@ -115,10 +88,8 @@ const PaymentTransactions: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await fetchWithAuth('/payment-transactions/stats')
-      if (response.success) {
-        setStats(response.data)
-      }
+      const response = await getPaymentTransactionStats()
+      setStats(response.data.data || null)
     } catch (error) {
       console.error('获取统计数据失败:', error)
     }

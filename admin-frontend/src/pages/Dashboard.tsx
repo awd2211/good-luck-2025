@@ -6,7 +6,7 @@ import {
   RiseOutlined,
   DollarOutlined,
 } from '@ant-design/icons'
-import { getDashboardStats } from '../services/apiService'
+import { getDashboardStats } from '../services/statsService'
 
 interface DashboardStats {
   users: {
@@ -45,7 +45,26 @@ const Dashboard = () => {
     try {
       setLoading(true)
       const response = await getDashboardStats()
-      setStats(response.data)
+      const data = response.data.data
+
+      // 添加默认值和数据规范化
+      setStats({
+        users: data.users,
+        orders: {
+          total: data.orders.total || 0,
+          today: data.orders.today || 0,
+          completed: data.orders.completed || 0,
+          pending: data.orders.pending || 0,
+          cancelled: data.orders.cancelled || 0,
+        },
+        revenue: {
+          total: data.revenue?.total || 0,
+          today: data.revenue?.today || 0,
+          average: data.revenue?.average || 0,
+          growthRate: data.revenue?.growthRate || 0,
+        },
+        fortuneTypes: data.fortuneTypes || {},
+      })
     } catch (error: any) {
       message.error('加载统计数据失败')
       console.error('加载统计数据失败:', error)
@@ -67,7 +86,7 @@ const Dashboard = () => {
   }
 
   // 计算热门功能数据（按订单数排序）
-  const fortuneTypesArray = Object.entries(stats.fortuneTypes)
+  const fortuneTypesArray = Object.entries(stats.fortuneTypes || {})
     .map(([name, data]) => ({
       name,
       count: data.count,
@@ -119,7 +138,7 @@ const Dashboard = () => {
               valueStyle={{ color: '#cf1322' }}
             />
             <div style={{ marginTop: 8, fontSize: 12, color: '#999' }}>
-              总收入: ¥{stats.revenue.total.toFixed(2)}
+              总收入: ¥{(stats.revenue?.total || 0).toFixed(2)}
             </div>
           </Card>
         </Col>

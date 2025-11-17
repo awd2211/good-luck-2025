@@ -1,4 +1,17 @@
 /**
+ * TODO: 为此文件添加完整的 @openapi 注解
+ * 
+ * 文件: emailTest.ts
+ * 标签: Admin - Email Test
+ * 前缀: /api/manage/email-test
+ * 
+ * 找到的路由:
+ *   - POST /test
+ *
+ * 请参考已完成的文件(如 routes/auth.ts)添加完整文档
+ */
+
+/**
  * 邮件测试路由
  */
 

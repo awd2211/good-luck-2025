@@ -37,6 +37,15 @@ import {
   FunnelPlotOutlined,
   MailOutlined,
   ShareAltOutlined,
+  SmileOutlined,
+  TrophyOutlined,
+  ThunderboltOutlined,
+  FileSearchOutlined,
+  WarningOutlined,
+  SwapOutlined,
+  BookOutlined,
+  ClockCircleOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../contexts/AuthContext'
 import { usePermission } from '../hooks/usePermission'
@@ -98,12 +107,12 @@ const MainLayout = () => {
     {
       key: 'fortune',
       icon: <StarOutlined />,
-      label: '算命管理',
+      label: '运势管理',
       children: [
         {
           key: '/fortunes',
           icon: <StarOutlined />,
-          label: '算命记录',
+          label: '运势记录',
           permission: Permission.FORTUNE_VIEW,
         },
         {
@@ -159,19 +168,19 @@ const MainLayout = () => {
           key: '/payment-transactions',
           icon: <TransactionOutlined />,
           label: '支付交易',
-          permission: Permission.FINANCIAL_VIEW,
+          permission: Permission.PAYMENT_TRANSACTIONS_VIEW,
         },
         {
           key: '/payment-methods',
           icon: <DollarOutlined />,
           label: '支付方式',
-          permission: Permission.FINANCIAL_VIEW,
+          permission: Permission.PAYMENT_METHODS_VIEW,
         },
         {
           key: '/payment-configs',
           icon: <SettingOutlined />,
           label: '支付配置',
-          permission: Permission.FINANCIAL_VIEW,
+          permission: Permission.PAYMENT_CONFIGS_VIEW,
         },
         {
           key: '/refunds',
@@ -214,7 +223,7 @@ const MainLayout = () => {
           key: '/share-analytics',
           icon: <ShareAltOutlined />,
           label: '分享统计',
-          permission: Permission.STATS_VIEW,
+          permission: Permission.SHARE_ANALYTICS_VIEW,
         },
       ],
     },
@@ -246,13 +255,91 @@ const MainLayout = () => {
           key: '/customer-service',
           icon: <TeamOutlined />,
           label: '客服管理',
-          permission: Permission.CS_AGENT_VIEW,
+          permission: Permission.CS_TEAM_VIEW,
         },
         {
           key: '/cs-workbench',
           icon: <MessageOutlined />,
           label: '客服工作台',
           permission: Permission.CS_WORKBENCH_VIEW,
+        },
+        {
+          key: '/cs-satisfaction',
+          icon: <SmileOutlined />,
+          label: '满意度统计',
+          permission: Permission.CS_SATISFACTION_VIEW,
+        },
+        {
+          key: '/cs-performance',
+          icon: <TrophyOutlined />,
+          label: '绩效报表',
+          permission: Permission.CS_PERFORMANCE_VIEW,
+        },
+        {
+          key: '/ai-bot-config',
+          icon: <RobotOutlined />,
+          label: 'AI机器人配置',
+          permission: Permission.CS_AI_BOT_VIEW,
+        },
+        {
+          key: '/quick-replies',
+          icon: <ThunderboltOutlined />,
+          label: '快捷回复',
+          permission: Permission.CS_QUICK_REPLY_VIEW,
+        },
+        {
+          key: '/cs-quality',
+          icon: <FileSearchOutlined />,
+          label: '质检管理',
+          permission: Permission.CS_QUALITY_VIEW,
+        },
+        {
+          key: '/cs-sensitive-words',
+          icon: <WarningOutlined />,
+          label: '敏感词管理',
+          permission: Permission.CS_SENSITIVE_WORDS_VIEW,
+        },
+        {
+          key: '/customer-tags',
+          icon: <TagsOutlined />,
+          label: '客户标签',
+          permission: Permission.CS_TAGS_VIEW,
+        },
+        {
+          key: '/customer-notes',
+          icon: <FileTextOutlined />,
+          label: '客户备注',
+          permission: Permission.CS_NOTES_VIEW,
+        },
+        {
+          key: '/session-transfers',
+          icon: <SwapOutlined />,
+          label: '会话转接',
+          permission: Permission.CS_TRANSFERS_VIEW,
+        },
+        {
+          key: '/knowledge-base',
+          icon: <BookOutlined />,
+          label: '知识库管理',
+          permission: Permission.CS_KNOWLEDGE_BASE_VIEW,
+        },
+        {
+          key: '/cs-schedule',
+          icon: <ClockCircleOutlined />,
+          label: '客服排班',
+          permission: Permission.CS_SCHEDULE_VIEW,
+        },
+        {
+          key: '/training',
+          icon: <BookOutlined />,
+          label: '培训系统',
+          permission: Permission.CS_TRAINING_VIEW,
+        },
+        {
+          key: '/customer-profile',
+          icon: <UserOutlined />,
+          label: '客户画像',
+          permission: Permission.CS_CUSTOMER_PROFILE_VIEW,
         },
       ],
     },
@@ -286,10 +373,28 @@ const MainLayout = () => {
           permission: Permission.SYSTEM_CONFIG_VIEW,
         },
         {
+          key: '/technical-configs',
+          icon: <DatabaseOutlined />,
+          label: '参数配置',
+          permission: Permission.TECHNICAL_CONFIGS_VIEW,
+        },
+        {
           key: '/email-templates',
           icon: <MailOutlined />,
           label: '邮件模板',
-          permission: Permission.SYSTEM_CONFIG_VIEW,
+          permission: Permission.EMAIL_TEMPLATES_VIEW,
+        },
+        {
+          key: '/email-notification-configs',
+          icon: <MailOutlined />,
+          label: '邮件通知配置',
+          permission: Permission.EMAIL_CONFIGS_VIEW,
+        },
+        {
+          key: '/email-send-history',
+          icon: <MailOutlined />,
+          label: '邮件发送历史',
+          permission: Permission.EMAIL_HISTORY_VIEW,
         },
         {
           key: '/audit-log',
@@ -319,7 +424,8 @@ const MainLayout = () => {
         }
 
         // 如果是叶子菜单项
-        if (item.permission && !checkPermission.has(item.permission)) {
+        // super_admin 可以访问所有菜单，跳过权限检查
+        if (item.permission && !checkPermission.isSuperAdmin() && !checkPermission.has(item.permission)) {
           return null
         }
 
@@ -417,7 +523,7 @@ const MainLayout = () => {
             bottom: 0,
           }}
         >
-          <Tooltip title={collapsed ? '算命平台管理' : ''} placement="right">
+          <Tooltip title={collapsed ? 'LUCK.DAY 管理后台' : ''} placement="right">
             <div style={{
               height: 64,
               display: 'flex',
@@ -429,7 +535,7 @@ const MainLayout = () => {
               transition: 'all 0.3s',
               cursor: 'default',
             }}>
-              {collapsed ? '管理' : '算命平台管理'}
+              {collapsed ? 'LUCK.DAY' : 'LUCK.DAY 管理后台'}
             </div>
           </Tooltip>
 

@@ -30,37 +30,19 @@ import {
   PayCircleOutlined,
   CreditCardOutlined,
 } from '@ant-design/icons'
-import { fetchWithAuth } from '../services/apiService'
+import {
+  getPaymentMethods,
+  createPaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  togglePaymentMethod,
+  getPaymentMethodStats
+} from '../services/paymentManageService'
+import type { PaymentMethod, PaymentMethodStats } from '../services/paymentManageService'
 import type { ColumnsType } from 'antd/es/table'
 
 const { Option } = Select
 const { TextArea } = Input
-
-interface PaymentMethod {
-  id: string
-  method_code: string
-  method_name: string
-  provider?: string
-  icon?: string
-  description?: string
-  is_enabled: boolean
-  sort_order: number
-  min_amount: number
-  max_amount?: number
-  fee_type: 'none' | 'fixed' | 'percentage'
-  fee_value: number
-  created_at: string
-  updated_at: string
-}
-
-interface PaymentMethodStats {
-  total_transactions: number
-  completed_count: number
-  pending_count: number
-  failed_count: number
-  total_amount: number
-  avg_amount: number
-}
 
 const PaymentMethodManagement: React.FC = () => {
   const [methods, setMethods] = useState<PaymentMethod[]>([])
@@ -81,10 +63,8 @@ const PaymentMethodManagement: React.FC = () => {
   const fetchMethods = async () => {
     setLoading(true)
     try {
-      const response = await fetchWithAuth('/payment-methods')
-      if (response.success) {
-        setMethods(response.data)
-      }
+      const response = await getPaymentMethods()
+      setMethods(response.data.data || [])
     } catch (error) {
       console.error('获取支付方式失败:', error)
       message.error('获取支付方式失败')
@@ -114,13 +94,9 @@ const PaymentMethodManagement: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await fetchWithAuth(`/payment-methods/${id}`, {
-        method: 'DELETE',
-      })
-      if (response.success) {
-        message.success('删除成功')
-        fetchMethods()
-      }
+      await deletePaymentMethod(id)
+      message.success('删除成功')
+      fetchMethods()
     } catch (error: any) {
       console.error('删除失败:', error)
       message.error(error.message || '删除失败')
@@ -129,13 +105,9 @@ const PaymentMethodManagement: React.FC = () => {
 
   const handleToggle = async (id: string) => {
     try {
-      const response = await fetchWithAuth(`/payment-methods/${id}/toggle`, {
-        method: 'PATCH',
-      })
-      if (response.success) {
-        message.success(response.message)
-        fetchMethods()
-      }
+      const response = await togglePaymentMethod(id)
+      message.success(response.data.data?.message || '操作成功')
+      fetchMethods()
     } catch (error) {
       console.error('切换状态失败:', error)
       message.error('切换状态失败')
@@ -148,27 +120,16 @@ const PaymentMethodManagement: React.FC = () => {
 
       if (editingMethod) {
         // 更新
-        const response = await fetchWithAuth(`/payment-methods/${editingMethod.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(values),
-        })
-        if (response.success) {
-          message.success('更新成功')
-          setModalVisible(false)
-          fetchMethods()
-        }
+        await updatePaymentMethod(editingMethod.id, values)
+        message.success('更新成功')
       } else {
         // 创建
-        const response = await fetchWithAuth('/payment-methods', {
-          method: 'POST',
-          body: JSON.stringify(values),
-        })
-        if (response.success) {
-          message.success('创建成功')
-          setModalVisible(false)
-          fetchMethods()
-        }
+        await createPaymentMethod(values)
+        message.success('创建成功')
       }
+
+      setModalVisible(false)
+      fetchMethods()
     } catch (error) {
       console.error('保存失败:', error)
       message.error('保存失败')
@@ -177,11 +138,9 @@ const PaymentMethodManagement: React.FC = () => {
 
   const handleViewStats = async (method: PaymentMethod) => {
     try {
-      const response = await fetchWithAuth(`/payment-methods/${method.id}/stats`)
-      if (response.success) {
-        setSelectedMethodStats(response.data.stats)
-        setStatsModalVisible(true)
-      }
+      const response = await getPaymentMethodStats(method.id)
+      setSelectedMethodStats(response.data.data?.stats || null)
+      setStatsModalVisible(true)
     } catch (error) {
       console.error('获取统计数据失败:', error)
       message.error('获取统计数据失败')

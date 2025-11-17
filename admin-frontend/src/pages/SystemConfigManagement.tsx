@@ -1,3 +1,4 @@
+import api from '../services/api'
 import { useState, useEffect } from 'react'
 import {
   Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message,
@@ -8,7 +9,6 @@ import {
   DownloadOutlined, UploadOutlined, CopyOutlined, SearchOutlined
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
 import JsonView from '@uiw/react-json-view'
 import SmtpConfigForm from '../components/SmtpConfigForm'
 import DynamicConfigForm from '../components/DynamicConfigForm'
@@ -109,7 +109,7 @@ const CONFIG_TEMPLATES = {
   fortune_pricing: {
     name: '算命服务定价配置',
     config_type: 'pricing',
-    description: '各类算命服务的价格设置',
+    description: '各类运势服务的价格设置',
     config_value: {
       base_prices: {
         bazi: 29.9,
@@ -175,7 +175,7 @@ const CONFIG_TEMPLATES = {
   ai_settings: {
     name: 'AI算命配置',
     config_type: 'ai',
-    description: 'AI算命服务相关配置',
+    description: 'AI运势服务相关配置',
     config_value: {
       enabled: true,
       api_key: '',
@@ -284,7 +284,7 @@ const SystemConfigManagement = () => {
 
       const res = await api.get('/system-configs', { params })
       if (res.data.success) {
-        const configData = res.data.data
+        const configData = (res.data.data || res.data)
         if (Array.isArray(configData)) {
           setConfigs(configData)
           setPagination({
@@ -315,7 +315,7 @@ const SystemConfigManagement = () => {
     try {
       const res = await api.get('/system-configs/types')
       if (res.data.success) {
-        setTypes(res.data.data || [])
+        setTypes((res.data.data || res.data) || [])
       }
     } catch (error: any) {
       console.error('获取类型失败:', error)

@@ -1,10 +1,18 @@
 /**
  * 邮件发送服务
- * 使用nodemailer发送邮件
+ * 支持多种邮件发送方式：
+ * 1. SMTP协议 - 使用nodemailer
+ * 2. Mailgun API - 使用mailgun.js
+ * 3. SendGrid API - 使用@sendgrid/mail
+ * 4. Amazon SES - 使用@aws-sdk/client-ses
  */
 
 import nodemailer from 'nodemailer'
 import { query } from '../config/database'
+import Mailgun from 'mailgun.js'
+import FormData from 'form-data'
+import sgMail from '@sendgrid/mail'
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses'
 
 /**
  * 从数据库获取邮件模板
@@ -271,77 +279,319 @@ export const send2FAEnabledEmail = async (
 }
 
 /**
- * 发送测试邮件
+ * 发送用户注册欢迎邮件
  */
-export const sendTestEmail = async (
-  toEmail: string,
-  smtpConfig?: any
+export const sendWelcomeEmail = async (
+  email: string,
+  nickname: string
 ) => {
-  let transporter: any
-
-  if (smtpConfig) {
-    // 使用提供的配置创建临时传输器
-    transporter = nodemailer.createTransport({
-      host: smtpConfig.host,
-      port: parseInt(smtpConfig.port),
-      secure: smtpConfig.secure === true,
-      auth: {
-        user: smtpConfig.user,
-        pass: smtpConfig.password,
-      },
-    })
-  } else {
-    // 使用当前配置
-    const result = await createTransporter()
-    transporter = result.transporter
-  }
-
-  const fromEmail = smtpConfig
-    ? `"${smtpConfig.from_name || '算命平台管理后台'}" <${smtpConfig.from_email || smtpConfig.user}>`
-    : '"算命平台管理后台" <noreply@fortune.com>'
+  // 获取邮件配置
+  const dbConfig = await getSMTPConfig()
+  const fromName = dbConfig?.fromName || '算命平台'
+  const fromEmail = dbConfig?.from || 'noreply@fortune.com'
+  const homeUrl = process.env.FRONTEND_URL || 'http://localhost:50302'
 
   // 尝试从数据库获取模板
-  const template = await getEmailTemplate('test_email')
+  const template = await getEmailTemplate('user_welcome')
 
-  const testTime = new Date().toLocaleString('zh-CN')
-  let subject = 'SMTP配置测试邮件'
+  let subject = '欢迎加入LUCK.DAY！'
   let html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #52c41a;">✅ SMTP配置测试成功</h2>
-        <p>恭喜！您的SMTP邮件服务配置正确，邮件发送功能正常。</p>
-        <p>此邮件用于测试以下功能：</p>
-        <ul>
-          <li>✉️ 密码重置邮件</li>
-          <li>🔐 双因素认证通知</li>
-          <li>📢 系统通知邮件</li>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #1890ff;">🎉 欢迎加入LUCK.DAY！</h2>
+      <p>您好，<strong>${nickname}</strong>！</p>
+      <p>感谢您注册LUCK.DAY，我们很高兴您的加入！</p>
+      <div style="background: #f0f5ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin-top: 0; color: #1890ff;">您可以开始：</h3>
+        <ul style="line-height: 1.8;">
+          <li>📿 浏览各种算命服务</li>
+          <li>🔮 体验每日运势</li>
+          <li>⭐ 收藏喜欢的服务</li>
+          <li>🎁 领取新人优惠券</li>
         </ul>
-        <p style="color: #999; font-size: 12px; margin-top: 30px;">
-          测试时间: ${testTime}
-        </p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-        <p style="color: #999; font-size: 12px; text-align: center;">
-          © 2025 算命平台管理后台. All rights reserved.
-        </p>
       </div>
-    `
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${homeUrl}" style="background-color: #1890ff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">开始探索</a>
+      </div>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px; text-align: center;">© 2025 LUCK.DAY. All rights reserved.</p>
+    </div>
+  `
 
   // 如果找到模板，使用模板
   if (template) {
     subject = template.subject
-    html = renderTemplate(template.html_content, { testTime })
+    html = renderTemplate(template.html_content, { username: nickname, homeUrl })
   }
 
-  const mailOptions = {
-    from: fromEmail,
-    to: toEmail,
-    subject,
-    html,
+  // 获取系统配置
+  const configResult = await query(
+    `SELECT config_value FROM system_configs WHERE config_key = 'smtp_settings'`,
+    []
+  )
+
+  if (configResult.rows.length === 0) {
+    console.warn('⚠️  未找到邮件配置，跳过发送欢迎邮件')
+    return { success: false, error: '邮件服务未配置' }
+  }
+
+  const emailConfig = configResult.rows[0].config_value
+
+  // 检查是否启用
+  if (emailConfig.enabled !== true) {
+    console.warn('⚠️  邮件服务未启用，跳过发送欢迎邮件')
+    return { success: false, error: '邮件服务未启用' }
   }
 
   try {
+    // 根据邮件服务类型发送
+    if (emailConfig.email_type === 'third_party_api') {
+      const provider = emailConfig.api_provider
+
+      if (provider === 'mailgun') {
+        // Mailgun API发送
+        const mailgun = new Mailgun(FormData)
+        const mg = mailgun.client({
+          username: 'api',
+          key: emailConfig.mailgun_api_key,
+          url: emailConfig.mailgun_region === 'eu'
+            ? 'https://api.eu.mailgun.net'
+            : 'https://api.mailgun.net'
+        })
+
+        const messageData = {
+          from: `${fromName} <${emailConfig.from_email}>`,
+          to: email,
+          subject,
+          html,
+        }
+
+        const result = await mg.messages.create(emailConfig.mailgun_domain, messageData)
+        console.log('✅ 欢迎邮件已发送 (Mailgun):', result.id, '发送至:', email)
+        return { success: true, messageId: result.id }
+
+      } else if (provider === 'sendgrid') {
+        // SendGrid API
+        sgMail.setApiKey(emailConfig.sendgrid_api_key)
+        const msg = {
+          to: email,
+          from: { email: emailConfig.from_email, name: fromName },
+          subject,
+          html,
+        }
+        const result = await sgMail.send(msg)
+        console.log('✅ 欢迎邮件已发送 (SendGrid):', result[0].headers['x-message-id'])
+        return { success: true, messageId: result[0].headers['x-message-id'] }
+
+      } else if (provider === 'ses') {
+        // Amazon SES
+        const sesClient = new SESClient({
+          region: emailConfig.ses_region,
+          credentials: {
+            accessKeyId: emailConfig.ses_access_key,
+            secretAccessKey: emailConfig.ses_secret_key,
+          },
+        })
+        const command = new SendEmailCommand({
+          Source: `${fromName} <${emailConfig.from_email}>`,
+          Destination: { ToAddresses: [email] },
+          Message: {
+            Subject: { Data: subject, Charset: 'UTF-8' },
+            Body: { Html: { Data: html, Charset: 'UTF-8' } },
+          },
+        })
+        const result = await sesClient.send(command)
+        console.log('✅ 欢迎邮件已发送 (Amazon SES):', result.MessageId)
+        return { success: true, messageId: result.MessageId }
+      }
+    } else if (emailConfig.email_type === 'smtp') {
+      // SMTP发送
+      const transporter = nodemailer.createTransport({
+        host: emailConfig.smtp_host,
+        port: parseInt(emailConfig.smtp_port),
+        secure: emailConfig.smtp_secure === true,
+        auth: {
+          user: emailConfig.smtp_user,
+          pass: emailConfig.smtp_password,
+        },
+      })
+
+      const mailOptions = {
+        from: `"${fromName}" <${emailConfig.from_email}>`,
+        to: email,
+        subject,
+        html,
+      }
+
+      const info = await transporter.sendMail(mailOptions)
+      console.log('✅ 欢迎邮件已发送 (SMTP):', info.messageId)
+      return { success: true, messageId: info.messageId }
+    }
+
+    throw new Error('不支持的邮件服务类型')
+  } catch (error: any) {
+    console.error('❌ 发送欢迎邮件失败:', error.message)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
+ * 发送测试邮件
+ * 支持两种邮件服务类型：
+ * 1. SMTP协议发送 - 使用标准SMTP
+ * 2. 第三方API服务 - 使用Mailgun/SendGrid/SES等
+ */
+export const sendTestEmail = async (
+  toEmail: string,
+  emailConfig?: any
+) => {
+  const testTime = new Date().toLocaleString('zh-CN')
+  const subject = '邮件配置测试邮件'
+  const fromName = emailConfig?.from_name || '算命平台管理后台'
+  const fromEmail = emailConfig?.from_email || 'noreply@fortune.com'
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #52c41a;">✅ 邮件配置测试成功</h2>
+      <p>恭喜！您的邮件服务配置正确，邮件发送功能正常。</p>
+      <p>此邮件用于测试以下功能：</p>
+      <ul>
+        <li>✉️ 密码重置邮件</li>
+        <li>🔐 双因素认证通知</li>
+        <li>📢 系统通知邮件</li>
+      </ul>
+      <p style="color: #999; font-size: 12px; margin-top: 30px;">
+        测试时间: ${testTime}<br>
+        服务类型: ${emailConfig?.email_type === 'smtp' ? 'SMTP协议' : `第三方API (${emailConfig?.api_provider})`}
+      </p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px; text-align: center;">
+        © 2025 算命平台管理后台. All rights reserved.
+      </p>
+    </div>
+  `
+
+  if (!emailConfig) {
+    // 使用默认SMTP配置
+    const { transporter } = await createTransporter()
+    const mailOptions = {
+      from: `"${fromName}" <${fromEmail}>`,
+      to: toEmail,
+      subject,
+      html,
+    }
     const info = await transporter.sendMail(mailOptions)
-    console.log('✅ 测试邮件已发送:', info.messageId)
+    console.log('✅ 测试邮件已发送 (默认配置):', info.messageId)
     return { success: true, messageId: info.messageId }
+  }
+
+  try {
+    // 根据邮件服务类型发送
+    if (emailConfig.email_type === 'smtp') {
+      // ==================== SMTP协议发送 ====================
+      const transporter = nodemailer.createTransport({
+        host: emailConfig.smtp_host,
+        port: parseInt(emailConfig.smtp_port),
+        secure: emailConfig.smtp_secure === true,
+        auth: {
+          user: emailConfig.smtp_user,
+          pass: emailConfig.smtp_password,
+        },
+      })
+
+      const mailOptions = {
+        from: `"${fromName}" <${fromEmail}>`,
+        to: toEmail,
+        subject,
+        html,
+      }
+
+      const info = await transporter.sendMail(mailOptions)
+      console.log('✅ 测试邮件已发送 (SMTP):', info.messageId)
+      return { success: true, messageId: info.messageId }
+
+    } else if (emailConfig.email_type === 'third_party_api') {
+      // ==================== 第三方API服务 ====================
+      const provider = emailConfig.api_provider
+
+      if (provider === 'mailgun') {
+        // ---------- Mailgun API ----------
+        const mailgun = new Mailgun(FormData)
+        const mg = mailgun.client({
+          username: 'api',
+          key: emailConfig.mailgun_api_key,
+          url: emailConfig.mailgun_region === 'eu'
+            ? 'https://api.eu.mailgun.net'
+            : 'https://api.mailgun.net'
+        })
+
+        const messageData = {
+          from: `${fromName} <${fromEmail}>`,
+          to: toEmail,
+          subject,
+          html,
+        }
+
+        const result = await mg.messages.create(emailConfig.mailgun_domain, messageData)
+        console.log('✅ 测试邮件已发送 (Mailgun):', result.id)
+        return { success: true, messageId: result.id }
+
+      } else if (provider === 'sendgrid') {
+        // ---------- SendGrid API ----------
+        sgMail.setApiKey(emailConfig.sendgrid_api_key)
+
+        const msg = {
+          to: toEmail,
+          from: {
+            email: fromEmail,
+            name: fromName,
+          },
+          subject,
+          html,
+        }
+
+        const result = await sgMail.send(msg)
+        console.log('✅ 测试邮件已发送 (SendGrid):', result[0].headers['x-message-id'])
+        return { success: true, messageId: result[0].headers['x-message-id'] }
+
+      } else if (provider === 'ses') {
+        // ---------- Amazon SES ----------
+        const sesClient = new SESClient({
+          region: emailConfig.ses_region,
+          credentials: {
+            accessKeyId: emailConfig.ses_access_key,
+            secretAccessKey: emailConfig.ses_secret_key,
+          },
+        })
+
+        const command = new SendEmailCommand({
+          Source: `${fromName} <${fromEmail}>`,
+          Destination: {
+            ToAddresses: [toEmail],
+          },
+          Message: {
+            Subject: {
+              Data: subject,
+              Charset: 'UTF-8',
+            },
+            Body: {
+              Html: {
+                Data: html,
+                Charset: 'UTF-8',
+              },
+            },
+          },
+        })
+
+        const result = await sesClient.send(command)
+        console.log('✅ 测试邮件已发送 (Amazon SES):', result.MessageId)
+        return { success: true, messageId: result.MessageId }
+
+      } else {
+        throw new Error(`不支持的第三方API服务提供商: ${provider}`)
+      }
+    } else {
+      throw new Error('未知的邮件服务类型')
+    }
   } catch (error: any) {
     console.error('❌ 发送测试邮件失败:', error)
     throw new Error(error.message || '测试邮件发送失败')

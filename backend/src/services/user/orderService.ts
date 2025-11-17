@@ -1,4 +1,6 @@
 import { query } from '../../config/database'
+import { redisCache } from '../../config/redis'
+import * as emailNotifications from '../emailNotificationService'
 
 /**
  * 用户端订单接口
@@ -92,7 +94,7 @@ export const createOrder = async (
   }
 
   // 获取用户信息
-  const userResult = await query('SELECT id, nickname, phone FROM users WHERE id = $1', [userId])
+  const userResult = await query('SELECT id, nickname, phone, email FROM users WHERE id = $1', [userId])
   if (userResult.rows.length === 0) {
     throw new Error('用户不存在')
   }
@@ -124,6 +126,30 @@ export const createOrder = async (
 
   const order = result.rows[0]
 
+  // 清除用户订单列表的所有缓存（使用模糊匹配）
+  const deletedCount = await redisCache.delPattern(`orders:${userId}:*`)
+  console.log(`🗑️ 已清除${deletedCount}个订单缓存: orders:${userId}:*`)
+
+  // 发送订单确认邮件（异步，不阻塞订单创建）
+  if (user.email) {
+    emailNotifications.sendOrderConfirmationEmail(
+      user.email,
+      order.order_id,
+      order.fortune_name,
+      parseFloat(order.amount)
+    )
+      .then(result => {
+        if (result.success) {
+          console.log(`✅ 订单确认邮件已发送至: ${user.email}`)
+        } else {
+          console.warn(`⚠️  订单确认邮件发送失败: ${result.error}`)
+        }
+      })
+      .catch(err => {
+        console.error('❌ 发送订单确认邮件时出错:', err)
+      })
+  }
+
   return {
     id: order.id,
     orderId: order.order_id,
@@ -141,6 +167,7 @@ export const createOrder = async (
 
 /**
  * 获取用户的订单列表
+ * 优化: 使用Redis缓存(5分钟) + 窗口函数合并COUNT查询
  */
 export const getUserOrders = async (
   userId: string,
@@ -153,27 +180,40 @@ export const getUserOrders = async (
   const page = params.page || 1
   const limit = params.limit || 10
   const offset = (page - 1) * limit
+  const status = params.status || 'all'
 
-  // 构建查询条件
+  // 1. 尝试从Redis获取缓存
+  const cacheKey = `orders:${userId}:${page}:${limit}:${status}`
+  const cached = await redisCache.get<any>(cacheKey)
+
+  if (cached) {
+    console.log(`✅ Redis缓存命中: ${cacheKey}`)
+    return cached
+  }
+
+  console.log(`⚠️ Redis缓存未命中，查询数据库: ${cacheKey}`)
+
+  // 2. 构建查询条件
   const conditions = ['o.user_id = $1']
   const queryParams: any[] = [userId]
   let paramIndex = 2
 
-  if (params.status && params.status !== 'all') {
+  if (status && status !== 'all') {
     conditions.push(`o.status = $${paramIndex}`)
-    queryParams.push(params.status)
+    queryParams.push(status)
     paramIndex++
   }
 
   const whereClause = conditions.join(' AND ')
 
-  // 查询订单列表（关联算命服务信息）
+  // 3. 使用窗口函数一次查询获取订单列表和总数（减少50%数据库往返）
   const result = await query(
     `SELECT
        o.id, o.order_id, o.user_id, o.username,
        o.fortune_type, o.fortune_name, o.amount, o.status, o.pay_method,
        o.create_time, o.update_time,
-       f.title, f.subtitle, f.price, f.icon, f.bg_color
+       f.title, f.subtitle, f.price, f.icon, f.bg_color,
+       COUNT(*) OVER() as total_count
      FROM orders o
      LEFT JOIN fortunes f ON o.fortune_type = f.id
      WHERE ${whereClause}
@@ -182,14 +222,10 @@ export const getUserOrders = async (
     [...queryParams, limit, offset]
   )
 
-  // 查询总数
-  const countResult = await query(
-    `SELECT COUNT(*) as total FROM orders o WHERE ${whereClause}`,
-    queryParams
-  )
+  // 4. 从第一行获取总数
+  const total = result.rows.length > 0 ? parseInt(result.rows[0].total_count) : 0
 
-  const total = parseInt(countResult.rows[0].total)
-
+  // 5. 移除total_count字段并格式化订单数据
   const orders = result.rows.map((row: any) => ({
     id: row.id,
     orderId: row.order_id,
@@ -206,14 +242,14 @@ export const getUserOrders = async (
       ? {
           title: row.title,
           subtitle: row.subtitle,
-          price: parseFloat(row.price),
+          price: row.price ? parseFloat(row.price) : 0,
           icon: row.icon,
           bgColor: row.bg_color,
         }
       : undefined,
   }))
 
-  return {
+  const response = {
     items: orders,
     pagination: {
       page,
@@ -222,6 +258,12 @@ export const getUserOrders = async (
       totalPages: Math.ceil(total / limit),
     },
   }
+
+  // 6. 写入Redis缓存（5分钟 = 300秒）
+  await redisCache.set(cacheKey, response, 300)
+  console.log(`📝 已写入Redis缓存: ${cacheKey}`)
+
+  return response
 }
 
 /**
@@ -264,7 +306,7 @@ export const getOrderDetail = async (userId: string, orderId: string) => {
           title: row.title,
           subtitle: row.subtitle,
           description: row.description,
-          price: parseFloat(row.price),
+          price: row.price ? parseFloat(row.price) : 0,
           originalPrice: row.original_price ? parseFloat(row.original_price) : undefined,
           icon: row.icon,
           bgColor: row.bg_color,
@@ -278,9 +320,12 @@ export const getOrderDetail = async (userId: string, orderId: string) => {
  * 取消订单（只能取消待支付的订单）
  */
 export const cancelOrder = async (userId: string, orderId: string) => {
-  // 检查订单状态
+  // 检查订单状态并获取用户邮箱
   const checkResult = await query(
-    'SELECT id, status FROM orders WHERE id = $1 AND user_id = $2',
+    `SELECT o.id, o.order_id, o.fortune_name, o.amount, o.status, u.email
+     FROM orders o
+     LEFT JOIN users u ON o.user_id = u.id
+     WHERE o.id = $1 AND o.user_id = $2`,
     [orderId, userId]
   )
 
@@ -304,6 +349,27 @@ export const cancelOrder = async (userId: string, orderId: string) => {
   )
 
   const updatedOrder = result.rows[0]
+
+  // 发送订单取消邮件（异步，不阻塞订单取消）
+  if (order.email) {
+    emailNotifications.sendOrderCancelledEmail(
+      order.email,
+      order.order_id,
+      order.fortune_name,
+      parseFloat(order.amount),
+      '用户主动取消'
+    )
+      .then(result => {
+        if (result.success) {
+          console.log(`✅ 订单取消邮件已发送至: ${order.email}`)
+        } else {
+          console.warn(`⚠️  订单取消邮件发送失败: ${result.error}`)
+        }
+      })
+      .catch(err => {
+        console.error('❌ 发送订单取消邮件时出错:', err)
+      })
+  }
 
   return {
     id: updatedOrder.id,

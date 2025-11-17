@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
 import * as reviewService from '../services/reviewService'
 import * as fortuneService from '../services/fortuneService'
 import type { Fortune } from '../types'
+import { showToast } from '../components/ToastContainer'
+import TrustFooter from '../components/TrustFooter'
 import './FortuneDetail.css'
 
 // Fortune service mock data (fallback only)
@@ -145,6 +148,7 @@ const fortuneDataFallback: any = {
 }
 
 const FortuneDetail = () => {
+  const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -201,9 +205,12 @@ const FortuneDetail = () => {
   const fetchReviews = async () => {
     try {
       const response = await reviewService.getReviews(id!)
-      setReviews(response.data.data || [])
+      // 后端返回 { items, stats, pagination }
+      const reviewData = response.data.data
+      setReviews(reviewData?.items || [])
     } catch (error) {
       console.error('获取评价失败:', error)
+      setReviews([])
     }
   }
 
@@ -239,7 +246,7 @@ const FortuneDetail = () => {
         setIsFavorite(true)
       }
     } catch (error) {
-      alert('操作失败，请重试')
+      showToast({ title: t('common.error'), content: t('fortuneDetail.operationFailed'), type: 'error' })
     }
   }
 
@@ -260,9 +267,9 @@ const FortuneDetail = () => {
         icon: fortune.icon,
         category: 'fortune',
       } as any)
-      alert('已添加到购物车')
+      showToast({ title: t('common.success'), content: t('fortuneDetail.addedToCart'), type: 'success' })
     } catch (error) {
-      alert('添加失败，请重试')
+      showToast({ title: t('common.error'), content: t('fortuneDetail.addFailed'), type: 'error' })
     }
   }
 
@@ -285,7 +292,7 @@ const FortuneDetail = () => {
       } as any)
       navigate('/cart')
     } catch (error) {
-      alert('操作失败，请重试')
+      showToast({ title: t('common.error'), content: t('fortuneDetail.operationFailed'), type: 'error' })
     }
   }
 
@@ -312,7 +319,7 @@ const FortuneDetail = () => {
       <div className="fortune-detail-page">
         <div className="error-container">
           <div className="error-icon">⏳</div>
-          <p>加载中...</p>
+          <p>{t('fortuneDetail.loading')}</p>
         </div>
       </div>
     )
@@ -323,9 +330,9 @@ const FortuneDetail = () => {
       <div className="fortune-detail-page">
         <div className="error-container">
           <div className="error-icon">😕</div>
-          <p>服务不存在</p>
+          <p>{t('fortuneDetail.notFound')}</p>
           <button onClick={() => navigate('/')} className="back-home-btn">
-            返回首页
+            {t('fortuneDetail.backHome')}
           </button>
         </div>
       </div>
@@ -357,11 +364,11 @@ const FortuneDetail = () => {
       {/* Price Bar */}
       <div className="price-bar">
         <div className="price-info">
-          <span className="price-label">价格</span>
+          <span className="price-label">{t('fortuneDetail.price')}</span>
           <span className="price-value">¥{fortune.price}</span>
         </div>
         <div className="sales-info">
-          <span className="sales-count">已售 {fortune.sales_count || 0}</span>
+          <span className="sales-count">{t('fortuneDetail.sold')} {fortune.sales_count || 0}</span>
           <span className="rating">
             ⭐ {fortune.rating || '0.0'}
           </span>
@@ -374,13 +381,13 @@ const FortuneDetail = () => {
           className={`tab-btn ${activeTab === 'detail' ? 'active' : ''}`}
           onClick={() => setActiveTab('detail')}
         >
-          服务详情
+          {t('fortuneDetail.serviceDetails')}
         </button>
         <button
           className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
           onClick={() => setActiveTab('reviews')}
         >
-          用户评价 ({reviews.length})
+          {t('fortuneDetail.userReviews')} ({reviews.length})
         </button>
       </div>
 
@@ -389,66 +396,66 @@ const FortuneDetail = () => {
         {activeTab === 'detail' ? (
           <div className="detail-tab">
             <section className="detail-section">
-              <h3 className="section-title">服务介绍</h3>
+              <h3 className="section-title">{t('fortuneDetail.serviceIntro')}</h3>
               <p className="section-text">{fortune.description}</p>
             </section>
 
             <section className="detail-section">
-              <h3 className="section-title">服务内容</h3>
+              <h3 className="section-title">{t('fortuneDetail.serviceContent')}</h3>
               <ul className="feature-list">
                 {(fortune as any).features ? (fortune as any).features.map((feature: string, index: number) => (
                   <li key={index}>✨ {feature}</li>
                 )) : (
                   <>
-                    <li>✨ 专业大师一对一解读</li>
-                    <li>✨ 详细的运势分析报告</li>
-                    <li>✨ 全方位运势详解</li>
-                    <li>✨ 幸运指引和建议</li>
+                    <li>✨ {t('fortuneDetail.feature1')}</li>
+                    <li>✨ {t('fortuneDetail.feature2')}</li>
+                    <li>✨ {t('fortuneDetail.feature3')}</li>
+                    <li>✨ {t('fortuneDetail.feature4')}</li>
                   </>
                 )}
               </ul>
             </section>
 
             <section className="detail-section">
-              <h3 className="section-title">服务流程</h3>
+              <h3 className="section-title">{t('fortuneDetail.serviceProcess')}</h3>
               <div className="process-steps">
                 <div className="step">
                   <div className="step-icon">1</div>
                   <div className="step-content">
-                    <h4>下单购买</h4>
-                    <p>选择服务并完成支付</p>
+                    <h4>{t('fortuneDetail.step1Title')}</h4>
+                    <p>{t('fortuneDetail.step1Desc')}</p>
                   </div>
                 </div>
                 <div className="step">
                   <div className="step-icon">2</div>
                   <div className="step-content">
-                    <h4>提交信息</h4>
-                    <p>填写您的基本信息</p>
+                    <h4>{t('fortuneDetail.step2Title')}</h4>
+                    <p>{t('fortuneDetail.step2Desc')}</p>
                   </div>
                 </div>
                 <div className="step">
                   <div className="step-icon">3</div>
                   <div className="step-content">
-                    <h4>专业解读</h4>
-                    <p>大师为您详细分析</p>
+                    <h4>{t('fortuneDetail.step3Title')}</h4>
+                    <p>{t('fortuneDetail.step3Desc')}</p>
                   </div>
                 </div>
                 <div className="step">
                   <div className="step-icon">4</div>
                   <div className="step-content">
-                    <h4>获取报告</h4>
-                    <p>查看您的专属报告</p>
+                    <h4>{t('fortuneDetail.step4Title')}</h4>
+                    <p>{t('fortuneDetail.step4Desc')}</p>
                   </div>
                 </div>
               </div>
             </section>
 
             <section className="detail-section">
-              <h3 className="section-title">温馨提示</h3>
+              <h3 className="section-title">{t('fortuneDetail.tips')}</h3>
               <div className="tips-box">
-                <p>• 服务结果仅供参考,请理性对待</p>
-                <p>• 请确保提供信息准确完整</p>
-                <p>• 如有疑问可联系在线客服</p>
+                <p>{t('fortuneDetail.tip1')}</p>
+                <p>{t('fortuneDetail.tip2')}</p>
+                <p>{t('fortuneDetail.tip3')}</p>
               </div>
             </section>
           </div>
@@ -466,7 +473,7 @@ const FortuneDetail = () => {
                           className="user-avatar"
                         />
                         <div>
-                          <div className="user-name">{review.user?.nickname || '匿名用户'}</div>
+                          <div className="user-name">{review.user?.nickname || t('fortuneDetail.anonymousUser')}</div>
                           <div className="review-date">
                             {new Date(review.created_at).toLocaleDateString()}
                           </div>
@@ -490,25 +497,28 @@ const FortuneDetail = () => {
             ) : (
               <div className="empty-reviews">
                 <div className="empty-icon">💬</div>
-                <p>暂无评价</p>
-                <p className="empty-hint">快来成为第一个评价的人吧~</p>
+                <p>{t('fortuneDetail.noReviews')}</p>
+                <p className="empty-hint">{t('fortuneDetail.beFirstReview')}</p>
               </div>
             )}
           </div>
         )}
       </div>
 
+      {/* 信任保障区域 */}
+      <TrustFooter />
+
       {/* Bottom Action Bar */}
       <div className="action-bar">
         <button className="quick-calc-btn" onClick={handleQuickCalculate}>
           <span className="btn-icon">✨</span>
-          <span className="btn-text">免费测算</span>
+          <span className="btn-text">{t('fortuneDetail.freeReading')}</span>
         </button>
         <button className="add-cart-btn" onClick={handleAddToCart}>
-          加入购物车
+          {t('fortuneDetail.addToCart')}
         </button>
         <button className="buy-now-btn" onClick={handleBuyNow}>
-          立即购买
+          {t('fortuneDetail.buyNow')}
         </button>
       </div>
     </div>

@@ -3,6 +3,8 @@ import http from 'http';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 import { config, validateConfig } from './config';
 import fortuneRoutes from './routes/fortune';
 import authRoutes from './routes/auth';
@@ -21,6 +23,7 @@ import reviewsRoutes from './routes/reviews';
 import couponsRoutes from './routes/coupons';
 import financialRoutes from './routes/financial';
 import adminsRoutes from './routes/admins';
+import invitationsRoutes from './routes/invitations';
 // 算命管理路由
 import fortuneCategoriesRoutes from './routes/fortuneCategories';
 import fortuneServicesRoutes from './routes/fortuneServices';
@@ -35,13 +38,18 @@ import paymentMethodsRoutes from './routes/manage/paymentMethods';
 import paymentTransactionsRoutes from './routes/manage/paymentTransactions';
 import emailTestRoutes from './routes/emailTest';
 import emailTemplatesRoutes from './routes/emailTemplates';
+import emailNotificationConfigsRoutes from './routes/manage/emailNotificationConfigs';
+import emailSendHistoryRoutes from './routes/manage/emailSendHistory';
 import shareAnalyticsRoutes from './routes/manage/shareAnalytics';
 // 公开API路由
 import publicBannersRoutes from './routes/public/banners';
 import publicShareRoutes from './routes/public/share';
 import publicNotificationsRoutes from './routes/public/notifications';
+import publicInvitationsRoutes from './routes/public/invitations';
+import publicStatsRoutes from './routes/public/stats';
 // 用户端API路由
 import userAuthRoutes from './routes/user/auth';
+import userEmailAuthRoutes from './routes/user/emailAuth';
 import userCartRoutes from './routes/user/cart';
 import userFavoriteRoutes from './routes/user/favorite';
 import userHistoryRoutes from './routes/user/history';
@@ -49,19 +57,39 @@ import userFortuneListRoutes from './routes/user/fortuneList';
 import userOrdersRoutes from './routes/user/orders';
 import userCouponsRoutes from './routes/user/coupons';
 import userReviewsRoutes from './routes/user/reviews';
-// import userPaymentsRoutes from './routes/user/payments';
+import userPaymentsRoutes from './routes/user/payments';
 import userDailyHoroscopesRoutes from './routes/user/dailyHoroscopes';
 import userPoliciesRoutes from './routes/user/policies';
 import userArticlesRoutes from './routes/user/articles';
 import userFortuneResultsRoutes from './routes/user/fortuneResults';
 import userNotificationsRoutes from './routes/user/notifications';
 import userShareRoutes from './routes/user/share';
+import userFeedbacksRoutes from './routes/user/feedbacks';
+import userKnowledgeBaseRoutes from './routes/user/knowledgeBase';
+import userProfileRoutes from './routes/user/profile';
 // WebChat路由
 import chatRoutes from './routes/chat';
 import csAgentsRoutes from './routes/csAgents';
 import csSessionsRoutes from './routes/csSessions';
 import csStatsRoutes from './routes/manage/csStats';
-import { apiLimiter } from './middleware/rateLimiter';
+import chatSatisfactionRoutes from './routes/webchat/satisfaction';
+import chatAiBotRoutes from './routes/webchat/aiBot';
+import serviceHoursRoutes from './routes/webchat/serviceHours';
+import csSatisfactionRoutes from './routes/manage/csSatisfaction';
+import csPerformanceRoutes from './routes/manage/csPerformance';
+import csAiBotRoutes from './routes/manage/csAiBot';
+import csQuickReplyRoutes from './routes/manage/csQuickReply';
+import csQualityRoutes from './routes/manage/csQuality';
+import csSensitiveWordsRoutes from './routes/manage/csSensitiveWords';
+import customerTagsRoutes from './routes/manage/customerTags';
+import customerNotesRoutes from './routes/manage/customerNotes';
+import sessionTransfersRoutes from './routes/manage/sessionTransfers';
+import knowledgeBaseRoutes from './routes/manage/knowledgeBase';
+import csScheduleRoutes from './routes/manage/csSchedule';
+import trainingRoutes from './routes/manage/training';
+import customerProfileRoutes from './routes/manage/customerProfile';
+import configsRoutes from './routes/manage/configs';
+import { apiLimiter, initializeRateLimiters } from './middleware/rateLimiter';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticate as auth } from './middleware/auth';
 import { authenticateUser as userAuth } from './middleware/userAuth';
@@ -71,6 +99,9 @@ import { auditLogger } from './middleware/auditLogger';
 import { performHealthCheck } from './services/healthService';
 import { startNotificationScheduler } from './services/notificationScheduler';
 import { initializeSocketServer, closeSocketServer } from './socket/chatServer';
+import configService from './services/configService';
+import { startStatsRefreshJob, stopStatsRefreshJob } from './jobs/refreshStats';
+import { startAllEmailTasks } from './jobs/emailScheduledTasks';
 
 // 验证配置
 try {
@@ -83,8 +114,24 @@ try {
 // 初始化Redis连接
 getRedisClient();
 
+// 初始化配置服务
+configService.initialize().catch(err => {
+  console.error('❌ 配置服务初始化失败，使用环境变量后备配置:', err.message);
+});
+
+// 初始化限流器（从数据库加载配置）
+initializeRateLimiters().catch(err => {
+  console.error('❌ 限流器初始化失败，使用默认配置:', err.message);
+});
+
 // 启动通知定时发送调度器
 startNotificationScheduler();
+
+// 启动物化视图刷新任务（每10分钟刷新统计数据）
+startStatsRefreshJob();
+
+// 启动邮件定时任务（每日运势、到期提醒、生日祝福等）
+startAllEmailTasks();
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -98,7 +145,9 @@ console.log('✅ Socket.IO服务器已初始化');
 app.set('trust proxy', 1);
 
 // 安全性中间件
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // 允许Swagger UI加载资源
+}));
 
 // CORS 配置
 app.use(cors({
@@ -129,13 +178,29 @@ if (config.app.isDevelopment) {
   });
 }
 
+// ========== Swagger API 文档 ==========
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: '算命平台 API 文档',
+  customfavIcon: '/favicon.ico'
+}));
+
+// Swagger JSON
+app.get('/api-docs.json', (_req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // ========== 公开API（无需认证） ==========
 app.use('/api/public/banners', publicBannersRoutes);
 app.use('/api/public/notifications', publicNotificationsRoutes);
 app.use('/api/public/share', publicShareRoutes);  // 分享点击追踪
+app.use('/api/public/invitations', publicInvitationsRoutes);  // 邀请验证和接受
+app.use('/api/public', publicStatsRoutes);  // 平台统计数据
 
 // ========== 用户端API (C端 - 普通用户使用) ==========
-app.use('/api/auth', userAuthRoutes);           // 用户认证（注册/登录/验证码）
+app.use('/api/auth', userAuthRoutes);           // 用户认证（注册/登录/验证码）- 兼容旧版
+app.use('/api/user/email-auth', userEmailAuthRoutes);  // 邮箱认证（新版）
 app.use('/api/cart', userCartRoutes);           // 购物车
 app.use('/api/favorites', userFavoriteRoutes);  // 收藏
 app.use('/api/history', userHistoryRoutes);     // 浏览历史
@@ -143,14 +208,20 @@ app.use('/api/fortunes', userFortuneListRoutes);// 算命服务列表
 app.use('/api/orders', userOrdersRoutes);       // 用户订单
 app.use('/api/coupons', userCouponsRoutes);     // 用户优惠券
 app.use('/api/reviews', userReviewsRoutes);     // 用户评价
-// app.use('/api/payments', userPaymentsRoutes);   // 支付
+app.use('/api/payments', userPaymentsRoutes);   // 支付
 app.use('/api/daily-horoscopes', userDailyHoroscopesRoutes);  // 每日运势
 app.use('/api/policies', userPoliciesRoutes);   // 用户协议和隐私政策
 app.use('/api/articles', userArticlesRoutes);   // 文章
 app.use('/api/fortune-results', userFortuneResultsRoutes);  // 算命结果
 app.use('/api/notifications', userAuth, userNotificationsRoutes);  // 用户通知
 app.use('/api/share', userAuth, userShareRoutes);  // 分享功能
+app.use('/api/feedbacks', userFeedbacksRoutes);  // 用户反馈
+app.use('/api/help', userKnowledgeBaseRoutes); // 帮助中心和知识库（公开API）
+app.use('/api/profile', userProfileRoutes);    // 用户个人资料和标签
 app.use('/api/chat', chatRoutes);             // WebChat用户端 (公开API,支持游客)
+app.use('/api/chat', chatSatisfactionRoutes); // 满意度评价 (用户端)
+app.use('/api/chat', chatAiBotRoutes);        // AI对话 (用户端)
+app.use('/api/chat', serviceHoursRoutes);     // 客服服务时间 (公开API)
 
 // 算命计算API（公开或用户端使用）
 app.use('/api/fortune', fortuneRoutes);
@@ -172,6 +243,7 @@ app.use('/api/manage/reviews', reviewsRoutes);              // 评价管理
 app.use('/api/manage/coupons', couponsRoutes);              // 优惠券管理
 app.use('/api/manage/financial', financialRoutes);          // 财务管理
 app.use('/api/manage/admins', adminsRoutes);                // 管理员管理
+app.use('/api/manage/invitations', invitationsRoutes);      // 管理员邀请
 app.use('/api/manage/fortune-categories', fortuneCategoriesRoutes);  // 算命分类
 app.use('/api/manage/fortune-services', fortuneServicesRoutes);      // 算命服务
 app.use('/api/manage/fortune-templates', fortuneTemplatesRoutes);    // 算命模板
@@ -185,12 +257,56 @@ app.use('/api/manage/payment-methods', paymentMethodsRoutes);        // 支付�
 app.use('/api/manage/payment-transactions', paymentTransactionsRoutes);  // 支付交易记录
 app.use('/api/manage/email', emailTestRoutes);                           // 邮件测试
 app.use('/api/manage/email-templates', emailTemplatesRoutes);            // 邮件模板管理
+app.use('/api/manage/email-notification-configs', auth, emailNotificationConfigsRoutes);  // 邮件通知配置
+app.use('/api/manage/email-send-history', auth, emailSendHistoryRoutes);              // 邮件发送历史
 app.use('/api/manage/cs/agents', csAgentsRoutes);                        // 客服人员管理 (已内置权限验证)
 app.use('/api/manage/cs/sessions', csSessionsRoutes);                    // 客服会话管理 (已内置权限验证)
 app.use('/api/manage/cs/stats', auth, csStatsRoutes);                    // 客服统计 (需要认证)
+app.use('/api/manage/cs/satisfaction', auth, csSatisfactionRoutes);      // 客服满意度管理
+app.use('/api/manage/cs/performance', auth, csPerformanceRoutes);        // 客服绩效管理
+app.use('/api/manage/cs/ai', auth, csAiBotRoutes);                       // AI机器人管理
+app.use('/api/manage/cs/quick-replies', auth, csQuickReplyRoutes);       // 快捷回复管理
+app.use('/api/manage/cs/quality', auth, csQualityRoutes);                // 质检管理
+app.use('/api/manage/cs/sensitive-words', auth, csSensitiveWordsRoutes); // 敏感词管理
+app.use('/api/manage/customer-tags', auth, customerTagsRoutes);          // 客户标签管理
+app.use('/api/manage/customer-notes', auth, customerNotesRoutes);        // 客户备注管理
+app.use('/api/manage/session-transfers', auth, sessionTransfersRoutes);  // 会话转接管理
+app.use('/api/manage/knowledge-base', auth, knowledgeBaseRoutes);        // 知识库管理
+app.use('/api/manage/cs-schedule', auth, csScheduleRoutes);              // 客服排班管理
+app.use('/api/manage/training', auth, trainingRoutes);                   // 培训系统
+app.use('/api/manage/customer-profiles', auth, customerProfileRoutes);   // 客户画像
 app.use('/api/manage/share-analytics', shareAnalyticsRoutes);            // 分享统计分析
+app.use('/api/manage/configs', auth, configsRoutes);                     // 配置管理
 
-// 根路径 - API信息
+/**
+ * @openapi
+ * /:
+ *   get:
+ *     summary: API 信息
+ *     description: 返回API基本信息和端点列表
+ *     tags:
+ *       - General
+ *     responses:
+ *       200:
+ *         description: 成功返回API信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                   example: 算命平台 API
+ *                 version:
+ *                   type: string
+ *                   example: 1.0.0
+ *                 status:
+ *                   type: string
+ *                   example: running
+ *                 documentation:
+ *                   type: string
+ *                   example: /api-docs
+ */
 app.get('/', (_req, res) => {
   res.json({
     name: '算命平台 API',
@@ -198,6 +314,7 @@ app.get('/', (_req, res) => {
     status: 'running',
     endpoints: {
       health: '/health',
+      documentation: '/api-docs',
       public: {
         banners: '/api/public/banners',
         notifications: '/api/public/notifications'
@@ -217,11 +334,50 @@ app.get('/', (_req, res) => {
         stats: '/api/manage/stats'
       }
     },
-    documentation: 'See README.md for full API documentation'
+    documentation: '访问 /api-docs 查看完整 Swagger API 文档'
   });
 });
 
-// 健康检查（详细模式）
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: 健康检查
+ *     description: 检查API服务、数据库和Redis的健康状态
+ *     tags:
+ *       - General
+ *     responses:
+ *       200:
+ *         description: 服务健康或降级运行
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [healthy, degraded, unhealthy]
+ *                   example: healthy
+ *                 message:
+ *                   type: string
+ *                   example: 所有服务运行正常
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *                 checks:
+ *                   type: object
+ *                   properties:
+ *                     database:
+ *                       type: object
+ *                     redis:
+ *                       type: object
+ *       503:
+ *         description: 服务不健康
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 app.get('/health', async (_req, res) => {
   try {
     const healthStatus = await performHealthCheck(true);
@@ -269,6 +425,9 @@ const server = httpServer.listen(PORT, '0.0.0.0', () => {
 process.on('SIGTERM', async () => {
   console.log('🛑 收到 SIGTERM 信号，正在优雅关闭...');
 
+  // 停止定时任务
+  stopStatsRefreshJob();
+
   // 关闭Socket.IO服务器
   await closeSocketServer();
 
@@ -283,6 +442,9 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('\n🛑 收到 SIGINT 信号，正在优雅关闭...');
+
+  // 停止定时任务
+  stopStatsRefreshJob();
 
   // 关闭Socket.IO服务器
   await closeSocketServer();

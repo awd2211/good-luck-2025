@@ -1,11 +1,12 @@
 // 用户相关类型
 export interface User {
   id: string
-  phone: string
+  email: string
+  phone?: string
   nickname?: string
   avatar?: string
   balance: number
-  created_at: string
+  created_at?: string
 }
 
 export interface LoginData {
@@ -24,6 +25,7 @@ export interface RegisterData {
 // 算命服务类型
 export interface Fortune {
   id: string
+  code?: string  // 服务代码，用于标识服务类型
   title: string
   subtitle?: string
   description: string
@@ -37,13 +39,29 @@ export interface Fortune {
   sales_count?: number
 }
 
-// 购物车类型
+// 购物车类型（后端返回的是平铺结构）
 export interface CartItem {
   id: string
   fortune_id: string
-  fortune: Fortune
   quantity: number
   price: number
+  item_price: number
+  created_at: string
+  // Fortune 信息（平铺）
+  title: string
+  subtitle?: string
+  category: string
+  description?: string
+  original_price?: number
+  icon?: string
+  bg_color?: string
+}
+
+// 购物车响应类型（后端返回格式）
+export interface CartResponse {
+  items: CartItem[]
+  count: number
+  total: string
 }
 
 // 订单类型

@@ -48,7 +48,7 @@ const RoleManagement = () => {
     try {
       setLoading(true)
       const token = localStorage.getItem('admin_token')
-      const response = await axios.get('http://localhost:50301/api/manage/admins/stats', {
+      const response = await axios.get('/api/manage/admins/stats', {
         headers: { Authorization: `Bearer ${token}` }
       })
       setStats(response.data.data)

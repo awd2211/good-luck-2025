@@ -178,3 +178,103 @@ export const exportUsers = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+/**
+ * 创建新用户
+ */
+export const createUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { phone, username, password, email, nickname, balance } = req.body;
+
+    // 验证必填字段
+    if (!phone || !username || !password) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少必填字段：phone, username, password'
+      });
+    }
+
+    // 验证手机号格式
+    const phoneRegex = /^1[3-9]\d{9}$/;
+    if (!phoneRegex.test(phone)) {
+      return res.status(400).json({
+        success: false,
+        message: '手机号格式不正确'
+      });
+    }
+
+    // 验证密码长度
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: '密码长度至少6位'
+      });
+    }
+
+    const userData = {
+      phone,
+      username,
+      password,
+      email,
+      nickname,
+      balance: balance !== undefined ? balance : 0
+    };
+
+    const user = await userService.createUser(userData);
+
+    res.status(201).json({
+      success: true,
+      message: '用户创建成功',
+      data: user
+    });
+  } catch (error: any) {
+    if (error.message?.includes('已存在')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * 重置用户密码
+ */
+export const resetUserPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { newPassword } = req.body;
+
+    // 验证必填字段
+    if (!newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供新密码'
+      });
+    }
+
+    // 验证密码长度
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: '密码长度至少6位'
+      });
+    }
+
+    await userService.resetUserPassword(id, newPassword);
+
+    res.json({
+      success: true,
+      message: '密码重置成功'
+    });
+  } catch (error: any) {
+    if (error.message?.includes('不存在')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message
+      });
+    }
+    next(error);
+  }
+};

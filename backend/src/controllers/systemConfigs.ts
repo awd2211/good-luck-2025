@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 import { redisCache } from '../config/redis';
+import configService from '../services/configService';
 
 const CACHE_KEY_PREFIX = 'system_configs';
-const CACHE_TTL = 7200; // 2小时，配置变化频率低
+// CACHE_TTL已迁移到数据库配置：cache.systemConfigs.ttl（默认7200秒）
 
 /**
  * 获取所有系统配置（支持分页和搜索）
@@ -100,7 +101,8 @@ export const getSystemConfig = async (req: Request, res: Response) => {
     }
 
     // 缓存结果
-    await redisCache.set(cacheKey, result.rows[0], CACHE_TTL);
+    const cacheTTL = await configService.get<number>('cache.systemConfigs.ttl', 7200);
+    await redisCache.set(cacheKey, result.rows[0], cacheTTL);
 
     res.json({
       success: true,

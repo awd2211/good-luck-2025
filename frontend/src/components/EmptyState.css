@@ -1,0 +1,177 @@
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 300px;
+}
+
+.empty-state-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+/* 图标 */
+.empty-state-icon {
+  margin-bottom: 20px;
+}
+
+.empty-state-emoji {
+  font-size: 80px;
+  line-height: 1;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* 标题 */
+.empty-state-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+/* 描述 */
+.empty-state-description {
+  font-size: 14px;
+  color: #999;
+  line-height: 1.6;
+  margin: 0 0 24px 0;
+}
+
+/* 操作按钮区域 */
+.empty-state-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.empty-state-button {
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  min-width: 100px;
+}
+
+.empty-state-button.primary {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.empty-state-button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+}
+
+.empty-state-button.primary:active {
+  transform: translateY(0);
+}
+
+.empty-state-button.secondary {
+  background: #fff;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.empty-state-button.secondary:hover {
+  background: #f5f5f5;
+  border-color: #ccc;
+}
+
+/* 尺寸变体 */
+.empty-state-small {
+  min-height: 200px;
+  padding: 30px 20px;
+}
+
+.empty-state-small .empty-state-emoji {
+  font-size: 60px;
+}
+
+.empty-state-small .empty-state-title {
+  font-size: 16px;
+}
+
+.empty-state-small .empty-state-description {
+  font-size: 13px;
+}
+
+.empty-state-large {
+  min-height: 400px;
+  padding: 60px 20px;
+}
+
+.empty-state-large .empty-state-emoji {
+  font-size: 100px;
+}
+
+.empty-state-large .empty-state-title {
+  font-size: 24px;
+}
+
+.empty-state-large .empty-state-description {
+  font-size: 16px;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .empty-state {
+    min-height: 250px;
+    padding: 30px 15px;
+  }
+
+  .empty-state-emoji {
+    font-size: 60px;
+  }
+
+  .empty-state-title {
+    font-size: 18px;
+  }
+
+  .empty-state-description {
+    font-size: 13px;
+  }
+
+  .empty-state-button {
+    padding: 8px 20px;
+    font-size: 13px;
+    min-width: 80px;
+  }
+}
+
+/* 暗色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .empty-state-title {
+    color: #e0e0e0;
+  }
+
+  .empty-state-description {
+    color: #999;
+  }
+
+  .empty-state-button.secondary {
+    background: #2a2a2a;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+
+  .empty-state-button.secondary:hover {
+    background: #333;
+    border-color: #555;
+  }
+}

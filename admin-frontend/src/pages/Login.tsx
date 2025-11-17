@@ -1,9 +1,23 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Alert, Space } from 'antd'
-import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, message, Alert, Space, Collapse, Table, Tag } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined, CrownOutlined, TeamOutlined, EyeOutlined, EditOutlined, CustomerServiceOutlined } from '@ant-design/icons'
 import { login } from '../services/authService'
 import { useAuth } from '../contexts/AuthContext'
+
+const { Panel } = Collapse
+
+// 测试账号列表
+const testAccounts = [
+  { username: 'admin', password: 'admin123', role: 'super_admin', roleName: '超级管理员', icon: <CrownOutlined />, color: 'red' },
+  { username: 'manager', password: 'manager123', role: 'manager', roleName: '经理', icon: <TeamOutlined />, color: 'cyan' },
+  { username: 'editor', password: 'editor123', role: 'editor', roleName: '编辑', icon: <EditOutlined />, color: 'blue' },
+  { username: 'viewer', password: 'viewer123', role: 'viewer', roleName: '访客', icon: <EyeOutlined />, color: 'default' },
+  { username: 'cs_manager', password: 'cs_manager123', role: 'cs_manager', roleName: '客服主管', icon: <CustomerServiceOutlined />, color: 'purple' },
+  { username: 'cs_agent', password: 'cs_agent123', role: 'cs_agent', roleName: '客服专员', icon: <CustomerServiceOutlined />, color: 'geekblue' },
+  { username: 'cs_manager_test', password: 'Test123456', role: 'cs_manager', roleName: '客服主管(测试)', icon: <CustomerServiceOutlined />, color: 'purple' },
+  { username: 'cs_agent_test', password: 'Test123456', role: 'cs_agent', roleName: '客服专员(测试)', icon: <CustomerServiceOutlined />, color: 'geekblue' },
+]
 
 const Login = () => {
   const [loading, setLoading] = useState(false)
@@ -51,6 +65,12 @@ const Login = () => {
     form.resetFields(['twoFactorToken'])
   }
 
+  // 快速填充测试账号
+  const handleQuickFill = (username: string, password: string) => {
+    form.setFieldsValue({ username, password })
+    message.info(`已填充测试账号: ${username}`)
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -60,7 +80,7 @@ const Login = () => {
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     }}>
       <Card
-        title="算命平台管理后台"
+        title="LUCK.DAY 管理后台"
         style={{ width: 400 }}
         headStyle={{ textAlign: 'center', fontSize: 24, fontWeight: 'bold' }}
       >
@@ -133,6 +153,64 @@ const Login = () => {
 
         {!requiresTwoFactor && (
           <>
+            {/* 测试账号列表 */}
+            <Collapse
+              ghost
+              style={{ marginBottom: 16 }}
+              items={[
+                {
+                  key: 'test-accounts',
+                  label: (
+                    <div style={{ textAlign: 'center', color: '#667eea', fontWeight: 500 }}>
+                      📝 测试账号列表（点击展开）
+                    </div>
+                  ),
+                  children: (
+                    <div style={{ marginTop: -8 }}>
+                      <div style={{ marginBottom: 12, fontSize: 12, color: '#999', textAlign: 'center' }}>
+                        点击账号可快速填充到表单
+                      </div>
+                      <Table
+                        dataSource={testAccounts}
+                        pagination={false}
+                        size="small"
+                        rowKey="username"
+                        onRow={(record) => ({
+                          onClick: () => handleQuickFill(record.username, record.password),
+                          style: { cursor: 'pointer' }
+                        })}
+                        columns={[
+                          {
+                            title: '角色',
+                            dataIndex: 'roleName',
+                            key: 'roleName',
+                            width: 100,
+                            render: (text: string, record: any) => (
+                              <Tag color={record.color} icon={record.icon}>
+                                {text}
+                              </Tag>
+                            )
+                          },
+                          {
+                            title: '用户名',
+                            dataIndex: 'username',
+                            key: 'username',
+                            render: (text: string) => <code style={{ color: '#667eea' }}>{text}</code>
+                          },
+                          {
+                            title: '密码',
+                            dataIndex: 'password',
+                            key: 'password',
+                            render: (text: string) => <code style={{ color: '#667eea' }}>{text}</code>
+                          },
+                        ]}
+                      />
+                    </div>
+                  )
+                }
+              ]}
+            />
+
             <div style={{ textAlign: 'center', marginBottom: 16 }}>
               <Link to="/forgot-password" style={{ color: '#667eea' }}>
                 忘记密码？

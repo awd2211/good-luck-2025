@@ -10,25 +10,11 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
 import { Permission } from '../config/permissions'
-import { getFinancialStats, getFinancialData } from '../services/apiService'
+import { getFinancialStats, getFinancialData } from '../services/financialService'
+import type { FinancialStats, OrderFinancial } from '../services/financialService'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
-
-interface FinancialStats {
-  total_revenue: string
-  today_revenue: string
-  total_orders: string
-  today_orders: string
-  avg_order_value: number
-  total_users: number
-}
-
-interface OrderFinancial {
-  date: string
-  revenue: string
-  order_count: string
-}
 
 const FinancialManagement = () => {
   const [stats, setStats] = useState<FinancialStats | null>(null)
@@ -57,7 +43,7 @@ const FinancialManagement = () => {
     try {
       setStatsLoading(true)
       const response = await getFinancialStats()
-      setStats(response.data)
+      setStats(response.data.data)
     } catch (error: any) {
       message.error('加载财务统计失败')
       console.error('加载财务统计失败:', error)
@@ -75,12 +61,12 @@ const FinancialManagement = () => {
         page,
         limit: pageSize
       })
-      const data = response.data || []
+      const data = response.data.data || []
       setFinancialData(Array.isArray(data) ? data : data.list || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+        total: Array.isArray(data) ? data.length : data.total || data.list?.length || 0,
       })
     } catch (error: any) {
       message.error('加载财务明细失败')

@@ -12,11 +12,27 @@ const pool = new Pool({
   min: config.database.poolMin,
   idleTimeoutMillis: config.database.idleTimeoutMillis,
   connectionTimeoutMillis: config.database.connectionTimeoutMillis,
+  statement_timeout: config.database.statementTimeout, // 查询超时
 });
 
-// 测试连接
+// 连接池事件监听
 pool.on('connect', () => {
   console.log('✅ 数据库连接成功');
+});
+
+pool.on('acquire', () => {
+  const stats = {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+  };
+  if (config.app.isDevelopment) {
+    console.log('📊 连接池状态:', stats);
+  }
+});
+
+pool.on('remove', () => {
+  console.log('⚠️ 连接被移除');
 });
 
 pool.on('error', (err) => {

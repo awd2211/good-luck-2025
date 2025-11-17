@@ -10,7 +10,7 @@ import { sendTestEmail } from '../services/emailService'
  */
 export const testEmail = async (req: Request, res: Response) => {
   try {
-    const { toEmail, smtpConfig } = req.body
+    const { toEmail, emailConfig } = req.body
 
     if (!toEmail) {
       return res.status(400).json({
@@ -19,7 +19,7 @@ export const testEmail = async (req: Request, res: Response) => {
       })
     }
 
-    const result = await sendTestEmail(toEmail, smtpConfig)
+    const result = await sendTestEmail(toEmail, emailConfig)
 
     res.json({
       success: true,

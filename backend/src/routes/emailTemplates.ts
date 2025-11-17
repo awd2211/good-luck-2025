@@ -4,12 +4,16 @@
 
 import { Router } from 'express'
 import {
-  getEmailTemplates,
-  getEmailTemplate,
-  createEmailTemplate,
-  updateEmailTemplate,
-  deleteEmailTemplate,
-  previewEmailTemplate,
+  getAllTemplates,
+  getTemplateById,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+  previewTemplate,
+  sendTestEmail,
+  getTemplateStats,
+  getEmailLogs,
+  sendBatchEmails,
 } from '../controllers/emailTemplateController'
 import { authenticate } from '../middleware/auth'
 
@@ -18,41 +22,22 @@ const router = Router()
 // 所有路由都需要管理员权限
 router.use(authenticate)
 
-/**
- * GET /api/manage/email-templates
- * 获取所有邮件模板
- * 查询参数: template_type, enabled
- */
-router.get('/', getEmailTemplates)
+// 模板统计
+router.get('/stats', getTemplateStats)
 
-/**
- * GET /api/manage/email-templates/:key
- * 获取单个邮件模板
- */
-router.get('/:key', getEmailTemplate)
+// 模板CRUD
+router.get('/', getAllTemplates)
+router.get('/:id', getTemplateById)
+router.post('/', createTemplate)
+router.put('/:id', updateTemplate)
+router.delete('/:id', deleteTemplate)
 
-/**
- * POST /api/manage/email-templates
- * 创建邮件模板
- */
-router.post('/', createEmailTemplate)
+// 模板操作
+router.post('/:id/preview', previewTemplate)
+router.post('/:id/test', sendTestEmail)
+router.post('/batch-send', sendBatchEmails)
 
-/**
- * PUT /api/manage/email-templates/:key
- * 更新邮件模板
- */
-router.put('/:key', updateEmailTemplate)
-
-/**
- * DELETE /api/manage/email-templates/:key
- * 删除邮件模板（系统模板不能删除）
- */
-router.delete('/:key', deleteEmailTemplate)
-
-/**
- * POST /api/manage/email-templates/preview
- * 预览邮件模板
- */
-router.post('/preview', previewEmailTemplate)
+// 邮件日志
+router.get('/logs/list', getEmailLogs)
 
 export default router

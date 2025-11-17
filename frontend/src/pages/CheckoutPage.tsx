@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import PaymentMethodSelector from '../components/PaymentMethodSelector'
+import PaymentTrustSection from '../components/PaymentTrustSection'
 import { createOrder } from '../services/orderService'
 import { createPayment } from '../services/paymentService'
 import storage from '../utils/storage'
@@ -27,6 +29,7 @@ interface LocationState {
 }
 
 const CheckoutPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
@@ -66,7 +69,7 @@ const CheckoutPage = () => {
   // 应用优惠券
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      showToast({ title: '提示', content: '请输入优惠券代码', type: 'warning' })
+      showToast({ title: t('checkout.notice'), content: t('checkout.enterCouponCode'), type: 'warning' })
       return
     }
 
@@ -87,14 +90,14 @@ const CheckoutPage = () => {
 
       if (result.success && result.data.valid) {
         setDiscount(result.data.discount || 0)
-        showToast({ title: '成功', content: `优惠券已应用!可优惠 $${result.data.discount}`, type: 'success' })
+        showToast({ title: t('checkout.success'), content: t('checkout.couponApplied', { discount: result.data.discount }), type: 'success' })
       } else {
-        showToast({ title: '失败', content: result.data.message || '优惠券无效', type: 'error' })
+        showToast({ title: t('checkout.failed'), content: result.data.message || t('checkout.couponInvalid'), type: 'error' })
         setDiscount(0)
       }
     } catch (error) {
       logError('验证优惠券失败', error, { couponCode, amount: subtotal })
-      showToast({ title: '错误', content: '验证优惠券失败,请稍后重试', type: 'error' })
+      showToast({ title: t('checkout.error'), content: t('checkout.validateCouponFailed'), type: 'error' })
       setDiscount(0)
     }
   }
@@ -102,7 +105,7 @@ const CheckoutPage = () => {
   // 提交订单并支付
   const handleSubmitOrder = async () => {
     if (!selectedMethod) {
-      showToast({ title: '提示', content: '请选择支付方式', type: 'warning' })
+      showToast({ title: t('checkout.notice'), content: t('checkout.selectPaymentMethod'), type: 'warning' })
       return
     }
 
@@ -116,12 +119,12 @@ const CheckoutPage = () => {
       })
 
       if (!orderResponse.data.success) {
-        throw new Error(orderResponse.data.message || '创建订单失败')
+        throw new Error(orderResponse.data.message || t('checkout.createOrderFailed'))
       }
 
       const orderId = orderResponse.data.data?.id
       if (!orderId) {
-        throw new Error('创建订单失败:未返回订单ID')
+        throw new Error(t('checkout.noOrderId'))
       }
 
       // 2. 创建支付
@@ -134,14 +137,14 @@ const CheckoutPage = () => {
       })
 
       if (!paymentResponse.data.success) {
-        throw new Error(paymentResponse.data.message || '创建支付失败')
+        throw new Error(paymentResponse.data.message || t('checkout.createPaymentFailed'))
       }
 
       const paymentData = paymentResponse.data.data
 
       // 3. 根据支付方式处理
       if (!paymentData) {
-        throw new Error('支付数据为空')
+        throw new Error(t('checkout.paymentDataEmpty'))
       }
 
       if (selectedMethod === 'balance') {
@@ -153,21 +156,21 @@ const CheckoutPage = () => {
         if (paymentData.payment_url) {
           window.location.href = paymentData.payment_url
         } else {
-          throw new Error('未获取到PayPal支付链接')
+          throw new Error(t('checkout.noPaypalLink'))
         }
       } else if (selectedMethod === 'stripe') {
         // Stripe需要跳转到支付页面
         if (paymentData.payment_url) {
           window.location.href = paymentData.payment_url
         } else {
-          throw new Error('未获取到Stripe支付链接')
+          throw new Error(t('checkout.noStripeLink'))
         }
       }
 
     } catch (error: unknown) {
       logError('提交订单失败', error, { selectedMethod, total, cartItemIds })
-      const errorMessage = error instanceof Error ? error.message : '提交订单失败，请重试'
-      showToast({ title: '错误', content: errorMessage, type: 'error' })
+      const errorMessage = error instanceof Error ? error.message : t('checkout.submitOrderFailed')
+      showToast({ title: t('checkout.error'), content: errorMessage, type: 'error' })
       setIsProcessing(false)
     }
   }
@@ -180,15 +183,15 @@ const CheckoutPage = () => {
     <div className="checkout-page">
       <div className="checkout-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('checkout.back')}
         </button>
-        <h1>确认订单</h1>
+        <h1>{t('checkout.title')}</h1>
       </div>
 
       <div className="checkout-content">
         {/* 商品列表 */}
         <div className="order-items-section">
-          <h2>订单商品</h2>
+          <h2>{t('checkout.orderItems')}</h2>
           <div className="items-list">
             {checkoutItems.map(item => (
               <div key={item.id} className="checkout-item">
@@ -211,11 +214,11 @@ const CheckoutPage = () => {
 
         {/* 优惠券 */}
         <div className="coupon-section">
-          <h2>优惠券</h2>
+          <h2>{t('checkout.coupon')}</h2>
           <div className="coupon-input-group">
             <input
               type="text"
-              placeholder="请输入优惠券代码"
+              placeholder={t('checkout.couponPlaceholder')}
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value)}
               disabled={isProcessing}
@@ -224,7 +227,7 @@ const CheckoutPage = () => {
               onClick={handleApplyCoupon}
               disabled={isProcessing || !couponCode.trim()}
             >
-              使用
+              {t('checkout.apply')}
             </button>
           </div>
         </div>
@@ -241,26 +244,29 @@ const CheckoutPage = () => {
         {/* 价格汇总 */}
         <div className="price-summary">
           <div className="summary-row">
-            <span>商品小计:</span>
+            <span>{t('checkout.subtotal')}</span>
             <span>¥{subtotal.toFixed(2)}</span>
           </div>
           {discount > 0 && (
             <div className="summary-row discount">
-              <span>优惠券抵扣:</span>
+              <span>{t('checkout.couponDiscount')}</span>
               <span>-¥{discount.toFixed(2)}</span>
             </div>
           )}
           <div className="summary-row total">
-            <span>实付金额:</span>
+            <span>{t('checkout.totalAmount')}</span>
             <span className="total-amount">¥{total.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* 信任保障 */}
+        <PaymentTrustSection />
       </div>
 
       {/* 底部提交按钮 */}
       <div className="checkout-footer">
         <div className="footer-info">
-          <span className="total-label">应付金额:</span>
+          <span className="total-label">{t('checkout.amountDue')}</span>
           <span className="total-price">¥{total.toFixed(2)}</span>
         </div>
         <button
@@ -268,7 +274,7 @@ const CheckoutPage = () => {
           onClick={handleSubmitOrder}
           disabled={!selectedMethod || isProcessing}
         >
-          {isProcessing ? '处理中...' : '提交订单'}
+          {isProcessing ? t('checkout.processing') : t('checkout.submitOrder')}
         </button>
       </div>
     </div>

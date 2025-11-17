@@ -1,4 +1,5 @@
 import { query } from '../../config/database'
+import * as emailNotifications from '../emailNotificationService'
 
 /**
  * 算命结果接口
@@ -46,27 +47,107 @@ export const saveFortuneResult = async (
   const id = generateId()
   const resultId = generateResultId()
 
-  const result = await query(
-    `INSERT INTO fortune_results (
-      id, result_id, order_id, user_id, fortune_id, fortune_type,
-      input_data, result_data
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-    RETURNING *`,
-    [id, resultId, orderId || null, userId, fortuneId, fortuneType, JSON.stringify(inputData), JSON.stringify(resultData)]
-  )
+  console.log('saveFortuneResult 调用参数:')
+  console.log('  userId:', userId)
+  console.log('  fortuneId:', fortuneId)
+  console.log('  fortuneType:', fortuneType)
+  console.log('  orderId:', orderId)
 
-  const row = result.rows[0]
-  return {
-    id: row.id,
-    result_id: row.result_id,
-    order_id: row.order_id,
-    user_id: row.user_id,
-    fortune_id: row.fortune_id,
-    fortune_type: row.fortune_type,
-    input_data: row.input_data,
-    result_data: row.result_data,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
+  // 验证 fortuneId - 如果是数字字符串，查询 fortune_services 以获取对应的 code
+  // 然后映射到 fortunes 表的 ID
+  let finalFortuneId = fortuneId
+  if (/^\d+$/.test(fortuneId)) {
+    console.log(`fortuneId是数字(${fortuneId})，查询fortune_services获取code...`)
+    try {
+      const serviceResult = await query(
+        'SELECT code FROM fortune_services WHERE id = $1',
+        [parseInt(fortuneId)]
+      )
+      if (serviceResult.rows.length > 0) {
+        const code = serviceResult.rows[0].code
+        console.log(`从 fortune_services 获取code: ${code}`)
+
+        // 映射 fortune_services.code 到 fortunes.id
+        const codeToFortuneIdMap: Record<string, string> = {
+          'bazi_detail': 'bazi',
+          'bazi_year': 'flow-year',
+          'zodiac_fortune': 'birth-animal',
+          'name_detail': 'name-detail',
+          'marriage_fate': 'marriage-analysis',
+          'marriage_match': 'marriage',
+          'wealth_fortune': 'wealth',
+          'bazi_mingge': 'bazi',
+          'zodiac_match': 'birth-animal',
+          'star_fortune': 'birth-animal',
+          'star_match': 'marriage',
+          'name_match': 'name-match',
+          'number_divination': 'number-divination',
+          'purple_star': 'purple-star',
+        }
+
+        finalFortuneId = codeToFortuneIdMap[code] || code
+        console.log(`映射code ${code} -> fortuneId ${finalFortuneId}`)
+      }
+    } catch (err) {
+      console.error('查询 fortune_services 失败:', err)
+    }
+  }
+
+  try {
+    const result = await query(
+      `INSERT INTO fortune_results (
+        id, result_id, order_id, user_id, fortune_id, fortune_type,
+        input_data, result_data
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *`,
+      [id, resultId, orderId || null, userId, finalFortuneId, fortuneType, JSON.stringify(inputData), JSON.stringify(resultData)]
+    )
+
+    console.log('✅ 数据库插入成功')
+
+    const savedResult = {
+      id: result.rows[0].id,
+      result_id: result.rows[0].result_id,
+      order_id: result.rows[0].order_id,
+      user_id: result.rows[0].user_id,
+      fortune_id: result.rows[0].fortune_id,
+      fortune_type: result.rows[0].fortune_type,
+      input_data: result.rows[0].input_data,
+      result_data: result.rows[0].result_data,
+      created_at: result.rows[0].created_at,
+      updated_at: result.rows[0].updated_at,
+    }
+
+    // 发送算命结果就绪邮件（异步，不阻塞结果保存）
+    const userResult = await query('SELECT email FROM users WHERE id = $1', [userId])
+    if (userResult.rows.length > 0 && userResult.rows[0].email) {
+      const userEmail = userResult.rows[0].email
+
+      // 获取算命服务名称
+      const fortuneInfo = await query('SELECT title FROM fortunes WHERE id = $1', [finalFortuneId])
+      const serviceName = fortuneInfo.rows.length > 0 ? fortuneInfo.rows[0].title : '算命服务'
+
+      emailNotifications.sendFortuneResultReadyEmail(
+        userEmail,
+        serviceName,
+        resultId
+      )
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ 算命结果就绪邮件已发送至: ${userEmail}`)
+          } else {
+            console.warn(`⚠️  算命结果就绪邮件发送失败: ${result.error}`)
+          }
+        })
+        .catch(err => {
+          console.error('❌ 发送算命结果就绪邮件时出错:', err)
+        })
+    }
+
+    return savedResult
+  } catch (error) {
+    console.error('❌ 数据库插入失败:', error)
+    throw error
   }
 }
 
@@ -167,11 +248,11 @@ export const getUserFortuneResults = async (
     created_at: row.created_at,
     updated_at: row.updated_at,
     fortune_info: {
-      title: row.fortune_title,
-      subtitle: row.fortune_subtitle,
-      icon: row.fortune_icon,
-      bg_color: row.fortune_bg_color,
-      price: parseFloat(row.fortune_price),
+      title: row.fortune_title || '未知服务',
+      subtitle: row.fortune_subtitle || '',
+      icon: row.fortune_icon || '🔮',
+      bg_color: row.fortune_bg_color || '#667eea',
+      price: row.fortune_price ? parseFloat(row.fortune_price) : 0,
     },
   }))
 

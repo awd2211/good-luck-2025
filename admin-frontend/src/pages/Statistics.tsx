@@ -10,34 +10,15 @@ import {
   getUserGrowthTrend,
   getFortuneTypeDistribution,
   getDashboardStats
-} from '../services/apiService'
-
-
-
-interface RevenueTrendData {
-  date: string
-  revenue: number
-  order_count: number
-}
-
-interface UserGrowthData {
-  date: string
-  new_users: number
-  total_users: number
-}
-
-interface FortuneTypeData {
-  type: string
-  count: number
-  revenue: number
-}
+} from '../services/statsService'
+import type { RevenueTrend, UserGrowthTrend, FortuneTypeDistribution } from '../services/statsService'
 
 const Statistics = () => {
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState(7)
-  const [revenueTrend, setRevenueTrend] = useState<RevenueTrendData[]>([])
-  const [userGrowth, setUserGrowth] = useState<UserGrowthData[]>([])
-  const [fortuneDistribution, setFortuneDistribution] = useState<FortuneTypeData[]>([])
+  const [revenueTrend, setRevenueTrend] = useState<RevenueTrend[]>([])
+  const [userGrowth, setUserGrowth] = useState<UserGrowthTrend[]>([])
+  const [fortuneDistribution, setFortuneDistribution] = useState<FortuneTypeDistribution[]>([])
   const [orderStats, setOrderStats] = useState<any>(null)
 
   useEffect(() => {
@@ -54,10 +35,10 @@ const Statistics = () => {
         getDashboardStats()
       ])
 
-      setRevenueTrend(revenueRes.data || [])
-      setUserGrowth(userRes.data || [])
-      setFortuneDistribution(fortuneRes.data || [])
-      setOrderStats(statsRes.data?.orders || null)
+      setRevenueTrend(revenueRes.data.data || [])
+      setUserGrowth(userRes.data.data || [])
+      setFortuneDistribution(fortuneRes.data.data || [])
+      setOrderStats(statsRes.data.data?.orders || null)
     } catch (error: any) {
       message.error('加载统计数据失败')
       console.error('加载统计数据失败:', error)
@@ -296,6 +277,8 @@ const Statistics = () => {
                 <ReactECharts
                   option={revenueChartOption}
                   style={{ height: 300 }}
+                  notMerge={true}
+                  lazyUpdate={true}
                   opts={{ renderer: 'svg' }}
                 />
               </Card>
@@ -305,6 +288,8 @@ const Statistics = () => {
                 <ReactECharts
                   option={userGrowthChartOption}
                   style={{ height: 300 }}
+                  notMerge={true}
+                  lazyUpdate={true}
                   opts={{ renderer: 'svg' }}
                 />
               </Card>
@@ -318,6 +303,8 @@ const Statistics = () => {
                   <ReactECharts
                     option={fortunePieChartOption}
                     style={{ height: 300 }}
+                    notMerge={true}
+                    lazyUpdate={true}
                     opts={{ renderer: 'svg' }}
                   />
                 ) : (
@@ -333,6 +320,8 @@ const Statistics = () => {
                   <ReactECharts
                     option={orderStatusChartOption}
                     style={{ height: 300 }}
+                    notMerge={true}
+                    lazyUpdate={true}
                     opts={{ renderer: 'svg' }}
                   />
                 ) : (

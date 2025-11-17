@@ -557,18 +557,23 @@ export async function getDeviceDistribution(userId?: string) {
  */
 export async function getTimeTrends(userId?: string, days: number = 30) {
   const params: any[] = [];
-  let whereClause = '1=1';
+
+  // Build user filter if needed
+  let seUserFilter = '';
+  let scUserFilter = '';
+  let scvUserFilter = '';
 
   if (userId) {
     params.push(userId);
-    whereClause += ` AND sl.user_id = $${params.length}`;
+    const paramIndex = params.length;
+    seUserFilter = ` AND sl_se.user_id = $${paramIndex}`;
+    scUserFilter = ` AND sl_sc.user_id = $${paramIndex}`;
+    scvUserFilter = ` AND sl_scv.user_id = $${paramIndex}`;
   }
-
-  params.push(days);
 
   const result = await query(
     `SELECT
-      DATE(se.created_at) as date,
+      date::date,
       COUNT(DISTINCT se.id) as shares,
       COUNT(DISTINCT sc.id) as clicks,
       COUNT(DISTINCT scv.id) as conversions
@@ -577,13 +582,12 @@ export async function getTimeTrends(userId?: string, days: number = 30) {
       CURRENT_DATE,
       INTERVAL '1 day'
     ) AS date
-    LEFT JOIN share_events se ON DATE(se.created_at) = date
-    LEFT JOIN share_links sl_se ON se.share_link_id = sl_se.id
-    LEFT JOIN share_clicks sc ON DATE(sc.created_at) = date
-    LEFT JOIN share_links sl_sc ON sc.share_link_id = sl_sc.id
-    LEFT JOIN share_conversions scv ON DATE(scv.created_at) = date
-    LEFT JOIN share_links sl_scv ON scv.share_link_id = sl_scv.id
-    WHERE ${whereClause}
+    LEFT JOIN share_events se ON DATE(se.share_time) = date::date
+    LEFT JOIN share_links sl_se ON se.share_link_id = sl_se.id${seUserFilter}
+    LEFT JOIN share_clicks sc ON DATE(sc.clicked_at) = date::date
+    LEFT JOIN share_links sl_sc ON sc.share_link_id = sl_sc.id${scUserFilter}
+    LEFT JOIN share_conversions scv ON DATE(scv.converted_at) = date::date
+    LEFT JOIN share_links sl_scv ON scv.share_link_id = sl_scv.id${scvUserFilter}
     GROUP BY date
     ORDER BY date`,
     params

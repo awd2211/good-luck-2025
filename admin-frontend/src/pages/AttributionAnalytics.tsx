@@ -51,7 +51,7 @@ import ReactECharts from 'echarts-for-react'
 import PermissionGuard from '../components/PermissionGuard'
 import { Permission } from '../config/permissions'
 import dayjs, { Dayjs } from 'dayjs'
-import api from '../services/apiService'
+import api from '../services/api'
 
 const { RangePicker } = DatePicker
 const { Text } = Typography
@@ -754,6 +754,8 @@ const OverviewTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
         <ReactECharts
           option={getChannelPerformanceChartOption()}
           style={{ height: 400 }}
+          notMerge={true}
+          lazyUpdate={true}
         />
       </Card>
     </div>
@@ -2026,7 +2028,12 @@ const FunnelAnalysisTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
 
   return (
     <Card loading={loading}>
-      <ReactECharts option={getFunnelChartOption()} style={{ height: 500 }} />
+      <ReactECharts
+        option={getFunnelChartOption()}
+        style={{ height: 500 }}
+        notMerge={true}
+        lazyUpdate={true}
+      />
 
       <Divider />
 
@@ -2276,6 +2283,8 @@ const ModelComparisonTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
       <ReactECharts
         option={getComparisonChartOption()}
         style={{ height: 400, marginBottom: 24 }}
+        notMerge={true}
+        lazyUpdate={true}
       />
 
       <Table
@@ -2616,7 +2625,12 @@ const ChannelComparisonTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
         </Select>
       }
     >
-      <ReactECharts option={getChartOption()} style={{ height: 500 }} />
+      <ReactECharts
+        option={getChartOption()}
+        style={{ height: 500 }}
+        notMerge={true}
+        lazyUpdate={true}
+      />
     </Card>
   )
 }
@@ -2719,7 +2733,12 @@ const TrendAnalysisTab = ({ dateRange }: { dateRange: [Dayjs, Dayjs] }) => {
         </Select>
       }
     >
-      <ReactECharts option={getTrendChartOption()} style={{ height: 500 }} />
+      <ReactECharts
+        option={getTrendChartOption()}
+        style={{ height: 500 }}
+        notMerge={true}
+        lazyUpdate={true}
+      />
     </Card>
   )
 }

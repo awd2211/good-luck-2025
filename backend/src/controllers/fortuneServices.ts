@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 import { redisCache } from '../config/redis';
+import configService from '../services/configService';
 
 const CACHE_KEY_PREFIX = 'fortune_services';
-const CACHE_TTL = 3600; // 1小时
+// CACHE_TTL已迁移到数据库配置：cache.fortuneServices.ttl（默认3600秒）
 
 /**
  * 获取所有算命服务（支持筛选和分页）
@@ -135,7 +136,8 @@ export const getFortuneService = async (req: Request, res: Response) => {
     }
 
     // 缓存结果
-    await redisCache.set(cacheKey, result.rows[0], CACHE_TTL);
+    const cacheTTL = await configService.get<number>("cache.fortuneServices.ttl", 3600);
+    await redisCache.set(cacheKey, result.rows[0], cacheTTL);
 
     res.json({
       success: true,

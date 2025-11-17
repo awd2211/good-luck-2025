@@ -1,0 +1,167 @@
+.language-switcher {
+  position: relative;
+  display: inline-block;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.language-button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.language-button:active {
+  transform: scale(0.98);
+}
+
+.language-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.language-name {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.language-arrow {
+  transition: transform 0.2s ease;
+  color: #9ca3af;
+}
+
+.language-arrow.open {
+  transform: rotate(180deg);
+}
+
+.language-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow: hidden;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.language-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.language-option:hover {
+  background: #f3f4f6;
+}
+
+.language-option.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.option-flag {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.option-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.option-check {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .language-button {
+    min-width: 120px;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .language-flag,
+  .option-flag {
+    font-size: 16px;
+  }
+
+  .language-name,
+  .option-name {
+    font-size: 13px;
+  }
+}
+
+/* 暗色主题支持 */
+@media (prefers-color-scheme: dark) {
+  .language-button {
+    background: #1f2937;
+    border-color: #374151;
+    color: #f9fafb;
+  }
+
+  .language-button:hover {
+    background: #374151;
+    border-color: #4b5563;
+  }
+
+  .language-dropdown {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .language-option {
+    color: #f9fafb;
+  }
+
+  .language-option:hover {
+    background: #374151;
+  }
+
+  .language-option.active {
+    background: #1e3a8a;
+    color: #93c5fd;
+  }
+
+  .option-check {
+    color: #93c5fd;
+  }
+}

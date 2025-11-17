@@ -1,4 +1,5 @@
 import { query } from '../../config/database'
+import { redisCache } from '../../config/redis'
 
 /**
  * 获取算命服务列表
@@ -66,6 +67,7 @@ export const getFortuneList = async (params: {
   const result = await query(
     `SELECT
       fs.id,
+      fs.code,
       fs.name as title,
       fs.subtitle,
       fc.code as category,
@@ -103,6 +105,7 @@ export const getFortuneDetail = async (fortuneId: string, userId?: string) => {
   const result = await query(
     `SELECT
       fs.id,
+      fs.code,
       fs.name as title,
       fs.subtitle,
       fc.code as category,
@@ -158,11 +161,25 @@ export const getFortuneDetail = async (fortuneId: string, userId?: string) => {
 
 /**
  * 获取热门服务
+ * 优化: 使用Redis缓存（1小时）
  */
 export const getPopularFortunes = async (limit: number = 10) => {
+  // 1. 尝试从Redis缓存获取
+  const cacheKey = `fortune:popular:${limit}`
+  const cached = await redisCache.get<any[]>(cacheKey)
+
+  if (cached) {
+    console.log(`✅ Redis缓存命中: ${cacheKey}`)
+    return cached
+  }
+
+  console.log(`⚠️ Redis缓存未命中，查询数据库: ${cacheKey}`)
+
+  // 2. 从数据库查询
   const result = await query(
     `SELECT
       fs.id,
+      fs.code,
       fs.name as title,
       fs.subtitle,
       fc.code as category,
@@ -182,6 +199,10 @@ export const getPopularFortunes = async (limit: number = 10) => {
     [limit]
   )
 
+  // 3. 写入Redis缓存（1小时 = 3600秒）
+  await redisCache.set(cacheKey, result.rows, 3600)
+  console.log(`📝 已写入Redis缓存: ${cacheKey}`)
+
   return result.rows
 }
 
@@ -192,6 +213,7 @@ export const getRecommendedFortunes = async (limit: number = 10) => {
   const result = await query(
     `SELECT
       fs.id,
+      fs.code,
       fs.name as title,
       fs.subtitle,
       fc.code as category,
@@ -216,8 +238,21 @@ export const getRecommendedFortunes = async (limit: number = 10) => {
 
 /**
  * 获取分类列表
+ * 优化: 使用Redis缓存（1小时）
  */
 export const getCategories = async () => {
+  // 1. 尝试从Redis缓存获取
+  const cacheKey = 'fortune:categories'
+  const cached = await redisCache.get<any[]>(cacheKey)
+
+  if (cached) {
+    console.log(`✅ Redis缓存命中: ${cacheKey}`)
+    return cached
+  }
+
+  console.log(`⚠️ Redis缓存未命中，查询数据库: ${cacheKey}`)
+
+  // 2. 从数据库查询
   const result = await query(
     `SELECT
       fc.id,
@@ -235,7 +270,7 @@ export const getCategories = async () => {
     ORDER BY fc.sort_order ASC, count DESC`
   )
 
-  return result.rows.map(row => ({
+  const categories = result.rows.map(row => ({
     category: row.category,
     name: row.name,
     icon: row.icon,
@@ -244,4 +279,10 @@ export const getCategories = async () => {
     minPrice: row.min_price ? parseFloat(row.min_price) : 0,
     maxPrice: row.max_price ? parseFloat(row.max_price) : 0,
   }))
+
+  // 3. 写入Redis缓存（1小时 = 3600秒）
+  await redisCache.set(cacheKey, categories, 3600)
+  console.log(`📝 已写入Redis缓存: ${cacheKey}`)
+
+  return categories
 }

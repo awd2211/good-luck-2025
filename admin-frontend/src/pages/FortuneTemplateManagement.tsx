@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message, Drawer } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, CopyOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
+import api from '../services/api'
 import JsonView from '@uiw/react-json-view'
 
 const { TextArea } = Input
@@ -52,7 +52,7 @@ const FortuneTemplateManagement = () => {
       })
       if (res.data.success) {
         // 确保返回的是数组
-        const templateData = res.data.data
+        const templateData = (res.data.data || res.data)
         if (Array.isArray(templateData)) {
           setTemplates(templateData)
           setPagination({
@@ -87,7 +87,7 @@ const FortuneTemplateManagement = () => {
       })
       if (res.data.success) {
         // 确保返回的是数组
-        const serviceData = res.data.data
+        const serviceData = (res.data.data || res.data)
         if (Array.isArray(serviceData)) {
           setServices(serviceData)
         } else if (serviceData && Array.isArray(serviceData.list)) {
@@ -106,7 +106,7 @@ const FortuneTemplateManagement = () => {
     try {
       const res = await api.get('/fortune-templates/types')
       if (res.data.success) {
-        setTypes(res.data.data)
+        setTypes((res.data.data || res.data))
       }
     } catch (error: any) {
       console.error('获取类型失败:', error)
@@ -305,7 +305,7 @@ const FortuneTemplateManagement = () => {
   return (
     <div>
       <Card
-        title="算命模板管理"
+        title="运势模板管理"
         extra={
           <Button
             type="primary"

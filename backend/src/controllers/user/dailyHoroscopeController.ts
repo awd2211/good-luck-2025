@@ -1,26 +1,26 @@
 import { Request, Response } from 'express'
-import { getTodayHoroscopeByZodiac, getAllTodayHoroscopes } from '../../services/user/dailyHoroscopeService'
+import { getTodayHoroscope as getTodayHoroscopeService, getAllTodayHoroscopes } from '../../services/user/dailyHoroscopeService'
 
 /**
- * 获取指定生肖的今日运势
+ * 获取指定类型和值的今日运势
  */
 export const getTodayHoroscope = async (req: Request, res: Response) => {
   try {
-    const { zodiac } = req.query
+    const { type, value } = req.query
 
-    if (!zodiac) {
+    if (!type || !value) {
       return res.status(400).json({
         success: false,
-        message: '请提供生肖参数',
+        message: '请提供type和value参数',
       })
     }
 
-    const horoscope = await getTodayHoroscopeByZodiac(zodiac as string)
+    const horoscope = await getTodayHoroscopeService(type as string, value as string)
 
     if (!horoscope) {
       return res.status(404).json({
         success: false,
-        message: '未找到该生肖的运势',
+        message: '未找到该运势',
       })
     }
 
@@ -38,11 +38,20 @@ export const getTodayHoroscope = async (req: Request, res: Response) => {
 }
 
 /**
- * 获取所有生肖的今日运势
+ * 获取指定类型的所有今日运势
  */
 export const getAllHoroscopes = async (req: Request, res: Response) => {
   try {
-    const horoscopes = await getAllTodayHoroscopes()
+    const { type } = req.query
+
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        message: '请提供type参数（zodiac或birth_animal）',
+      })
+    }
+
+    const horoscopes = await getAllTodayHoroscopes(type as string)
 
     res.json({
       success: true,

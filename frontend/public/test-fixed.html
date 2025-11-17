@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixed定位测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+
+        .content {
+            padding: 20px;
+            min-height: 200vh;
+            background: linear-gradient(to bottom, #ffecd2, #fcb69f);
+        }
+
+        .test-box {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-top: 2px solid red;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section {
+            background: white;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="section">
+            <h1>Fixed定位测试页面</h1>
+            <p>向下滚动页面，底部的红色边框白色横条应该始终固定在屏幕底部。</p>
+        </div>
+
+        <div class="section">
+            <h2>测试内容 1</h2>
+            <p>这是一些测试内容...</p>
+        </div>
+
+        <div class="section">
+            <h2>测试内容 2</h2>
+            <p>继续滚动...</p>
+        </div>
+
+        <div class="section">
+            <h2>测试内容 3</h2>
+            <p>底部导航栏应该一直可见</p>
+        </div>
+
+        <div class="section">
+            <h2>测试内容 4</h2>
+            <p>不管你滚动到哪里</p>
+        </div>
+
+        <div class="section">
+            <h2>测试内容 5</h2>
+            <p>它都应该固定在底部</p>
+        </div>
+    </div>
+
+    <div class="test-box">
+        ✅ 如果你能始终看到这个白色横条，说明fixed定位正常工作
+    </div>
+
+    <script>
+        // 输出调试信息
+        window.addEventListener('DOMContentLoaded', () => {
+            const testBox = document.querySelector('.test-box');
+            const styles = window.getComputedStyle(testBox);
+            console.log('=== Fixed定位测试 ===');
+            console.log('position:', styles.position);
+            console.log('bottom:', styles.bottom);
+            console.log('z-index:', styles.zIndex);
+            console.log('元素位置:', testBox.getBoundingClientRect());
+        });
+    </script>
+</body>
+</html>

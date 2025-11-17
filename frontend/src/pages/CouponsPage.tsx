@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import * as couponService from '../services/couponService'
 import { SkeletonList } from '../components/Skeleton'
+import { showToast } from '../components/ToastContainer'
 import './CouponsPage.css'
 
 const CouponsPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<'available' | 'my'>('available')
@@ -26,13 +29,21 @@ const CouponsPage = () => {
     try {
       if (activeTab === 'available') {
         const response = await couponService.getAvailableCoupons()
+        // getAvailableCoupons 直接返回数组
         setAvailableCoupons(response.data.data || [])
       } else {
         const response = await couponService.getMyCoupons()
-        setMyCoupons(response.data.data || [])
+        // getMyCoupons 返回 { items, pagination }
+        const couponData = response.data.data
+        setMyCoupons(couponData?.items || [])
       }
     } catch (error) {
       console.error('获取优惠券失败:', error)
+      if (activeTab === 'available') {
+        setAvailableCoupons([])
+      } else {
+        setMyCoupons([])
+      }
     } finally {
       setLoading(false)
     }
@@ -41,16 +52,16 @@ const CouponsPage = () => {
   const handleClaim = async (couponId: string) => {
     try {
       await couponService.claimCoupon(couponId)
-      alert('领取成功！')
+      showToast({ title: t('common.success'), content: t('coupons.claimSuccess'), type: 'success' })
       fetchCoupons()
     } catch (error: any) {
-      alert(error.response?.data?.message || '领取失败')
+      showToast({ title: t('common.error'), content: error.response?.data?.message || t('coupons.claimFailed'), type: 'error' })
     }
   }
 
   const getCouponText = (coupon: any) => {
     if (coupon.type === 'percentage') {
-      return `${coupon.value}折`
+      return `${coupon.value}${t('coupons.discount')}`
     }
     return `¥${coupon.value}`
   }
@@ -67,9 +78,9 @@ const CouponsPage = () => {
     <div className="coupons-page">
       <div className="coupons-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('coupons.back')}
         </button>
-        <h1>优惠券</h1>
+        <h1>{t('coupons.title')}</h1>
         <div style={{ width: '48px' }} />
       </div>
 
@@ -78,13 +89,13 @@ const CouponsPage = () => {
           className={`tab-btn ${activeTab === 'available' ? 'active' : ''}`}
           onClick={() => setActiveTab('available')}
         >
-          可领取
+          {t('coupons.available')}
         </button>
         <button
           className={`tab-btn ${activeTab === 'my' ? 'active' : ''}`}
           onClick={() => setActiveTab('my')}
         >
-          我的优惠券
+          {t('coupons.myCoupons')}
         </button>
       </div>
 
@@ -99,7 +110,7 @@ const CouponsPage = () => {
                   <div className="coupon-left">
                     <div className="coupon-value">{getCouponText(coupon)}</div>
                     <div className="coupon-condition">
-                      满{coupon.min_amount}元可用
+                      {t('coupons.minAmount', { amount: coupon.min_amount })}
                     </div>
                   </div>
                   <div className="coupon-right">
@@ -112,7 +123,7 @@ const CouponsPage = () => {
                       onClick={() => handleClaim(coupon.id)}
                       disabled={!coupon.is_active || coupon.usage_limit <= coupon.used_count}
                     >
-                      {coupon.usage_limit <= coupon.used_count ? '已抢光' : '立即领取'}
+                      {coupon.usage_limit <= coupon.used_count ? t('coupons.soldOut') : t('coupons.claim')}
                     </button>
                   </div>
                 </div>
@@ -121,7 +132,7 @@ const CouponsPage = () => {
           ) : (
             <div className="empty-coupons">
               <div className="empty-icon">🎫</div>
-              <p>暂无可领取的优惠券</p>
+              <p>{t('coupons.noAvailable')}</p>
             </div>
           )
         ) : (
@@ -140,7 +151,7 @@ const CouponsPage = () => {
                     <div className="coupon-left">
                       <div className="coupon-value">{getCouponText(coupon)}</div>
                       <div className="coupon-condition">
-                        满{coupon.min_amount}元可用
+                        {t('coupons.minAmount', { amount: coupon.min_amount })}
                       </div>
                     </div>
                     <div className="coupon-right">
@@ -149,15 +160,15 @@ const CouponsPage = () => {
                         {new Date(coupon.start_date).toLocaleDateString()} - {new Date(coupon.end_date).toLocaleDateString()}
                       </div>
                       {used ? (
-                        <div className="coupon-status">已使用</div>
+                        <div className="coupon-status">{t('coupons.used')}</div>
                       ) : expired ? (
-                        <div className="coupon-status">已过期</div>
+                        <div className="coupon-status">{t('coupons.expired')}</div>
                       ) : (
                         <button
                           className="use-btn"
                           onClick={() => navigate('/cart')}
                         >
-                          去使用
+                          {t('coupons.use')}
                         </button>
                       )}
                     </div>
@@ -168,12 +179,12 @@ const CouponsPage = () => {
           ) : (
             <div className="empty-coupons">
               <div className="empty-icon">🎫</div>
-              <p>还没有优惠券</p>
+              <p>{t('coupons.noCoupons')}</p>
               <button
                 className="go-claim-btn"
                 onClick={() => setActiveTab('available')}
               >
-                去领取
+                {t('coupons.goClaim')}
               </button>
             </div>
           )

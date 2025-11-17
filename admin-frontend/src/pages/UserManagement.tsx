@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Table, Button, Tag, Space, Input, Card, Modal, Form, Select, message, Popconfirm, Statistic, Row, Col } from 'antd'
-import { SearchOutlined, EditOutlined, DeleteOutlined, ExportOutlined, ReloadOutlined, UserOutlined } from '@ant-design/icons'
+import { SearchOutlined, EditOutlined, DeleteOutlined, ExportOutlined, ReloadOutlined, UserOutlined, PlusOutlined, KeyOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
-import api from '../services/apiService'
+import { getUsers, getUserStats, createUser, updateUser, deleteUser, exportUsers, resetUserPassword } from '../services/userService'
+import { extractDataArray, extractPagination } from '../utils/tableHelpers'
 import dayjs from 'dayjs'
 
 interface User {
@@ -41,6 +42,9 @@ const UserManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [form] = Form.useForm()
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null)
+  const [passwordForm] = Form.useForm()
   const [stats, setStats] = useState<Stats | null>(null)
   const [pagination, setPagination] = useState({
     current: 1,
@@ -60,14 +64,16 @@ const UserManagement = () => {
         status: statusFilter || undefined
       }
 
-      const response = await api.get('/users', { params })
-      const data = response.data.data
+      const response = await getUsers(params)
 
-      setUsers(data.list || [])
+      // 使用辅助函数安全提取数据
+      setUsers(extractDataArray(response))
+
+      const paginationData = extractPagination(response)
       setPagination({
-        current: page,
-        pageSize,
-        total: data.pagination?.total || 0
+        current: paginationData.current,
+        pageSize: paginationData.pageSize,
+        total: paginationData.total
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载用户列表失败')
@@ -79,7 +85,7 @@ const UserManagement = () => {
   // 加载统计信息
   const loadStats = async () => {
     try {
-      const response = await api.get('/users/stats')
+      const response = await getUserStats()
       setStats(response.data.data)
     } catch (error: any) {
       console.error('加载统计失败:', error)
@@ -95,6 +101,13 @@ const UserManagement = () => {
   const handleSearch = () => {
     setPagination({ ...pagination, current: 1 })
     loadUsers(1, pagination.pageSize)
+  }
+
+  // 添加用户
+  const handleAdd = () => {
+    setEditingUser(null)
+    form.resetFields()
+    setIsModalOpen(true)
   }
 
   // 编辑用户
@@ -116,8 +129,13 @@ const UserManagement = () => {
       const values = await form.validateFields()
 
       if (editingUser) {
-        await api.put(`/users/${editingUser.id}`, values)
+        // 编辑模式
+        await updateUser(editingUser.id, values)
         message.success('用户信息更新成功')
+      } else {
+        // 新增模式
+        await createUser(values)
+        message.success('用户创建成功')
       }
 
       setIsModalOpen(false)
@@ -132,10 +150,35 @@ const UserManagement = () => {
     }
   }
 
+  // 重置密码
+  const handleResetPassword = (userId: string) => {
+    setResetPasswordUserId(userId)
+    passwordForm.resetFields()
+    setIsPasswordModalOpen(true)
+  }
+
+  // 确认重置密码
+  const handleConfirmResetPassword = async () => {
+    try {
+      const values = await passwordForm.validateFields()
+      if (!resetPasswordUserId) return
+
+      await resetUserPassword(resetPasswordUserId, values.newPassword)
+      message.success('密码重置成功')
+      setIsPasswordModalOpen(false)
+      passwordForm.resetFields()
+      setResetPasswordUserId(null)
+    } catch (error: any) {
+      if (error.response) {
+        message.error(error.response.data?.message || '重置失败')
+      }
+    }
+  }
+
   // 更新用户状态
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      await api.put(`/users/${id}`, { status: newStatus })
+      await updateUser(id, { status: newStatus as 'active' | 'inactive' | 'banned' })
       message.success('状态更新成功')
       loadUsers()
       loadStats()
@@ -147,7 +190,7 @@ const UserManagement = () => {
   // 删除用户
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/users/${id}`)
+      await deleteUser(id)
       message.success('用户已删除')
       loadUsers()
       loadStats()
@@ -165,10 +208,7 @@ const UserManagement = () => {
         status: statusFilter || undefined
       }
 
-      const response = await api.get('/users/export', {
-        params,
-        responseType: 'blob'
-      })
+      const response = await exportUsers(params)
 
       const url = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement('a')
@@ -307,6 +347,16 @@ const UserManagement = () => {
               编辑
             </Button>
           )}
+          {checkPermission.has(Permission.USER_EDIT) && (
+            <Button
+              type="link"
+              size="small"
+              icon={<KeyOutlined />}
+              onClick={() => handleResetPassword(record.id)}
+            >
+              重置密码
+            </Button>
+          )}
           {checkPermission.has(Permission.USER_DELETE) && record.status === 'active' && (
             <Popconfirm
               title="确定禁用此用户？"
@@ -392,6 +442,15 @@ const UserManagement = () => {
         }
         extra={
           <Space>
+            {checkPermission.has(Permission.USER_CREATE) && (
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAdd}
+              >
+                添加用户
+              </Button>
+            )}
             {checkPermission.has(Permission.USER_EXPORT) && (
               <Button
                 icon={<ExportOutlined />}
@@ -453,7 +512,7 @@ const UserManagement = () => {
         />
 
         <Modal
-          title="编辑用户"
+          title={editingUser ? "编辑用户" : "添加用户"}
           open={isModalOpen}
           onOk={handleSave}
           onCancel={() => {
@@ -464,6 +523,30 @@ const UserManagement = () => {
           width={600}
         >
           <Form form={form} layout="vertical">
+            {!editingUser && (
+              <>
+                <Form.Item
+                  label="手机号"
+                  name="phone"
+                  rules={[
+                    { required: true, message: '请输入手机号' },
+                    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确' }
+                  ]}
+                >
+                  <Input placeholder="请输入11位手机号" />
+                </Form.Item>
+                <Form.Item
+                  label="密码"
+                  name="password"
+                  rules={[
+                    { required: true, message: '请输入密码' },
+                    { min: 6, message: '密码至少6位' }
+                  ]}
+                >
+                  <Input.Password placeholder="密码至少6位" />
+                </Form.Item>
+              </>
+            )}
             <Form.Item
               label="用户名"
               name="username"
@@ -477,23 +560,79 @@ const UserManagement = () => {
             <Form.Item label="邮箱" name="email">
               <Input type="email" />
             </Form.Item>
+            {!editingUser && (
+              <Form.Item
+                label="初始余额"
+                name="balance"
+                initialValue={0}
+              >
+                <Input type="number" prefix="¥" />
+              </Form.Item>
+            )}
+            {editingUser && (
+              <>
+                <Form.Item
+                  label="状态"
+                  name="status"
+                  rules={[{ required: true, message: '请选择状态' }]}
+                >
+                  <Select>
+                    <Select.Option value="active">正常</Select.Option>
+                    <Select.Option value="inactive">禁用</Select.Option>
+                    <Select.Option value="banned">封禁</Select.Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  label="余额"
+                  name="balance"
+                  rules={[{ required: true, message: '请输入余额' }]}
+                >
+                  <Input type="number" prefix="¥" />
+                </Form.Item>
+              </>
+            )}
+          </Form>
+        </Modal>
+
+        <Modal
+          title="重置密码"
+          open={isPasswordModalOpen}
+          onOk={handleConfirmResetPassword}
+          onCancel={() => {
+            setIsPasswordModalOpen(false)
+            passwordForm.resetFields()
+            setResetPasswordUserId(null)
+          }}
+          width={400}
+        >
+          <Form form={passwordForm} layout="vertical">
             <Form.Item
-              label="状态"
-              name="status"
-              rules={[{ required: true, message: '请选择状态' }]}
+              label="新密码"
+              name="newPassword"
+              rules={[
+                { required: true, message: '请输入新密码' },
+                { min: 6, message: '密码至少6位' }
+              ]}
             >
-              <Select>
-                <Select.Option value="active">正常</Select.Option>
-                <Select.Option value="inactive">禁用</Select.Option>
-                <Select.Option value="banned">封禁</Select.Option>
-              </Select>
+              <Input.Password placeholder="请输入新密码（至少6位）" />
             </Form.Item>
             <Form.Item
-              label="余额"
-              name="balance"
-              rules={[{ required: true, message: '请输入余额' }]}
+              label="确认密码"
+              name="confirmPassword"
+              dependencies={['newPassword']}
+              rules={[
+                { required: true, message: '请确认密码' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue('newPassword') === value) {
+                      return Promise.resolve()
+                    }
+                    return Promise.reject(new Error('两次输入的密码不一致'))
+                  },
+                }),
+              ]}
             >
-              <Input type="number" prefix="¥" />
+              <Input.Password placeholder="请再次输入新密码" />
             </Form.Item>
           </Form>
         </Modal>

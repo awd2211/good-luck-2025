@@ -51,6 +51,33 @@ export enum Resource {
   CS_WORKBENCH = 'cs_workbench',
   CS_TEAM = 'cs_team',
   CS_STATS = 'cs_stats',
+  CS_KNOWLEDGE_BASE = 'cs_knowledge_base',
+  CS_SCHEDULE = 'cs_schedule',
+  CS_TRAINING = 'cs_training',
+  CS_CUSTOMER_PROFILE = 'cs_customer_profile',
+  CS_TAGS = 'cs_tags',
+  CS_NOTES = 'cs_notes',
+  CS_TRANSFERS = 'cs_transfers',
+  CS_QUICK_REPLY = 'cs_quick_reply',
+  CS_AI_BOT = 'cs_ai_bot',
+  CS_QUALITY = 'cs_quality',
+  CS_SENSITIVE_WORDS = 'cs_sensitive_words',
+  CS_SATISFACTION = 'cs_satisfaction',
+  CS_PERFORMANCE = 'cs_performance',
+
+  // 邮件系统
+  EMAIL_TEMPLATES = 'email_templates',
+  EMAIL_CONFIGS = 'email_configs',
+  EMAIL_HISTORY = 'email_history',
+
+  // 支付系统
+  PAYMENT_METHODS = 'payment_methods',
+  PAYMENT_CONFIGS = 'payment_configs',
+  PAYMENT_TRANSACTIONS = 'payment_transactions',
+
+  // 技术配置
+  TECHNICAL_CONFIGS = 'technical_configs',
+  SHARE_ANALYTICS = 'share_analytics',
 }
 
 // 操作类型（与后端完全一致）
@@ -168,6 +195,103 @@ export enum Permission {
   // 客服统计
   CS_STATS_VIEW = 'cs_stats:view',
 
+  // 知识库
+  CS_KNOWLEDGE_BASE_VIEW = 'cs_knowledge_base:view',
+  CS_KNOWLEDGE_BASE_CREATE = 'cs_knowledge_base:create',
+  CS_KNOWLEDGE_BASE_EDIT = 'cs_knowledge_base:edit',
+  CS_KNOWLEDGE_BASE_DELETE = 'cs_knowledge_base:delete',
+
+  // 客服排班
+  CS_SCHEDULE_VIEW = 'cs_schedule:view',
+  CS_SCHEDULE_CREATE = 'cs_schedule:create',
+  CS_SCHEDULE_EDIT = 'cs_schedule:edit',
+  CS_SCHEDULE_DELETE = 'cs_schedule:delete',
+
+  // 培训系统
+  CS_TRAINING_VIEW = 'cs_training:view',
+  CS_TRAINING_CREATE = 'cs_training:create',
+  CS_TRAINING_EDIT = 'cs_training:edit',
+  CS_TRAINING_DELETE = 'cs_training:delete',
+
+  // 客户画像
+  CS_CUSTOMER_PROFILE_VIEW = 'cs_customer_profile:view',
+
+  // 客户标签
+  CS_TAGS_VIEW = 'cs_tags:view',
+  CS_TAGS_CREATE = 'cs_tags:create',
+  CS_TAGS_EDIT = 'cs_tags:edit',
+  CS_TAGS_DELETE = 'cs_tags:delete',
+
+  // 客户备注
+  CS_NOTES_VIEW = 'cs_notes:view',
+  CS_NOTES_CREATE = 'cs_notes:create',
+  CS_NOTES_EDIT = 'cs_notes:edit',
+  CS_NOTES_DELETE = 'cs_notes:delete',
+
+  // 会话转接
+  CS_TRANSFERS_VIEW = 'cs_transfers:view',
+  CS_TRANSFERS_CREATE = 'cs_transfers:create',
+
+  // 快捷回复
+  CS_QUICK_REPLY_VIEW = 'cs_quick_reply:view',
+  CS_QUICK_REPLY_CREATE = 'cs_quick_reply:create',
+  CS_QUICK_REPLY_EDIT = 'cs_quick_reply:edit',
+  CS_QUICK_REPLY_DELETE = 'cs_quick_reply:delete',
+
+  // AI机器人配置
+  CS_AI_BOT_VIEW = 'cs_ai_bot:view',
+  CS_AI_BOT_EDIT = 'cs_ai_bot:edit',
+
+  // 质检管理
+  CS_QUALITY_VIEW = 'cs_quality:view',
+  CS_QUALITY_CREATE = 'cs_quality:create',
+  CS_QUALITY_EDIT = 'cs_quality:edit',
+
+  // 敏感词管理
+  CS_SENSITIVE_WORDS_VIEW = 'cs_sensitive_words:view',
+  CS_SENSITIVE_WORDS_CREATE = 'cs_sensitive_words:create',
+  CS_SENSITIVE_WORDS_EDIT = 'cs_sensitive_words:edit',
+  CS_SENSITIVE_WORDS_DELETE = 'cs_sensitive_words:delete',
+
+  // 满意度统计
+  CS_SATISFACTION_VIEW = 'cs_satisfaction:view',
+
+  // 绩效报表
+  CS_PERFORMANCE_VIEW = 'cs_performance:view',
+
+  // 邮件模板
+  EMAIL_TEMPLATES_VIEW = 'email_templates:view',
+  EMAIL_TEMPLATES_CREATE = 'email_templates:create',
+  EMAIL_TEMPLATES_EDIT = 'email_templates:edit',
+  EMAIL_TEMPLATES_DELETE = 'email_templates:delete',
+
+  // 邮件通知配置
+  EMAIL_CONFIGS_VIEW = 'email_configs:view',
+  EMAIL_CONFIGS_EDIT = 'email_configs:edit',
+
+  // 邮件发送历史
+  EMAIL_HISTORY_VIEW = 'email_history:view',
+
+  // 支付方式
+  PAYMENT_METHODS_VIEW = 'payment_methods:view',
+  PAYMENT_METHODS_CREATE = 'payment_methods:create',
+  PAYMENT_METHODS_EDIT = 'payment_methods:edit',
+  PAYMENT_METHODS_DELETE = 'payment_methods:delete',
+
+  // 支付配置
+  PAYMENT_CONFIGS_VIEW = 'payment_configs:view',
+  PAYMENT_CONFIGS_EDIT = 'payment_configs:edit',
+
+  // 支付交易
+  PAYMENT_TRANSACTIONS_VIEW = 'payment_transactions:view',
+
+  // 技术配置
+  TECHNICAL_CONFIGS_VIEW = 'technical_configs:view',
+  TECHNICAL_CONFIGS_EDIT = 'technical_configs:edit',
+
+  // 分享统计
+  SHARE_ANALYTICS_VIEW = 'share_analytics:view',
+
   // 向后兼容的别名
   USER_VIEW = 'users:view',
   USER_CREATE = 'users:create',
@@ -266,6 +390,65 @@ export const rolePermissions: Record<Role, Permission[]> = {
     Permission.CS_TEAM_EDIT,
     Permission.CS_TEAM_DELETE,
     Permission.CS_STATS_VIEW,
+    // 新增客服系统权限
+    Permission.CS_KNOWLEDGE_BASE_VIEW,
+    Permission.CS_KNOWLEDGE_BASE_CREATE,
+    Permission.CS_KNOWLEDGE_BASE_EDIT,
+    Permission.CS_KNOWLEDGE_BASE_DELETE,
+    Permission.CS_SCHEDULE_VIEW,
+    Permission.CS_SCHEDULE_CREATE,
+    Permission.CS_SCHEDULE_EDIT,
+    Permission.CS_SCHEDULE_DELETE,
+    Permission.CS_TRAINING_VIEW,
+    Permission.CS_TRAINING_CREATE,
+    Permission.CS_TRAINING_EDIT,
+    Permission.CS_TRAINING_DELETE,
+    Permission.CS_CUSTOMER_PROFILE_VIEW,
+    Permission.CS_TAGS_VIEW,
+    Permission.CS_TAGS_CREATE,
+    Permission.CS_TAGS_EDIT,
+    Permission.CS_TAGS_DELETE,
+    Permission.CS_NOTES_VIEW,
+    Permission.CS_NOTES_CREATE,
+    Permission.CS_NOTES_EDIT,
+    Permission.CS_NOTES_DELETE,
+    Permission.CS_TRANSFERS_VIEW,
+    Permission.CS_TRANSFERS_CREATE,
+    Permission.CS_QUICK_REPLY_VIEW,
+    Permission.CS_QUICK_REPLY_CREATE,
+    Permission.CS_QUICK_REPLY_EDIT,
+    Permission.CS_QUICK_REPLY_DELETE,
+    Permission.CS_AI_BOT_VIEW,
+    Permission.CS_AI_BOT_EDIT,
+    Permission.CS_QUALITY_VIEW,
+    Permission.CS_QUALITY_CREATE,
+    Permission.CS_QUALITY_EDIT,
+    Permission.CS_SENSITIVE_WORDS_VIEW,
+    Permission.CS_SENSITIVE_WORDS_CREATE,
+    Permission.CS_SENSITIVE_WORDS_EDIT,
+    Permission.CS_SENSITIVE_WORDS_DELETE,
+    Permission.CS_SATISFACTION_VIEW,
+    Permission.CS_PERFORMANCE_VIEW,
+    // 新增邮件系统权限
+    Permission.EMAIL_TEMPLATES_VIEW,
+    Permission.EMAIL_TEMPLATES_CREATE,
+    Permission.EMAIL_TEMPLATES_EDIT,
+    Permission.EMAIL_TEMPLATES_DELETE,
+    Permission.EMAIL_CONFIGS_VIEW,
+    Permission.EMAIL_CONFIGS_EDIT,
+    Permission.EMAIL_HISTORY_VIEW,
+    // 新增支付系统权限
+    Permission.PAYMENT_METHODS_VIEW,
+    Permission.PAYMENT_METHODS_CREATE,
+    Permission.PAYMENT_METHODS_EDIT,
+    Permission.PAYMENT_METHODS_DELETE,
+    Permission.PAYMENT_CONFIGS_VIEW,
+    Permission.PAYMENT_CONFIGS_EDIT,
+    Permission.PAYMENT_TRANSACTIONS_VIEW,
+    // 新增其他权限
+    Permission.TECHNICAL_CONFIGS_VIEW,
+    Permission.TECHNICAL_CONFIGS_EDIT,
+    Permission.SHARE_ANALYTICS_VIEW,
   ],
 
   [Role.MANAGER]: [
@@ -296,6 +479,45 @@ export const rolePermissions: Record<Role, Permission[]> = {
     Permission.STATS_VIEW,
     Permission.AUDIT_VIEW,
     Permission.ATTRIBUTION_VIEW,
+    // 新增客服系统权限（仅查看和编辑）
+    Permission.CS_KNOWLEDGE_BASE_VIEW,
+    Permission.CS_KNOWLEDGE_BASE_EDIT,
+    Permission.CS_SCHEDULE_VIEW,
+    Permission.CS_SCHEDULE_EDIT,
+    Permission.CS_TRAINING_VIEW,
+    Permission.CS_TRAINING_EDIT,
+    Permission.CS_CUSTOMER_PROFILE_VIEW,
+    Permission.CS_TAGS_VIEW,
+    Permission.CS_TAGS_EDIT,
+    Permission.CS_NOTES_VIEW,
+    Permission.CS_NOTES_EDIT,
+    Permission.CS_TRANSFERS_VIEW,
+    Permission.CS_QUICK_REPLY_VIEW,
+    Permission.CS_QUICK_REPLY_EDIT,
+    Permission.CS_AI_BOT_VIEW,
+    Permission.CS_AI_BOT_EDIT,
+    Permission.CS_QUALITY_VIEW,
+    Permission.CS_QUALITY_EDIT,
+    Permission.CS_SENSITIVE_WORDS_VIEW,
+    Permission.CS_SENSITIVE_WORDS_EDIT,
+    Permission.CS_SATISFACTION_VIEW,
+    Permission.CS_PERFORMANCE_VIEW,
+    // 新增邮件系统权限（仅查看和编辑）
+    Permission.EMAIL_TEMPLATES_VIEW,
+    Permission.EMAIL_TEMPLATES_EDIT,
+    Permission.EMAIL_CONFIGS_VIEW,
+    Permission.EMAIL_CONFIGS_EDIT,
+    Permission.EMAIL_HISTORY_VIEW,
+    // 新增支付系统权限（仅查看和编辑）
+    Permission.PAYMENT_METHODS_VIEW,
+    Permission.PAYMENT_METHODS_EDIT,
+    Permission.PAYMENT_CONFIGS_VIEW,
+    Permission.PAYMENT_CONFIGS_EDIT,
+    Permission.PAYMENT_TRANSACTIONS_VIEW,
+    // 新增其他权限（仅查看和编辑）
+    Permission.TECHNICAL_CONFIGS_VIEW,
+    Permission.TECHNICAL_CONFIGS_EDIT,
+    Permission.SHARE_ANALYTICS_VIEW,
   ],
 
   [Role.VIEWER]: [
@@ -315,6 +537,31 @@ export const rolePermissions: Record<Role, Permission[]> = {
     Permission.STATS_VIEW,
     Permission.AUDIT_VIEW,
     Permission.ATTRIBUTION_VIEW,
+    // 新增客服系统权限（仅查看）
+    Permission.CS_KNOWLEDGE_BASE_VIEW,
+    Permission.CS_SCHEDULE_VIEW,
+    Permission.CS_TRAINING_VIEW,
+    Permission.CS_CUSTOMER_PROFILE_VIEW,
+    Permission.CS_TAGS_VIEW,
+    Permission.CS_NOTES_VIEW,
+    Permission.CS_TRANSFERS_VIEW,
+    Permission.CS_QUICK_REPLY_VIEW,
+    Permission.CS_AI_BOT_VIEW,
+    Permission.CS_QUALITY_VIEW,
+    Permission.CS_SENSITIVE_WORDS_VIEW,
+    Permission.CS_SATISFACTION_VIEW,
+    Permission.CS_PERFORMANCE_VIEW,
+    // 新增邮件系统权限（仅查看）
+    Permission.EMAIL_TEMPLATES_VIEW,
+    Permission.EMAIL_CONFIGS_VIEW,
+    Permission.EMAIL_HISTORY_VIEW,
+    // 新增支付系统权限（仅查看）
+    Permission.PAYMENT_METHODS_VIEW,
+    Permission.PAYMENT_CONFIGS_VIEW,
+    Permission.PAYMENT_TRANSACTIONS_VIEW,
+    // 新增其他权限（仅查看）
+    Permission.TECHNICAL_CONFIGS_VIEW,
+    Permission.SHARE_ANALYTICS_VIEW,
   ],
 
   [Role.CS_MANAGER]: [
@@ -326,12 +573,61 @@ export const rolePermissions: Record<Role, Permission[]> = {
     Permission.CS_TEAM_EDIT,
     Permission.CS_TEAM_DELETE,
     Permission.CS_STATS_VIEW,
+    // 客服主管拥有所有客服相关权限
+    Permission.CS_KNOWLEDGE_BASE_VIEW,
+    Permission.CS_KNOWLEDGE_BASE_CREATE,
+    Permission.CS_KNOWLEDGE_BASE_EDIT,
+    Permission.CS_KNOWLEDGE_BASE_DELETE,
+    Permission.CS_SCHEDULE_VIEW,
+    Permission.CS_SCHEDULE_CREATE,
+    Permission.CS_SCHEDULE_EDIT,
+    Permission.CS_SCHEDULE_DELETE,
+    Permission.CS_TRAINING_VIEW,
+    Permission.CS_TRAINING_CREATE,
+    Permission.CS_TRAINING_EDIT,
+    Permission.CS_TRAINING_DELETE,
+    Permission.CS_CUSTOMER_PROFILE_VIEW,
+    Permission.CS_TAGS_VIEW,
+    Permission.CS_TAGS_CREATE,
+    Permission.CS_TAGS_EDIT,
+    Permission.CS_TAGS_DELETE,
+    Permission.CS_NOTES_VIEW,
+    Permission.CS_NOTES_CREATE,
+    Permission.CS_NOTES_EDIT,
+    Permission.CS_NOTES_DELETE,
+    Permission.CS_TRANSFERS_VIEW,
+    Permission.CS_TRANSFERS_CREATE,
+    Permission.CS_QUICK_REPLY_VIEW,
+    Permission.CS_QUICK_REPLY_CREATE,
+    Permission.CS_QUICK_REPLY_EDIT,
+    Permission.CS_QUICK_REPLY_DELETE,
+    Permission.CS_AI_BOT_VIEW,
+    Permission.CS_AI_BOT_EDIT,
+    Permission.CS_QUALITY_VIEW,
+    Permission.CS_QUALITY_CREATE,
+    Permission.CS_QUALITY_EDIT,
+    Permission.CS_SENSITIVE_WORDS_VIEW,
+    Permission.CS_SENSITIVE_WORDS_CREATE,
+    Permission.CS_SENSITIVE_WORDS_EDIT,
+    Permission.CS_SENSITIVE_WORDS_DELETE,
+    Permission.CS_SATISFACTION_VIEW,
+    Permission.CS_PERFORMANCE_VIEW,
   ],
 
   [Role.CS_AGENT]: [
     Permission.CS_WORKBENCH_VIEW,
     Permission.CS_WORKBENCH_CREATE,
     Permission.CS_WORKBENCH_EDIT,
+    // 客服专员的基础权限
+    Permission.CS_KNOWLEDGE_BASE_VIEW,
+    Permission.CS_SCHEDULE_VIEW,
+    Permission.CS_CUSTOMER_PROFILE_VIEW,
+    Permission.CS_TAGS_VIEW,
+    Permission.CS_NOTES_VIEW,
+    Permission.CS_NOTES_CREATE,
+    Permission.CS_TRANSFERS_VIEW,
+    Permission.CS_TRANSFERS_CREATE,
+    Permission.CS_QUICK_REPLY_VIEW,
   ],
 }
 
@@ -368,6 +664,27 @@ export const resourceNames: Record<Resource, string> = {
   [Resource.CS_WORKBENCH]: '客服工作台',
   [Resource.CS_TEAM]: '客服团队',
   [Resource.CS_STATS]: '客服统计',
+  [Resource.CS_KNOWLEDGE_BASE]: '知识库',
+  [Resource.CS_SCHEDULE]: '客服排班',
+  [Resource.CS_TRAINING]: '培训系统',
+  [Resource.CS_CUSTOMER_PROFILE]: '客户画像',
+  [Resource.CS_TAGS]: '客户标签',
+  [Resource.CS_NOTES]: '客户备注',
+  [Resource.CS_TRANSFERS]: '会话转接',
+  [Resource.CS_QUICK_REPLY]: '快捷回复',
+  [Resource.CS_AI_BOT]: 'AI机器人',
+  [Resource.CS_QUALITY]: '质检管理',
+  [Resource.CS_SENSITIVE_WORDS]: '敏感词',
+  [Resource.CS_SATISFACTION]: '满意度',
+  [Resource.CS_PERFORMANCE]: '绩效报表',
+  [Resource.EMAIL_TEMPLATES]: '邮件模板',
+  [Resource.EMAIL_CONFIGS]: '邮件配置',
+  [Resource.EMAIL_HISTORY]: '邮件历史',
+  [Resource.PAYMENT_METHODS]: '支付方式',
+  [Resource.PAYMENT_CONFIGS]: '支付配置',
+  [Resource.PAYMENT_TRANSACTIONS]: '支付交易',
+  [Resource.TECHNICAL_CONFIGS]: '技术配置',
+  [Resource.SHARE_ANALYTICS]: '分享统计',
 }
 
 /**

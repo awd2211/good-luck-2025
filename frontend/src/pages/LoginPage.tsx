@@ -1,29 +1,37 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
-import * as authApi from '../services/authService'
+import * as emailAuthApi from '../services/emailAuthService'
+import { showToast } from '../components/ToastContainer'
 import './LoginPage.css'
 
 const LoginPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
-  const { login } = useAuth()
-  const [mode, setMode] = useState<'code' | 'password'>('code')
-  const [phone, setPhone] = useState('')
+  const { setAuth } = useAuth()
+  const [mode, setMode] = useState<'code' | 'password'>('password')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
+  const [verificationCode, setVerificationCode] = useState('')
   const [countdown, setCountdown] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   // 发送验证码
   const handleSendCode = async () => {
-    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
-      setError('请输入正确的手机号')
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email || !emailRegex.test(email)) {
+      setError(t('auth.invalidEmail'))
       return
     }
 
     try {
-      await authApi.sendVerificationCode(phone)
+      setError('')
+      await emailAuthApi.sendVerificationCode(email, 'login')
+
+      // 开始倒计时
       setCountdown(60)
       const timer = setInterval(() => {
         setCountdown((prev) => {
@@ -34,8 +42,12 @@ const LoginPage = () => {
           return prev - 1
         })
       }, 1000)
+
+      showToast({ title: t('common.success'), content: t('auth.codeSent'), type: 'success' })
     } catch (err: any) {
-      setError(err.response?.data?.message || '发送验证码失败')
+      const errorMsg = err.response?.data?.message || t('auth.sendCodeFailed')
+      setError(errorMsg)
+      console.error('发送验证码失败:', err)
     }
   }
 
@@ -44,83 +56,146 @@ const LoginPage = () => {
     e.preventDefault()
     setError('')
 
-    if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
-      setError('请输入正确的手机号')
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!email || !emailRegex.test(email)) {
+      setError(t('auth.invalidEmail'))
       return
     }
 
     if (mode === 'code') {
-      if (!code || code.length !== 6) {
-        setError('请输入6位验证码')
+      if (!verificationCode || verificationCode.length !== 6) {
+        setError(t('auth.invalidCode'))
         return
       }
     } else {
       if (!password || password.length < 6) {
-        setError('密码至少6位')
+        setError(t('auth.passwordMinLength'))
         return
       }
     }
 
-    setLoading(true)
     try {
-      await login({
-        phone,
-        password: mode === 'password' ? password : undefined,
-        code: mode === 'code' ? code : undefined,
-      })
-      navigate('/')
+      setLoading(true)
+      let response
+
+      if (mode === 'password') {
+        // 密码登录
+        response = await emailAuthApi.loginWithPassword(email, password)
+      } else {
+        // 验证码登录
+        response = await emailAuthApi.loginWithCode(email, verificationCode)
+      }
+
+      if (response.success) {
+        // 更新认证上下文（会自动保存到storage）
+        setAuth(response.data.token, response.data.user)
+
+        // 跳转到首页
+        navigate('/')
+      } else {
+        setError(response.message || t('auth.loginFailed'))
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || '登录失败，请检查您的信息')
+      const errorMsg = err.response?.data?.message || t('auth.loginError')
+      setError(errorMsg)
+      console.error('登录失败:', err)
     } finally {
       setLoading(false)
     }
+  }
+
+  // 一键填充测试账号
+  const fillTestAccount = (testEmail: string, testPassword: string) => {
+    setEmail(testEmail)
+    setPassword(testPassword)
+    setMode('password')
   }
 
   return (
     <div className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>欢迎回来</h1>
-          <p>登录算命平台，探索您的命运</p>
+          <h1>{t('auth.welcomeBack')}</h1>
+          <p>{t('auth.loginSubtitle')}</p>
         </div>
 
+        {/* 开发环境测试账号提示 */}
+        {import.meta.env.DEV && (
+          <div className="test-accounts-hint">
+            <div className="hint-title">🧪 {t('auth.testAccounts')}</div>
+            <div className="test-accounts-list">
+              <div className="test-account-item">
+                <div className="account-info">
+                  <span className="account-label">{t('auth.accountLabel')}1:</span>
+                  <span className="account-email">zhangsan@example.com</span>
+                  <span className="account-password">{t('auth.password')}: password123</span>
+                </div>
+                <button
+                  type="button"
+                  className="fill-btn"
+                  onClick={() => fillTestAccount('zhangsan@example.com', 'password123')}
+                >
+                  {t('auth.fillAccount')}
+                </button>
+              </div>
+              <div className="test-account-item">
+                <div className="account-info">
+                  <span className="account-label">{t('auth.accountLabel')}2:</span>
+                  <span className="account-email">lisi@example.com</span>
+                  <span className="account-password">{t('auth.password')}: password123</span>
+                </div>
+                <button
+                  type="button"
+                  className="fill-btn"
+                  onClick={() => fillTestAccount('lisi@example.com', 'password123')}
+                >
+                  {t('auth.fillAccount')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="login-tabs">
-          <button
-            className={mode === 'code' ? 'active' : ''}
-            onClick={() => setMode('code')}
-          >
-            验证码登录
-          </button>
           <button
             className={mode === 'password' ? 'active' : ''}
             onClick={() => setMode('password')}
           >
-            密码登录
+            {t('auth.loginWithPassword')}
+          </button>
+          <button
+            className={mode === 'code' ? 'active' : ''}
+            onClick={() => setMode('code')}
+          >
+            {t('auth.loginWithCode')}
           </button>
         </div>
 
         <form onSubmit={handleLogin} className="login-form">
+          {/* 邮箱 */}
           <div className="form-group">
-            <label>手机号</label>
+            <label>{t('auth.email')}</label>
             <input
-              type="tel"
-              placeholder="请输入手机号"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              maxLength={11}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={t('auth.emailPlaceholder')}
+              required
             />
           </div>
 
           {mode === 'code' ? (
             <div className="form-group">
-              <label>验证码</label>
-              <div className="code-input-wrapper">
+              <label>{t('auth.verificationCode')}</label>
+              <div className="code-input-group">
                 <input
                   type="text"
-                  placeholder="请输入验证码"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value)}
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder={t('auth.codePlaceholder')}
                   maxLength={6}
+                  required
                 />
                 <button
                   type="button"
@@ -128,38 +203,46 @@ const LoginPage = () => {
                   disabled={countdown > 0}
                   className="send-code-btn"
                 >
-                  {countdown > 0 ? `${countdown}s` : '发送验证码'}
+                  {countdown > 0 ? `${countdown}${t('auth.retryAfterSeconds')}` : t('auth.sendCode')}
                 </button>
               </div>
             </div>
           ) : (
             <div className="form-group">
-              <label>密码</label>
+              <label>{t('auth.password')}</label>
               <input
                 type="password"
-                placeholder="请输入密码"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder={t('auth.passwordPlaceholder')}
+                minLength={6}
+                required
               />
             </div>
           )}
 
+          {/* 错误提示 */}
           {error && <div className="error-message">{error}</div>}
 
-          <button type="submit" className="login-btn" disabled={loading}>
-            {loading ? '登录中...' : '登录'}
+          {/* 登录按钮 */}
+          <button
+            type="submit"
+            className="submit-btn"
+            disabled={loading}
+          >
+            {loading ? t('auth.loggingIn') : t('auth.loginNow')}
           </button>
 
-          <div className="form-footer">
-            <Link to="/register" className="link">
-              还没有账号？立即注册
-            </Link>
-            {mode === 'password' && (
-              <Link to="/forgot-password" className="link">
-                忘记密码？
-              </Link>
-            )}
+          {/* 跳转注册和忘记密码 */}
+          <div className="switch-mode">
+            {t('auth.noAccount')}
+            <Link to="/register">{t('auth.goToRegister')}</Link>
           </div>
+          {mode === 'password' && (
+            <div className="switch-mode" style={{ marginTop: '8px' }}>
+              <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+            </div>
+          )}
         </form>
       </div>
     </div>

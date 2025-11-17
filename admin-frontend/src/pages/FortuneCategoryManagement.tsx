@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, InputNumber, Select, message } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
+import api from '../services/api'
 
 const { TextArea } = Input
 const { Option } = Select
@@ -42,7 +42,7 @@ const FortuneCategoryManagement = () => {
 
       const res = await api.get('/fortune-categories', { params })
       if (res.data.success) {
-        const categoriesData = res.data.data
+        const categoriesData = (res.data.data || res.data)
         if (Array.isArray(categoriesData)) {
           setCategories(categoriesData)
           setPagination({
@@ -50,12 +50,12 @@ const FortuneCategoryManagement = () => {
             pageSize,
             total: categoriesData.length
           })
-        } else if (categoriesData && Array.isArray(categoriesData.list)) {
+        } else if (categoriesData && Array.isArray(categoriesData?.list)) {
           setCategories(categoriesData.list)
           setPagination({
             current: page,
             pageSize,
-            total: categoriesData.pagination?.total || categoriesData.list.length
+            total: categoriesData?.pagination?.total || categoriesData?.list?.length || 0
           })
         } else {
           setCategories([])
@@ -274,7 +274,7 @@ const FortuneCategoryManagement = () => {
   return (
     <div>
       <Card
-        title="算命分类管理"
+        title="运势分类管理"
         extra={
           <Button
             type="primary"

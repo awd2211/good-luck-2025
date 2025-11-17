@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getFeedbacks, updateFeedback } from '../services/feedbackService'
 
 const { TextArea } = Input
 
@@ -52,15 +52,12 @@ const FeedbackManagement = () => {
   const loadFeedbacks = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/feedbacks', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setFeedbacks(Array.isArray(data) ? data : data.list || [])
+      const response = await getFeedbacks({ page, limit: pageSize })
+      setFeedbacks(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+        total: response.data.pagination?.total || 0,
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载反馈失败')
@@ -87,7 +84,7 @@ const FeedbackManagement = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields()
-      await api.put(`/feedbacks/${currentFeedback?.id}`, {
+      await updateFeedback(currentFeedback!.id, {
         status: values.status,
         handler_comment: values.handler_comment,
       })

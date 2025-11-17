@@ -1,0 +1,47 @@
+.virtual-list {
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  will-change: scroll-position;
+}
+
+.virtual-list-content {
+  position: relative;
+  width: 100%;
+}
+
+.virtual-list-item {
+  position: absolute;
+  left: 0;
+  right: 0;
+  will-change: transform;
+  contain: layout style paint;
+}
+
+/* 优化滚动性能 */
+.virtual-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.virtual-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.virtual-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.virtual-list::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .virtual-list::-webkit-scrollbar {
+    width: 4px;
+  }
+}

@@ -46,6 +46,96 @@
   margin: 0;
 }
 
+/* 测试账号提示区域 */
+.test-accounts-hint {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 2px dashed #ff9800;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 152, 0, 0);
+  }
+}
+
+.test-accounts-hint .hint-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e65100;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.test-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.test-account-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.test-account-item .account-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.test-account-item .account-label {
+  font-weight: 600;
+  color: #555;
+}
+
+.test-account-item .account-email {
+  color: #667eea;
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.test-account-item .account-password {
+  color: #888;
+  font-family: monospace;
+}
+
+.test-account-item .fill-btn {
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.test-account-item .fill-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.test-account-item .fill-btn:active {
+  transform: translateY(0);
+}
+
 .login-tabs {
   display: flex;
   gap: 8px;

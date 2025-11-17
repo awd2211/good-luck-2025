@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { OrderStatus } from '../types'
 import * as orderService from '../services/orderService'
@@ -11,6 +12,7 @@ import { showToast } from '../components/ToastContainer'
 import './OrdersPage.css'
 
 const OrdersPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -57,10 +59,10 @@ const OrdersPage = () => {
 
   const handleCancelOrder = async (orderId: string) => {
     const confirmed = await confirm({
-      title: '取消订单',
-      message: '确定要取消订单吗？',
-      confirmText: '取消订单',
-      cancelText: '返回',
+      title: t('orders.cancelConfirmTitle'),
+      message: t('orders.cancelConfirmMessage'),
+      confirmText: t('orders.cancelConfirmButton'),
+      cancelText: t('common.back'),
       variant: 'danger'
     })
 
@@ -68,21 +70,21 @@ const OrdersPage = () => {
 
     try {
       await orderService.cancelOrder(orderId)
-      showToast({ title: '成功', content: '订单已取消', type: 'success' })
+      showToast({ title: t('common.success'), content: t('orders.cancelSuccess'), type: 'success' })
       fetchOrders()
     } catch (error) {
-      showToast({ title: '错误', content: '取消订单失败，请重试', type: 'error' })
+      showToast({ title: t('common.error'), content: t('orders.cancelFailed'), type: 'error' })
     }
   }
 
   const getStatusText = (status: OrderStatus) => {
     const statusMap = {
-      [OrderStatus.PENDING]: '待支付',
-      [OrderStatus.PAID]: '已支付',
-      [OrderStatus.PROCESSING]: '处理中',
-      [OrderStatus.COMPLETED]: '已完成',
-      [OrderStatus.CANCELLED]: '已取消',
-      [OrderStatus.REFUNDED]: '已退款',
+      [OrderStatus.PENDING]: t('orders.pending'),
+      [OrderStatus.PAID]: t('orders.paid'),
+      [OrderStatus.PROCESSING]: t('orders.processing'),
+      [OrderStatus.COMPLETED]: t('orders.completed'),
+      [OrderStatus.CANCELLED]: t('orders.cancelled'),
+      [OrderStatus.REFUNDED]: t('orders.refunded'),
     }
     return statusMap[status] || status
   }
@@ -100,10 +102,10 @@ const OrdersPage = () => {
   }
 
   const tabs = [
-    { key: 'all', label: '全部' },
-    { key: OrderStatus.PENDING, label: '待支付' },
-    { key: OrderStatus.PROCESSING, label: '处理中' },
-    { key: OrderStatus.COMPLETED, label: '已完成' },
+    { key: 'all', label: t('orders.all') },
+    { key: OrderStatus.PENDING, label: t('orders.pending') },
+    { key: OrderStatus.PROCESSING, label: t('orders.processing') },
+    { key: OrderStatus.COMPLETED, label: t('orders.completed') },
   ]
 
   if (!user) {
@@ -125,9 +127,9 @@ const OrdersPage = () => {
       <div className="orders-page">
       <div className="orders-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('orders.back')}
         </button>
-        <h1>我的订单</h1>
+        <h1>{t('orders.title')}</h1>
         <div style={{ width: '48px' }} />
       </div>
 
@@ -155,7 +157,7 @@ const OrdersPage = () => {
                 onClick={() => navigate(`/orders/${order.id}`)}
               >
                 <div className="order-header">
-                  <span className="order-no">订单号: {order.order_no}</span>
+                  <span className="order-no">{t('orders.orderNo')}: {order.order_no}</span>
                   <span
                     className="order-status"
                     style={{ color: getStatusColor(order.status) }}
@@ -181,7 +183,7 @@ const OrdersPage = () => {
                     {new Date(order.created_at).toLocaleString('zh-CN')}
                   </div>
                   <div className="order-total">
-                    合计: <span className="amount">¥{order.final_amount}</span>
+                    {t('orders.total')}: <span className="amount">¥{order.final_amount}</span>
                   </div>
                 </div>
 
@@ -194,7 +196,7 @@ const OrdersPage = () => {
                         handleCancelOrder(order.id)
                       }}
                     >
-                      取消订单
+                      {t('orders.cancelOrder')}
                     </button>
                     <button
                       className="btn-primary"
@@ -203,7 +205,7 @@ const OrdersPage = () => {
                         navigate(`/payment/${order.id}`)
                       }}
                     >
-                      立即支付
+                      {t('orders.payNow')}
                     </button>
                   </div>
                 )}

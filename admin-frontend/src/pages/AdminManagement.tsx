@@ -14,6 +14,9 @@ import {
   Statistic,
   Row,
   Col,
+  Tabs,
+  Tooltip,
+  Divider,
 } from 'antd'
 import {
   PlusOutlined,
@@ -26,13 +29,20 @@ import {
   EyeOutlined,
   CustomerServiceOutlined,
   QuestionCircleOutlined,
+  MailOutlined,
+  SendOutlined,
+  CloseCircleOutlined,
+  ReloadOutlined,
+  UsergroupAddOutlined,
+  MinusCircleOutlined,
 } from '@ant-design/icons'
-import api from '../services/apiService'
+import api from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'
 import { validatePasswordMinimum } from '../utils/passwordStrength'
 
 const { Option } = Select
+const { TextArea } = Input
 
 interface Admin {
   id: string
@@ -43,12 +53,35 @@ interface Admin {
   updated_at: string
 }
 
+interface Invitation {
+  id: number
+  email: string
+  username: string
+  role: string
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled'
+  invited_by: string
+  token: string
+  expires_at: string
+  created_at: string
+  accepted_at?: string
+}
+
+interface EmailInvite {
+  email: string
+  username: string
+  role: string
+}
+
 const AdminManagement = () => {
   const [admins, setAdmins] = useState<Admin[]>([])
+  const [invitations, setInvitations] = useState<Invitation[]>([])
   const [loading, setLoading] = useState(false)
+  const [invitationsLoading, setInvitationsLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
+  const [inviteModalVisible, setInviteModalVisible] = useState(false)
   const [editingAdmin, setEditingAdmin] = useState<Admin | null>(null)
   const [form] = Form.useForm()
+  const [inviteForm] = Form.useForm()
   const [searchText, setSearchText] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('')
   const [password, setPassword] = useState('')
@@ -57,14 +90,25 @@ const AdminManagement = () => {
     pageSize: 20,
     total: 0,
   })
+  const [invitationPagination, setInvitationPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+  })
   const [stats, setStats] = useState<any>({})
+  const [activeTab, setActiveTab] = useState('admins')
   const { user } = useAuth()
+
+  // 批量邀请的邮箱列表
+  const [emailInvites, setEmailInvites] = useState<EmailInvite[]>([
+    { email: '', username: '', role: 'viewer' }
+  ])
 
   const fetchStats = async () => {
     try {
       const response = await api.get('/admins/stats')
       if (response.data.success) {
-        setStats(response.data.data)
+        setStats(response.data?.data || {})
       }
     } catch (error) {
       console.error('获取统计数据失败:', error)
@@ -84,11 +128,11 @@ const AdminManagement = () => {
       })
 
       if (response.data.success) {
-        setAdmins(response.data.data.data)
+        setAdmins(response.data?.data?.data || [])
         setPagination({
           current: page,
           pageSize,
-          total: response.data.data.total,
+          total: response.data?.data?.total || 0,
         })
       }
     } catch (error: any) {
@@ -98,10 +142,41 @@ const AdminManagement = () => {
     }
   }
 
+  const fetchInvitations = async (page = invitationPagination.current, pageSize = invitationPagination.pageSize) => {
+    try {
+      setInvitationsLoading(true)
+      const response = await api.get('/invitations', {
+        params: {
+          page,
+          limit: pageSize,
+        },
+      })
+
+      if (response.data.success) {
+        setInvitations(response.data?.data?.invitations || [])
+        setInvitationPagination({
+          current: page,
+          pageSize,
+          total: response.data?.data?.total || 0,
+        })
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '获取邀请列表失败')
+    } finally {
+      setInvitationsLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchAdmins(1, pagination.pageSize)
     fetchStats()
   }, [roleFilter, searchText])
+
+  useEffect(() => {
+    if (activeTab === 'invitations') {
+      fetchInvitations()
+    }
+  }, [activeTab])
 
   const handleAdd = () => {
     setEditingAdmin(null)
@@ -164,6 +239,128 @@ const AdminManagement = () => {
     }
   }
 
+  // 打开邮箱邀请模态框
+  const handleOpenInviteModal = () => {
+    setEmailInvites([{ email: '', username: '', role: 'viewer' }])
+    inviteForm.resetFields()
+    setInviteModalVisible(true)
+  }
+
+  // 添加邮箱邀请行
+  const handleAddEmailInvite = () => {
+    setEmailInvites([...emailInvites, { email: '', username: '', role: 'viewer' }])
+  }
+
+  // 删除邮箱邀请行
+  const handleRemoveEmailInvite = (index: number) => {
+    if (emailInvites.length > 1) {
+      const newInvites = emailInvites.filter((_, i) => i !== index)
+      setEmailInvites(newInvites)
+    }
+  }
+
+  // 更新邮箱邀请数据
+  const handleEmailInviteChange = (index: number, field: keyof EmailInvite, value: string) => {
+    const newInvites = [...emailInvites]
+    newInvites[index][field] = value
+    setEmailInvites(newInvites)
+  }
+
+  // 发送邮箱邀请
+  const handleSendInvitations = async () => {
+    try {
+      // 验证所有邮箱
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      for (let i = 0; i < emailInvites.length; i++) {
+        const invite = emailInvites[i]
+        if (!invite.email || !emailRegex.test(invite.email)) {
+          message.error(`第 ${i + 1} 行邮箱格式不正确`)
+          return
+        }
+        if (!invite.username) {
+          message.error(`第 ${i + 1} 行用户名不能为空`)
+          return
+        }
+        if (!invite.role) {
+          message.error(`第 ${i + 1} 行请选择角色`)
+          return
+        }
+      }
+
+      // 发送所有邀请
+      const promises = emailInvites.map(invite =>
+        api.post('/invitations/send', invite)
+      )
+
+      const results = await Promise.allSettled(promises)
+
+      let successCount = 0
+      let failCount = 0
+      const errors: string[] = []
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value.data.success) {
+          successCount++
+        } else {
+          failCount++
+          const errorMsg = result.status === 'rejected'
+            ? result.reason?.response?.data?.message || '发送失败'
+            : result.value.data.message || '发送失败'
+          errors.push(`${emailInvites[index].email}: ${errorMsg}`)
+        }
+      })
+
+      if (successCount > 0) {
+        message.success(`成功发送 ${successCount} 个邀请`)
+        setInviteModalVisible(false)
+        if (activeTab === 'invitations') {
+          fetchInvitations()
+        }
+      }
+
+      if (failCount > 0) {
+        Modal.error({
+          title: `${failCount} 个邀请发送失败`,
+          content: (
+            <div>
+              {errors.map((error, index) => (
+                <div key={index}>{error}</div>
+              ))}
+            </div>
+          ),
+        })
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '发送邀请失败')
+    }
+  }
+
+  // 取消邀请
+  const handleCancelInvitation = async (id: number) => {
+    try {
+      const response = await api.post(`/invitations/${id}/cancel`)
+      if (response.data.success) {
+        message.success('邀请已取消')
+        fetchInvitations()
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '取消邀请失败')
+    }
+  }
+
+  // 重新发送邀请
+  const handleResendInvitation = async (id: number) => {
+    try {
+      const response = await api.post(`/invitations/${id}/resend`)
+      if (response.data.success) {
+        message.success('邀请邮件已重新发送')
+        fetchInvitations()
+      }
+    } catch (error: any) {
+      message.error(error.response?.data?.message || '重新发送失败')
+    }
+  }
+
   const getRoleTag = (role: string) => {
     const roleConfig: Record<string, { color: string; icon: any; text: string }> = {
       super_admin: { color: 'red', icon: <CrownOutlined />, text: '超级管理员' },
@@ -181,7 +378,18 @@ const AdminManagement = () => {
     )
   }
 
-  const columns = [
+  const getStatusTag = (status: string) => {
+    const statusConfig: Record<string, { color: string; text: string }> = {
+      pending: { color: 'processing', text: '待接受' },
+      accepted: { color: 'success', text: '已接受' },
+      expired: { color: 'default', text: '已过期' },
+      cancelled: { color: 'error', text: '已取消' },
+    }
+    const config = statusConfig[status] || { color: 'default', text: status }
+    return <Tag color={config.color}>{config.text}</Tag>
+  }
+
+  const adminColumns = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -239,6 +447,92 @@ const AdminManagement = () => {
               删除
             </Button>
           </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  const invitationColumns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+    },
+    {
+      title: '邮箱',
+      dataIndex: 'email',
+      key: 'email',
+    },
+    {
+      title: '用户名',
+      dataIndex: 'username',
+      key: 'username',
+    },
+    {
+      title: '角色',
+      dataIndex: 'role',
+      key: 'role',
+      render: (role: string) => getRoleTag(role),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => getStatusTag(status),
+    },
+    {
+      title: '邀请人',
+      dataIndex: 'invited_by',
+      key: 'invited_by',
+    },
+    {
+      title: '过期时间',
+      dataIndex: 'expires_at',
+      key: 'expires_at',
+      render: (text: string) => new Date(text).toLocaleString('zh-CN'),
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (text: string) => new Date(text).toLocaleString('zh-CN'),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_: any, record: Invitation) => (
+        <Space>
+          {record.status === 'pending' && (
+            <>
+              <Tooltip title="重新发送邀请邮件">
+                <Button
+                  type="link"
+                  icon={<ReloadOutlined />}
+                  onClick={() => handleResendInvitation(record.id)}
+                >
+                  重发
+                </Button>
+              </Tooltip>
+              <Popconfirm
+                title="确定要取消这个邀请吗？"
+                onConfirm={() => handleCancelInvitation(record.id)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Button
+                  type="link"
+                  danger
+                  icon={<CloseCircleOutlined />}
+                >
+                  取消
+                </Button>
+              </Popconfirm>
+            </>
+          )}
+          {record.status !== 'pending' && (
+            <Tag color="default">无可用操作</Tag>
+          )}
         </Space>
       ),
     },
@@ -308,56 +602,130 @@ const AdminManagement = () => {
         </Col>
       </Row>
 
-      {/* 操作栏 */}
-      <Card style={{ marginBottom: 16 }}>
-        <Space style={{ marginBottom: 16 }}>
-          <Input
-            placeholder="搜索用户名或邮箱"
-            prefix={<SearchOutlined />}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250 }}
-            allowClear
-          />
-          <Select
-            placeholder="选择角色"
-            onChange={setRoleFilter}
-            style={{ width: 150 }}
-            allowClear
-          >
-            <Option value="super_admin">超级管理员</Option>
-            <Option value="admin">管理员</Option>
-            <Option value="manager">经理</Option>
-            <Option value="viewer">访客</Option>
-            <Option value="cs_manager">客服主管</Option>
-            <Option value="cs_agent">客服专员</Option>
-          </Select>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-            添加管理员
-          </Button>
-        </Space>
+      <Card>
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            {
+              key: 'admins',
+              label: (
+                <span>
+                  <TeamOutlined />
+                  管理员列表
+                </span>
+              ),
+              children: (
+                <>
+                  {/* 操作栏 */}
+                  <Space style={{ marginBottom: 16 }}>
+                    <Input
+                      placeholder="搜索用户名或邮箱"
+                      prefix={<SearchOutlined />}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      style={{ width: 250 }}
+                      allowClear
+                    />
+                    <Select
+                      placeholder="选择角色"
+                      onChange={setRoleFilter}
+                      style={{ width: 150 }}
+                      allowClear
+                    >
+                      <Option value="super_admin">超级管理员</Option>
+                      <Option value="admin">管理员</Option>
+                      <Option value="manager">经理</Option>
+                      <Option value="viewer">访客</Option>
+                      <Option value="cs_manager">客服主管</Option>
+                      <Option value="cs_agent">客服专员</Option>
+                    </Select>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                      直接创建管理员
+                    </Button>
+                    <Button
+                      type="default"
+                      icon={<MailOutlined />}
+                      onClick={handleOpenInviteModal}
+                      style={{ backgroundColor: '#52c41a', color: 'white', borderColor: '#52c41a' }}
+                    >
+                      邮箱邀请管理员
+                    </Button>
+                  </Space>
 
-        {/* 表格 */}
-        <Table
-          columns={columns}
-          dataSource={admins}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条记录`,
-            onChange: (page, pageSize) => {
-              fetchAdmins(page, pageSize)
+                  {/* 表格 */}
+                  <Table
+                    columns={adminColumns}
+                    dataSource={admins}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{
+                      ...pagination,
+                      showSizeChanger: true,
+                      showQuickJumper: true,
+                      showTotal: (total) => `共 ${total} 条记录`,
+                      onChange: (page, pageSize) => {
+                        fetchAdmins(page, pageSize)
+                      },
+                      onShowSizeChange: (_, size) => {
+                        fetchAdmins(1, size)
+                      }
+                    }}
+                  />
+                </>
+              ),
             },
-            onShowSizeChange: (_, size) => {
-              fetchAdmins(1, size)
-            }
-          }}
+            {
+              key: 'invitations',
+              label: (
+                <span>
+                  <MailOutlined />
+                  邀请列表
+                </span>
+              ),
+              children: (
+                <>
+                  <Space style={{ marginBottom: 16 }}>
+                    <Button
+                      type="primary"
+                      icon={<MailOutlined />}
+                      onClick={handleOpenInviteModal}
+                    >
+                      发送邀请
+                    </Button>
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={() => fetchInvitations()}
+                    >
+                      刷新
+                    </Button>
+                  </Space>
+
+                  <Table
+                    columns={invitationColumns}
+                    dataSource={invitations}
+                    rowKey="id"
+                    loading={invitationsLoading}
+                    pagination={{
+                      ...invitationPagination,
+                      showSizeChanger: true,
+                      showQuickJumper: true,
+                      showTotal: (total) => `共 ${total} 条记录`,
+                      onChange: (page, pageSize) => {
+                        fetchInvitations(page, pageSize)
+                      },
+                      onShowSizeChange: (_, size) => {
+                        fetchInvitations(1, size)
+                      }
+                    }}
+                  />
+                </>
+              ),
+            },
+          ]}
         />
       </Card>
 
-      {/* 添加/编辑模态框 */}
+      {/* 添加/编辑管理员模态框 */}
       <Modal
         title={editingAdmin ? '编辑管理员' : '添加管理员'}
         open={modalVisible}
@@ -452,6 +820,92 @@ const AdminManagement = () => {
             </Form.Item>
           )}
         </Form>
+      </Modal>
+
+      {/* 邮箱邀请模态框 */}
+      <Modal
+        title={
+          <Space>
+            <UsergroupAddOutlined />
+            邮箱邀请管理员
+          </Space>
+        }
+        open={inviteModalVisible}
+        onOk={handleSendInvitations}
+        onCancel={() => setInviteModalVisible(false)}
+        okText="发送邀请"
+        cancelText="取消"
+        width={800}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ color: '#666', fontSize: '13px', marginBottom: 8 }}>
+            💡 提示：可以一次邀请多个管理员，受邀人将收到邮件并通过邮件链接设置密码完成注册
+          </div>
+        </div>
+
+        {emailInvites.map((invite, index) => (
+          <Card
+            key={index}
+            size="small"
+            style={{ marginBottom: 12 }}
+            extra={
+              emailInvites.length > 1 && (
+                <Button
+                  type="link"
+                  danger
+                  size="small"
+                  icon={<MinusCircleOutlined />}
+                  onClick={() => handleRemoveEmailInvite(index)}
+                >
+                  删除
+                </Button>
+              )
+            }
+          >
+            <Row gutter={12}>
+              <Col span={10}>
+                <Input
+                  placeholder="请输入邮箱地址"
+                  prefix={<MailOutlined />}
+                  value={invite.email}
+                  onChange={(e) => handleEmailInviteChange(index, 'email', e.target.value)}
+                />
+              </Col>
+              <Col span={7}>
+                <Input
+                  placeholder="请输入用户名"
+                  prefix={<UserOutlined />}
+                  value={invite.username}
+                  onChange={(e) => handleEmailInviteChange(index, 'username', e.target.value)}
+                />
+              </Col>
+              <Col span={7}>
+                <Select
+                  placeholder="选择角色"
+                  value={invite.role}
+                  onChange={(value) => handleEmailInviteChange(index, 'role', value)}
+                  style={{ width: '100%' }}
+                >
+                  <Option value="super_admin">超级管理员</Option>
+                  <Option value="admin">管理员</Option>
+                  <Option value="manager">经理</Option>
+                  <Option value="viewer">访客</Option>
+                  <Option value="cs_manager">客服主管</Option>
+                  <Option value="cs_agent">客服专员</Option>
+                </Select>
+              </Col>
+            </Row>
+          </Card>
+        ))}
+
+        <Button
+          type="dashed"
+          onClick={handleAddEmailInvite}
+          icon={<PlusOutlined />}
+          style={{ width: '100%', marginTop: 8 }}
+        >
+          添加更多邮箱
+        </Button>
       </Modal>
     </div>
   )

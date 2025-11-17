@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { Form, Input, Button, Card, message, Alert, Result, Spin } from 'antd'
 import { LockOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'
-import api from '../services/apiService'
+import api from '../services/api'
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'
 import { validatePasswordMinimum } from '../utils/passwordStrength'
 

@@ -1,3 +1,4 @@
+import api from '../services/api'
 import { useState, useEffect } from 'react'
 import { Card, Table, Button, Space, Modal, Form, Input, Select, message, Tag, Popconfirm } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined, FileTextOutlined } from '@ant-design/icons'
@@ -6,7 +7,6 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission, Role } from '../config/permissions'
 import { useAuth } from '../contexts/AuthContext'
-import api from '../services/apiService'
 
 const { TextArea } = Input
 
@@ -53,11 +53,11 @@ const NotificationTemplates = () => {
         params: { page, limit: pageSize }
       })
       const data = response.data.data || []
-      setTemplates(Array.isArray(data) ? data : data.list || [])
+      setTemplates(Array.isArray(data) ? data : data?.list || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.pagination?.total || (Array.isArray(data) ? data.length : data.list?.length || 0)
+        total: data?.pagination?.total || (Array.isArray(data) ? data.length : data?.list?.length || 0)
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载模板失败')
@@ -241,7 +241,7 @@ const NotificationTemplates = () => {
       width: 200,
       render: (variables: string[]) => (
         <Space size={[0, 4]} wrap>
-          {variables && variables.length > 0 ? (
+          {variables?.length > 0 ? (
             variables.map((v: string, i: number) => (
               <Tag key={i} style={{ fontSize: '11px' }}>
                 {`{${v}}`}

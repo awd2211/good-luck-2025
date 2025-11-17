@@ -1,6 +1,25 @@
 /**
  * 用户端聊天 API 路由
  * 用户端使用,需要用户认证
+ *
+ * 标签: User - Chat
+ * 前缀: /api/chat
+ *
+ * 已完成的路由 (14个端点):
+ *   - POST /sessions - 发起咨询会话
+ *   - GET /sessions/:key - 获取会话信息
+ *   - GET /history - 获取历史会话
+ *   - GET /messages/:sessionId - 获取会话消息
+ *   - POST /messages - 发送消息
+ *   - POST /messages/:id/read - 标记消息已读
+ *   - POST /sessions/:sessionId/read - 标记会话全部已读
+ *   - GET /sessions/:sessionId/unread - 获取未读数量
+ *   - GET /unread/total - 获取总未读数
+ *   - POST /sessions/:sessionId/close - 关闭会话
+ *   - POST /rating - 评价客服
+ *   - GET /quick-replies - 获取快捷回复
+ *   - GET /quick-replies/shortcut/:key - 通过快捷键获取模板
+ *   - GET /sessions/:sessionId/stats - 获取会话统计
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
@@ -11,8 +30,71 @@ import * as quickReplyService from '../../services/webchat/quickReplyService';
 const router = Router();
 
 /**
- * 发起咨询(创建会话)
- * POST /api/chat/sessions
+ * @openapi
+ * /api/chat/sessions:
+ *   post:
+ *     summary: 发起咨询会话
+ *     description: 用户发起客服咨询,创建新的聊天会话并自动分配客服
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 description: 用户ID
+ *                 example: "user123"
+ *               channel:
+ *                 type: string
+ *                 description: 咨询渠道
+ *                 enum: [web, mobile, app]
+ *                 default: web
+ *               priority:
+ *                 type: integer
+ *                 description: 优先级(0-10)
+ *                 default: 0
+ *               metadata:
+ *                 type: object
+ *                 description: 附加元数据
+ *     responses:
+ *       200:
+ *         description: 会话创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "客服分配成功"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     session_key:
+ *                       type: string
+ *                     user_id:
+ *                       type: string
+ *                     agent_id:
+ *                       type: integer
+ *                     status:
+ *                       type: string
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/sessions', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -47,8 +129,50 @@ router.post('/sessions', async (req: Request, res: Response, next: NextFunction)
 });
 
 /**
- * 根据session_key获取会话信息
- * GET /api/chat/sessions/:key
+ * @openapi
+ * /api/chat/sessions/{key}:
+ *   get:
+ *     summary: 获取会话信息
+ *     description: 根据会话密钥获取会话详细信息
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 会话密钥
+ *     responses:
+ *       200:
+ *         description: 成功获取会话信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     session_key:
+ *                       type: string
+ *                     user_id:
+ *                       type: string
+ *                     agent_id:
+ *                       type: integer
+ *                     status:
+ *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/sessions/:key', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -73,8 +197,47 @@ router.get('/sessions/:key', async (req: Request, res: Response, next: NextFunct
 });
 
 /**
- * 获取用户的历史会话
- * GET /api/chat/history
+ * @openapi
+ * /api/chat/history:
+ *   get:
+ *     summary: 获取历史会话
+ *     description: 获取用户的历史咨询会话列表
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 用户ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: 返回数量限制
+ *     responses:
+ *       200:
+ *         description: 成功获取历史会话
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/history', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -102,8 +265,56 @@ router.get('/history', async (req: Request, res: Response, next: NextFunction) =
 });
 
 /**
- * 获取会话消息历史
- * GET /api/chat/messages/:sessionId
+ * @openapi
+ * /api/chat/messages/{sessionId}:
+ *   get:
+ *     summary: 获取会话消息
+ *     description: 获取指定会话的消息历史记录
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: 返回消息数量
+ *     responses:
+ *       200:
+ *         description: 成功获取消息列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       session_id:
+ *                         type: integer
+ *                       sender_type:
+ *                         type: string
+ *                       content:
+ *                         type: string
+ *                       message_type:
+ *                         type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/messages/:sessionId', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -125,8 +336,59 @@ router.get('/messages/:sessionId', async (req: Request, res: Response, next: Nex
 });
 
 /**
- * 发送消息
- * POST /api/chat/messages
+ * @openapi
+ * /api/chat/messages:
+ *   post:
+ *     summary: 发送消息
+ *     description: 在会话中发送新消息
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - senderType
+ *               - senderId
+ *               - content
+ *             properties:
+ *               sessionId:
+ *                 type: integer
+ *                 description: 会话ID
+ *               senderType:
+ *                 type: string
+ *                 enum: [user, agent]
+ *                 description: 发送者类型
+ *               senderId:
+ *                 type: string
+ *                 description: 发送者ID
+ *               content:
+ *                 type: string
+ *                 description: 消息内容
+ *               messageType:
+ *                 type: string
+ *                 enum: [text, image, file]
+ *                 default: text
+ *               attachments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *     responses:
+ *       200:
+ *         description: 消息发送成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/messages', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -166,8 +428,31 @@ router.post('/messages', async (req: Request, res: Response, next: NextFunction)
 });
 
 /**
- * 标记消息为已读
- * POST /api/chat/messages/:id/read
+ * @openapi
+ * /api/chat/messages/{id}/read:
+ *   post:
+ *     summary: 标记消息已读
+ *     description: 将指定消息标记为已读状态
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 消息ID
+ *     responses:
+ *       200:
+ *         description: 标记成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/messages/:id/read', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -186,8 +471,56 @@ router.post('/messages/:id/read', async (req: Request, res: Response, next: Next
 });
 
 /**
- * 标记会话所有消息为已读
- * POST /api/chat/sessions/:sessionId/read
+ * @openapi
+ * /api/chat/sessions/{sessionId}/read:
+ *   post:
+ *     summary: 标记会话全部已读
+ *     description: 将会话中所有消息标记为已读
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - readerType
+ *             properties:
+ *               readerType:
+ *                 type: string
+ *                 enum: [user, agent]
+ *                 description: 读者类型
+ *     responses:
+ *       200:
+ *         description: 标记成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     count:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/sessions/:sessionId/read', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -217,8 +550,48 @@ router.post('/sessions/:sessionId/read', async (req: Request, res: Response, nex
 });
 
 /**
- * 获取未读消息数量
- * GET /api/chat/sessions/:sessionId/unread
+ * @openapi
+ * /api/chat/sessions/{sessionId}/unread:
+ *   get:
+ *     summary: 获取未读数量
+ *     description: 获取会话中的未读消息数量
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *       - in: query
+ *         name: readerType
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [user, agent]
+ *         description: 读者类型
+ *     responses:
+ *       200:
+ *         description: 成功获取未读数量
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     unreadCount:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/sessions/:sessionId/unread', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -247,8 +620,41 @@ router.get('/sessions/:sessionId/unread', async (req: Request, res: Response, ne
 });
 
 /**
- * 获取用户的总未读消息数
- * GET /api/chat/unread/total
+ * @openapi
+ * /api/chat/unread/total:
+ *   get:
+ *     summary: 获取总未读数
+ *     description: 获取用户所有会话的未读消息总数
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 用户ID
+ *     responses:
+ *       200:
+ *         description: 成功获取总未读数
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalUnread:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/unread/total', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -273,8 +679,33 @@ router.get('/unread/total', async (req: Request, res: Response, next: NextFuncti
 });
 
 /**
- * 关闭会话
- * POST /api/chat/sessions/:sessionId/close
+ * @openapi
+ * /api/chat/sessions/{sessionId}/close:
+ *   post:
+ *     summary: 关闭会话
+ *     description: 关闭指定的咨询会话
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     responses:
+ *       200:
+ *         description: 会话关闭成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/sessions/:sessionId/close', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -303,8 +734,49 @@ router.post('/sessions/:sessionId/close', async (req: Request, res: Response, ne
 });
 
 /**
- * 评价客服
- * POST /api/chat/rating
+ * @openapi
+ * /api/chat/rating:
+ *   post:
+ *     summary: 评价客服
+ *     description: 对客服服务进行评分和反馈
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - rating
+ *             properties:
+ *               sessionId:
+ *                 type: integer
+ *                 description: 会话ID
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 description: 评分(1-5星)
+ *               feedback:
+ *                 type: string
+ *                 description: 文字反馈
+ *     responses:
+ *       200:
+ *         description: 评价提交成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.post('/rating', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -348,8 +820,61 @@ router.post('/rating', async (req: Request, res: Response, next: NextFunction) =
 });
 
 /**
- * 获取快捷回复模板列表(全局+个人)
- * GET /api/chat/quick-replies
+ * @openapi
+ * /api/chat/quick-replies:
+ *   get:
+ *     summary: 获取快捷回复
+ *     description: 获取快捷回复模板列表(包含全局和个人模板)
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: agentId
+ *         schema:
+ *           type: integer
+ *         description: 客服ID
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: 分类
+ *       - in: query
+ *         name: keyword
+ *         schema:
+ *           type: string
+ *         description: 搜索关键词
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 页码
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: 每页数量
+ *     responses:
+ *       200:
+ *         description: 成功获取快捷回复列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/quick-replies', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -384,8 +909,43 @@ router.get('/quick-replies', async (req: Request, res: Response, next: NextFunct
 });
 
 /**
- * 根据快捷键获取模板
- * GET /api/chat/quick-replies/shortcut/:key
+ * @openapi
+ * /api/chat/quick-replies/shortcut/{key}:
+ *   get:
+ *     summary: 通过快捷键获取模板
+ *     description: 根据快捷键代码获取对应的快捷回复模板
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 快捷键代码
+ *       - in: query
+ *         name: agentId
+ *         schema:
+ *           type: integer
+ *         description: 客服ID
+ *     responses:
+ *       200:
+ *         description: 成功获取模板
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/quick-replies/shortcut/:key', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -414,8 +974,41 @@ router.get('/quick-replies/shortcut/:key', async (req: Request, res: Response, n
 });
 
 /**
- * 获取会话统计信息
- * GET /api/chat/sessions/:sessionId/stats
+ * @openapi
+ * /api/chat/sessions/{sessionId}/stats:
+ *   get:
+ *     summary: 获取会话统计
+ *     description: 获取指定会话的统计信息(消息数、响应时间等)
+ *     tags:
+ *       - User - Chat
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 会话ID
+ *     responses:
+ *       200:
+ *         description: 成功获取统计信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalMessages:
+ *                       type: integer
+ *                     avgResponseTime:
+ *                       type: number
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/sessions/:sessionId/stats', async (req: Request, res: Response, next: NextFunction) => {
   try {

@@ -23,7 +23,7 @@ import {
   TrophyOutlined
 } from '@ant-design/icons';
 import * as echarts from 'echarts';
-import { fetchWithAuth } from '../services/apiService';
+import api from '../services/api';
 import type { EChartsOption } from 'echarts';
 
 const { RangePicker } = DatePicker;
@@ -105,9 +105,9 @@ const ShareAnalytics: React.FC = () => {
         params.append('endDate', dateRange[1]);
       }
 
-      const response = await fetchWithAuth(`/api/manage/share-analytics/overview?${params}`);
-      setOverview(response.data.overview);
-      setChannels(response.data.channels);
+      const response = await api.get(`/share-analytics/overview?${params}`);
+      setOverview(response.data.overview || null);
+      setChannels(Array.isArray(response.data.channels) ? response.data.channels : []);
     } catch (error) {
       message.error('加载总览数据失败');
       console.error(error);
@@ -126,8 +126,8 @@ const ShareAnalytics: React.FC = () => {
         params.append('endDate', dateRange[1]);
       }
 
-      const response = await fetchWithAuth(`/api/manage/share-analytics/funnel?${params}`);
-      setFunnel(response.data);
+      const response = await api.get(`/share-analytics/funnel?${params}`);
+      setFunnel(response.data || null);
     } catch (error) {
       console.error('加载转化漏斗失败:', error);
     }
@@ -139,8 +139,8 @@ const ShareAnalytics: React.FC = () => {
       const params = new URLSearchParams();
       if (selectedUser) params.append('userId', selectedUser);
 
-      const response = await fetchWithAuth(`/api/manage/share-analytics/geo?${params}`);
-      setGeoData(response.data);
+      const response = await api.get(`/share-analytics/geo?${params}`);
+      setGeoData(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('加载地理数据失败:', error);
     }
@@ -152,8 +152,8 @@ const ShareAnalytics: React.FC = () => {
       const params = new URLSearchParams();
       if (selectedUser) params.append('userId', selectedUser);
 
-      const response = await fetchWithAuth(`/api/manage/share-analytics/devices?${params}`);
-      setDeviceData(response.data);
+      const response = await api.get(`/share-analytics/devices?${params}`);
+      setDeviceData(response.data || null);
     } catch (error) {
       console.error('加载设备数据失败:', error);
     }
@@ -166,8 +166,8 @@ const ShareAnalytics: React.FC = () => {
       if (selectedUser) params.append('userId', selectedUser);
       params.append('days', '30');
 
-      const response = await fetchWithAuth(`/api/manage/share-analytics/trends?${params}`);
-      setTrends(response.data);
+      const response = await api.get(`/share-analytics/trends?${params}`);
+      setTrends(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('加载趋势数据失败:', error);
     }
@@ -176,8 +176,8 @@ const ShareAnalytics: React.FC = () => {
   // 加载排行榜
   const loadLeaderboard = async () => {
     try {
-      const response = await fetchWithAuth('/api/manage/share-analytics/leaderboard?limit=100');
-      setLeaderboard(response.data);
+      const response = await api.get('/share-analytics/leaderboard?limit=100');
+      setLeaderboard(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('加载排行榜失败:', error);
     }
@@ -290,7 +290,7 @@ const ShareAnalytics: React.FC = () => {
                 fontSize: 20
               }
             },
-            data: funnel.funnel.map(stage => ({
+            data: (funnel.funnel || []).map(stage => ({
               value: stage.count,
               name: stage.label
             }))
@@ -406,7 +406,7 @@ const ShareAnalytics: React.FC = () => {
             labelLine: {
               show: false
             },
-            data: deviceData.devices.map(d => ({
+            data: (deviceData.devices || []).map(d => ({
               value: d.count,
               name: d.device_type
             }))
@@ -613,7 +613,7 @@ const ShareAnalytics: React.FC = () => {
               <div id="funnel-chart" style={{ width: '100%', height: '500px' }}></div>
               {funnel && (
                 <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                  <h3>总体转化率: {funnel.totalConversionRate}%</h3>
+                  <h3>总体转化率: {funnel.totalConversionRate || 0}%</h3>
                 </div>
               )}
             </Card>
@@ -638,7 +638,7 @@ const ShareAnalytics: React.FC = () => {
                 <Card title="浏览器分布">
                   {deviceData && (
                     <Table
-                      dataSource={deviceData.browsers}
+                      dataSource={deviceData.browsers || []}
                       columns={[
                         { title: '浏览器', dataIndex: 'browser', key: 'browser' },
                         { title: '数量', dataIndex: 'count', key: 'count' },

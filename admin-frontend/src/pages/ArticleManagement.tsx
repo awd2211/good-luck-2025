@@ -2,32 +2,11 @@ import { useState, useEffect } from 'react'
 import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, message, Switch, InputNumber } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
+import { getArticles, getArticleCategories, getArticleTags, createArticle, updateArticle, deleteArticle, batchUpdateArticleStatus } from '../services/articleService'
+import type { Article } from '../services/articleService'
 
 const { TextArea } = Input
 const { Option } = Select
-
-interface Article {
-  id: number
-  title: string
-  summary: string
-  content: string
-  cover_image: string
-  category: string
-  tags: string[]
-  status: 'draft' | 'published' | 'archived'
-  author: string
-  sort_order: number
-  view_count: number
-  like_count: number
-  seo_title: string
-  seo_keywords: string
-  seo_description: string
-  is_featured: boolean
-  is_hot: boolean
-  created_at: string
-  updated_at: string
-}
 
 const ArticleManagement = () => {
   const [articles, setArticles] = useState<Article[]>([])
@@ -58,15 +37,13 @@ const ArticleManagement = () => {
         ...filters
       }
 
-      const res = await api.get('/articles', { params })
-      if (res.data.success) {
-        setArticles(res.data.data.list)
-        setPagination({
-          current: page,
-          pageSize,
-          total: res.data.data.total
-        })
-      }
+      const res = await getArticles(params)
+      setArticles(res.data.data || res.data || [])  // 兼容两种格式
+      setPagination({
+        current: page,
+        pageSize,
+        total: res.data.pagination?.total || 0
+      })
     } catch (error: any) {
       message.error(error.response?.data?.message || '获取文章列表失败')
     } finally {
@@ -76,16 +53,12 @@ const ArticleManagement = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get('/articles/categories')
-      if (res.data.success) {
-        const categoriesData = res.data.data
-        if (Array.isArray(categoriesData)) {
-          setCategories(categoriesData)
-        } else if (categoriesData && Array.isArray(categoriesData.list)) {
-          setCategories(categoriesData.list)
-        } else {
-          setCategories([])
-        }
+      const res = await getArticleCategories()
+      const categoriesData = res.data.data
+      if (Array.isArray(categoriesData)) {
+        setCategories(categoriesData)
+      } else {
+        setCategories([])
       }
     } catch (error: any) {
       console.error('获取分类失败:', error)
@@ -95,16 +68,12 @@ const ArticleManagement = () => {
 
   const fetchTags = async () => {
     try {
-      const res = await api.get('/articles/tags')
-      if (res.data.success) {
-        const tagsData = res.data.data
-        if (Array.isArray(tagsData)) {
-          setTags(tagsData)
-        } else if (tagsData && Array.isArray(tagsData.list)) {
-          setTags(tagsData.list)
-        } else {
-          setTags([])
-        }
+      const res = await getArticleTags()
+      const tagsData = res.data.data
+      if (Array.isArray(tagsData)) {
+        setTags(tagsData)
+      } else {
+        setTags([])
       }
     } catch (error: any) {
       console.error('获取标签失败:', error)
@@ -144,10 +113,10 @@ const ArticleManagement = () => {
       const values = await form.validateFields()
 
       if (editingArticle) {
-        await api.put(`/articles/${editingArticle.id}`, values)
+        await updateArticle(editingArticle.id, values)
         message.success('更新成功')
       } else {
-        await api.post('/articles', values)
+        await createArticle(values)
         message.success('创建成功')
       }
 
@@ -166,7 +135,7 @@ const ArticleManagement = () => {
       content: '确定要删除这篇文章吗？此操作不可恢复。',
       onOk: async () => {
         try {
-          await api.delete(`/articles/${id}`)
+          await deleteArticle(id)
           message.success('删除成功')
           fetchArticles(pagination.current, pagination.pageSize)
         } catch (error: any) {
@@ -183,10 +152,7 @@ const ArticleManagement = () => {
     }
 
     try {
-      await api.patch('/articles/batch/status', {
-        ids: selectedRowKeys,
-        status
-      })
+      await batchUpdateArticleStatus(selectedRowKeys as number[], status)
       message.success('批量更新成功')
       setSelectedRowKeys([])
       fetchArticles(pagination.current, pagination.pageSize)
@@ -207,7 +173,7 @@ const ArticleManagement = () => {
       onOk: async () => {
         try {
           // 批量删除需要逐个调用删除API
-          await Promise.all(selectedRowKeys.map(id => api.delete(`/articles/${id}`)))
+          await Promise.all(selectedRowKeys.map(id => deleteArticle(id as number)))
           message.success('批量删除成功')
           setSelectedRowKeys([])
           fetchArticles(pagination.current, pagination.pageSize)
@@ -512,7 +478,7 @@ const ArticleManagement = () => {
               label="文章分类"
               rules={[{ required: true, message: '请输入分类' }]}
             >
-              <Input placeholder="如：算命知识" style={{ width: 150 }} />
+              <Input placeholder="如：运势知识" style={{ width: 150 }} />
             </Form.Item>
 
             <Form.Item

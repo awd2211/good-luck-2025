@@ -8,6 +8,10 @@ import * as fortuneService from '../../services/fortuneService'
  */
 export const calculateAndSave = async (req: Request, res: Response, next: NextFunction) => {
   try {
+    console.log('=== calculateAndSave 开始 ===')
+    console.log('req.user:', req.user)
+    console.log('req.body:', JSON.stringify(req.body, null, 2))
+
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -19,11 +23,14 @@ export const calculateAndSave = async (req: Request, res: Response, next: NextFu
 
     // 验证必填字段
     if (!fortuneId || !fortuneType || !inputData) {
+      console.log('❌ 缺少必填字段')
       return res.status(400).json({
         success: false,
         message: '缺少必填字段：fortuneId, fortuneType, inputData',
       })
     }
+
+    console.log(`fortuneId: ${fortuneId}, fortuneType: ${fortuneType}`)
 
     // 根据不同类型调用相应的计算函数
     let resultData: any
@@ -79,6 +86,116 @@ export const calculateAndSave = async (req: Request, res: Response, next: NextFu
         resultData = fortuneService.calculateMarriage(inputData)
         break
 
+      case 'marriage-analysis':
+        if (!inputData.birthYear || !inputData.birthMonth || !inputData.birthDay || !inputData.gender) {
+          return res.status(400).json({
+            success: false,
+            message: '姻缘分析需要提供：birthYear, birthMonth, birthDay, gender',
+          })
+        }
+        resultData = fortuneService.calculateMarriageAnalysis(inputData)
+        break
+
+      case 'name-match':
+        if (!inputData.name1 || !inputData.name2) {
+          return res.status(400).json({
+            success: false,
+            message: '姓名配对需要提供：name1, name2',
+          })
+        }
+        resultData = fortuneService.calculateNameMatch(inputData)
+        break
+
+      case 'wealth':
+        if (!inputData.birthYear || !inputData.birthMonth || !inputData.birthDay) {
+          return res.status(400).json({
+            success: false,
+            message: '财运分析需要提供：birthYear, birthMonth, birthDay',
+          })
+        }
+        resultData = fortuneService.calculateWealth(inputData)
+        break
+
+      case 'number-divination':
+        if (!inputData.number || !inputData.type) {
+          return res.status(400).json({
+            success: false,
+            message: '号码吉凶需要提供：number, type',
+          })
+        }
+        resultData = fortuneService.calculateNumberDivination(inputData)
+        break
+
+      case 'purple-star':
+        if (!inputData.birthYear || !inputData.birthMonth || !inputData.birthDay || !inputData.birthHour || !inputData.gender) {
+          return res.status(400).json({
+            success: false,
+            message: '紫微斗数需要提供：birthYear, birthMonth, birthDay, birthHour, gender',
+          })
+        }
+        resultData = fortuneService.calculatePurpleStar(inputData)
+        break
+
+      case 'bazi-mingge':
+        if (!inputData.birthYear || !inputData.birthMonth || !inputData.birthDay || !inputData.birthHour || !inputData.gender) {
+          return res.status(400).json({
+            success: false,
+            message: '命格测算需要提供：birthYear, birthMonth, birthDay, birthHour, gender',
+          })
+        }
+        resultData = fortuneService.calculateBaziMingge(inputData)
+        break
+
+      case 'zodiac-match':
+        if (!inputData.birthYear1 || !inputData.birthYear2) {
+          return res.status(400).json({
+            success: false,
+            message: '生肖配对需要提供：birthYear1, birthYear2',
+          })
+        }
+        resultData = fortuneService.calculateZodiacMatch(inputData)
+        break
+
+      case 'star-fortune':
+        if (!inputData.starSign || !inputData.period) {
+          return res.status(400).json({
+            success: false,
+            message: '星座运势需要提供：starSign, period',
+          })
+        }
+        resultData = fortuneService.calculateStarFortune(inputData)
+        break
+
+      case 'star-match':
+        if (!inputData.starSign1 || !inputData.starSign2) {
+          return res.status(400).json({
+            success: false,
+            message: '星座配对需要提供：starSign1, starSign2',
+          })
+        }
+        resultData = fortuneService.calculateStarMatch(inputData)
+        break
+
+      case 'name-baby':
+        if (!inputData.lastName || !inputData.gender || !inputData.birthYear || !inputData.birthMonth || !inputData.birthDay) {
+          return res.status(400).json({
+            success: false,
+            message: '起名宝典需要提供：lastName, gender, birthYear, birthMonth, birthDay',
+          })
+        }
+        resultData = fortuneService.calculateNameBaby(inputData)
+        break
+
+      case 'career':
+        if (!inputData.birthYear || !inputData.birthMonth || !inputData.birthDay || !inputData.targetYear) {
+          return res.status(400).json({
+            success: false,
+            message: '事业运势需要提供：birthYear, birthMonth, birthDay, targetYear',
+          })
+        }
+        resultData = fortuneService.calculateCareer(inputData)
+        break
+
       default:
         return res.status(400).json({
           success: false,
@@ -87,6 +204,12 @@ export const calculateAndSave = async (req: Request, res: Response, next: NextFu
     }
 
     // 保存算命结果到数据库
+    console.log('准备保存到数据库...')
+    console.log('userId:', req.user.id)
+    console.log('fortuneId:', fortuneId)
+    console.log('fortuneType:', fortuneType)
+    console.log('resultData keys:', Object.keys(resultData))
+
     const savedResult = await fortuneResultService.saveFortuneResult(
       req.user.id,
       fortuneId,
@@ -96,13 +219,16 @@ export const calculateAndSave = async (req: Request, res: Response, next: NextFu
       orderId
     )
 
+    console.log('✅ 保存成功:', savedResult.result_id)
+
     res.status(201).json({
       success: true,
       message: '算命结果已保存',
       data: savedResult,
     })
   } catch (error) {
-    console.error('计算并保存算命结果失败:', error)
+    console.error('❌ 计算并保存算命结果失败:', error)
+    console.error('错误堆栈:', error instanceof Error ? error.stack : 'N/A')
     next(error)
   }
 }

@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { query } from '../config/database';
 import { redisCache } from '../config/redis';
+import configService from '../services/configService';
 
 const CACHE_KEY_PREFIX = 'daily_horoscopes';
-const CACHE_TTL = 1800; // 30分钟
+// CACHE_TTL已迁移到数据库配置：cache.horoscopes.ttl（默认1800秒）
 
 /**
  * 获取每日运势列表
@@ -203,7 +204,8 @@ export const getHoroscopeByDateAndType = async (req: Request, res: Response) => 
       [date, type]
     );
 
-    await redisCache.set(cacheKey, result.rows, CACHE_TTL);
+    const cacheTTL = await configService.get<number>('cache.horoscopes.ttl', 1800);
+    await redisCache.set(cacheKey, result.rows, cacheTTL);
     res.json({ success: true, data: result.rows });
   } catch (error: any) {
     console.error('查询运势失败:', error);

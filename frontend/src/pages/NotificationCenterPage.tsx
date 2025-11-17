@@ -5,6 +5,7 @@ import * as notificationService from '../services/notificationService';
 import type { Notification } from '../services/notificationService';
 import { useConfirm } from '../hooks/useConfirm';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { SkeletonList } from '../components/Skeleton';
 import './NotificationCenterPage.css';
 
 const NotificationCenterPage = () => {
@@ -213,7 +214,7 @@ const NotificationCenterPage = () => {
 
       <div className="notification-list">
         {loading ? (
-          <div className="loading">加载中...</div>
+          <SkeletonList count={6} />
         ) : notifications.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🔔</div>

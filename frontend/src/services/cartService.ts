@@ -1,10 +1,10 @@
 import api from './api'
-import type { CartItem } from '../types'
+import type { CartItem, CartResponse } from '../types'
 import type { ApiResponse } from '../types'
 
 // 获取购物车
 export const getCart = () => {
-  return api.get<ApiResponse<CartItem[]>>('/cart')
+  return api.get<ApiResponse<CartResponse>>('/cart')
 }
 
 // 添加到购物车

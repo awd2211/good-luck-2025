@@ -73,7 +73,7 @@ export const getTemplates = async (filters?: {
   let params: any[] = [];
   let paramIndex = 1;
 
-  if (agentId !== undefined) {
+  if (agentId !== undefined && !isNaN(agentId)) {
     if (includeGlobal) {
       // 包含个人模板和全局模板
       whereConditions.push(`(agent_id = $${paramIndex++} OR agent_id IS NULL)`);

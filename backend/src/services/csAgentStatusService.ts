@@ -3,6 +3,8 @@
  * 使用内存存储（可迁移到Redis以支持分布式部署）
  */
 
+import configService from './configService';
+
 interface AgentStatus {
   agentId: string
   status: 'online' | 'busy' | 'offline'
@@ -13,6 +15,29 @@ interface AgentStatus {
 
 // 内存存储（生产环境建议使用Redis）
 const agentStatusMap = new Map<string, AgentStatus>()
+
+// 配置缓存（从数据库加载，默认值作为后备）
+// MAX_CONCURRENT_CHATS 已迁移到数据库配置：cs.maxConcurrentChats（默认5）
+// INACTIVE_TIMEOUT_MINUTES 已迁移到数据库配置：cs.inactiveTimeoutMinutes（默认30）
+// CLEANUP_INTERVAL_MINUTES 已迁移到数据库配置：cs.cleanupIntervalMinutes（默认10）
+let MAX_CONCURRENT_CHATS = 5;
+let INACTIVE_TIMEOUT_MINUTES = 30;
+let CLEANUP_INTERVAL_MINUTES = 10;
+
+// 初始化配置（从数据库加载）
+const initConfigs = async () => {
+  try {
+    MAX_CONCURRENT_CHATS = await configService.get<number>('cs.maxConcurrentChats', 5);
+    INACTIVE_TIMEOUT_MINUTES = await configService.get<number>('cs.inactiveTimeoutMinutes', 30);
+    CLEANUP_INTERVAL_MINUTES = await configService.get<number>('cs.cleanupIntervalMinutes', 10);
+    console.log(`[CS Status] 配置已加载: 最大并发=${MAX_CONCURRENT_CHATS}, 超时=${INACTIVE_TIMEOUT_MINUTES}分钟, 清理间隔=${CLEANUP_INTERVAL_MINUTES}分钟`);
+  } catch (error) {
+    console.error('[CS Status] 配置加载失败，使用默认值:', error);
+  }
+};
+
+// 立即加载配置
+initConfigs();
 
 /**
  * 设置客服在线状态
@@ -79,8 +104,7 @@ export function incrementChatCount(agentId: string): number {
   agent.lastActivityAt = new Date()
 
   // 自动更新为忙碌状态（如果达到上限）
-  // 这里假设最大5个并发聊天
-  if (agent.currentChatCount >= 5) {
+  if (agent.currentChatCount >= MAX_CONCURRENT_CHATS) {
     agent.status = 'busy'
   }
 
@@ -101,7 +125,7 @@ export function decrementChatCount(agentId: string): number {
   agent.lastActivityAt = new Date()
 
   // 如果之前是忙碌状态，现在有空闲了，自动改为在线
-  if (agent.status === 'busy' && agent.currentChatCount < 5) {
+  if (agent.status === 'busy' && agent.currentChatCount < MAX_CONCURRENT_CHATS) {
     agent.status = 'online'
   }
 
@@ -159,9 +183,9 @@ export function getAgentStatusStats(): {
 /**
  * 清理长时间未活动的状态（定时任务）
  */
-export function cleanupInactiveAgents(timeoutMinutes: number = 30): number {
+export function cleanupInactiveAgents(timeoutMinutes?: number): number {
+  const timeout = (timeoutMinutes || INACTIVE_TIMEOUT_MINUTES) * 60 * 1000
   const now = new Date()
-  const timeout = timeoutMinutes * 60 * 1000
   let cleanedCount = 0
 
   agentStatusMap.forEach((agent, agentId) => {
@@ -176,10 +200,10 @@ export function cleanupInactiveAgents(timeoutMinutes: number = 30): number {
   return cleanedCount
 }
 
-// 启动定时清理任务（每10分钟检查一次）
+// 启动定时清理任务（间隔从数据库配置读取）
 setInterval(() => {
-  const cleaned = cleanupInactiveAgents(30)
+  const cleaned = cleanupInactiveAgents()
   if (cleaned > 0) {
     console.log(`[CS Status] Cleaned up ${cleaned} inactive agents`)
   }
-}, 10 * 60 * 1000)
+}, CLEANUP_INTERVAL_MINUTES * 60 * 1000)

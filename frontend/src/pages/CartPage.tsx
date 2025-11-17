@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import { SkeletonList } from '../components/Skeleton'
@@ -80,6 +81,7 @@ const CartItem = memo(({ item, isSelected, onToggleSelect, onDelete, onUpdateQua
 })
 
 const CartPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { items, updateQuantity, removeItem, isLoading } = useCart()
@@ -123,18 +125,18 @@ const CartPage = () => {
     try {
       await removeItem(id)
       setSelectedIds(prev => prev.filter(selectedId => selectedId !== id))
-      showToast({ title: '删除成功', content: `已删除「${title}」`, type: 'success' })
+      showToast({ title: t('cartPage.deleteSuccess'), content: t('cartPage.deletedItem', { title }), type: 'success' })
     } catch (error) {
       logError('删除购物车商品失败', error, { id, title })
-      showToast({ title: '删除失败', content: '请重试', type: 'error' })
+      showToast({ title: t('cartPage.deleteFailed'), content: t('cartPage.pleaseRetry'), type: 'error' })
       throw error
     }
-  }, [removeItem])
+  }, [removeItem, t])
 
   // 删除选中 - 使用 useCallback 优化
   const handleDeleteSelected = useCallback(async () => {
     if (selectedIds.length === 0) {
-      showToast({ title: '提示', content: '请先选择要删除的商品', type: 'warning' })
+      showToast({ title: t('cartPage.notice'), content: t('cartPage.selectItemsToDelete'), type: 'warning' })
       return
     }
 
@@ -142,22 +144,22 @@ const CartPage = () => {
       for (const id of selectedIds) {
         await removeItem(id)
       }
-      showToast({ title: '删除成功', content: `已删除${selectedIds.length}个商品`, type: 'success' })
+      showToast({ title: t('cartPage.deleteSuccess'), content: t('cartPage.deletedCount', { count: selectedIds.length }), type: 'success' })
       setSelectedIds([])
     } catch (error) {
       logError('批量删除购物车商品失败', error, { count: selectedIds.length })
-      showToast({ title: '删除失败', content: '请重试', type: 'error' })
+      showToast({ title: t('cartPage.deleteFailed'), content: t('cartPage.pleaseRetry'), type: 'error' })
     }
-  }, [selectedIds, removeItem])
+  }, [selectedIds, removeItem, t])
 
   // 结算 - 使用 useCallback 优化
   const handleCheckout = useCallback(() => {
     if (selectedIds.length === 0) {
-      showToast({ title: '提示', content: '请先选择要结算的商品', type: 'warning' })
+      showToast({ title: t('cartPage.notice'), content: t('cartPage.selectItemsToCheckout'), type: 'warning' })
       return
     }
     navigate('/checkout', { state: { cartItemIds: selectedIds } })
-  }, [selectedIds, navigate])
+  }, [selectedIds, navigate, t])
 
   // 导航到详情页 - 使用 useCallback 优化
   const handleNavigateToDetail = useCallback((fortuneId: string) => {
@@ -172,7 +174,7 @@ const CartPage = () => {
     return (
       <div className="cart-page">
         <div className="cart-header">
-          <h1>购物车</h1>
+          <h1>{t('cartPage.title')}</h1>
         </div>
         <div className="cart-content">
           <SkeletonList count={3} />
@@ -186,9 +188,9 @@ const CartPage = () => {
       <div className="cart-page">
         <div className="empty-cart">
           <div className="empty-icon">🛒</div>
-          <p>购物车是空的</p>
+          <p>{t('cartPage.empty')}</p>
           <button onClick={() => navigate('/')} className="go-shopping-btn">
-            去逛逛
+            {t('cartPage.goShopping')}
           </button>
         </div>
       </div>
@@ -199,11 +201,11 @@ const CartPage = () => {
     <div className="cart-page">
       <div className="cart-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('cartPage.back')}
         </button>
-        <h1>购物车</h1>
+        <h1>{t('cartPage.title')}</h1>
         <button className="delete-btn" onClick={handleDeleteSelected}>
-          删除
+          {t('cartPage.delete')}
         </button>
       </div>
 
@@ -215,7 +217,7 @@ const CartPage = () => {
               checked={selectedIds.length === items.length && items.length > 0}
               onChange={toggleSelectAll}
             />
-            <span>全选</span>
+            <span>{t('cartPage.selectAll')}</span>
           </label>
         </div>
 
@@ -240,13 +242,13 @@ const CartPage = () => {
               checked={selectedIds.length === items.length && items.length > 0}
               onChange={toggleSelectAll}
             />
-            <span>全选</span>
+            <span>{t('cartPage.selectAll')}</span>
           </label>
           <div className="total-info">
             <span className="selected-count">
-              已选 {selectedIds.length} 件
+              {t('cartPage.selected')} {selectedIds.length} {t('cartPage.items')}
             </span>
-            <span className="total-label">合计：</span>
+            <span className="total-label">{t('cartPage.total')}</span>
             <span className="total-price">¥{selectedTotal.toFixed(2)}</span>
           </div>
         </div>
@@ -255,7 +257,7 @@ const CartPage = () => {
           onClick={handleCheckout}
           disabled={selectedIds.length === 0}
         >
-          结算 ({selectedIds.length})
+          {t('cartPage.checkout')} ({selectedIds.length})
         </button>
       </div>
     </div>

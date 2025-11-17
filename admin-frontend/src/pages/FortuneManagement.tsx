@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, Table, Tag, Space, Button, Input, Select, Modal, message, Statistic, Row, Col } from 'antd'
 import { EyeOutlined, SearchOutlined, ReloadOutlined, ShoppingOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import api from '../services/apiService'
+import api from '../services/api'
 import PermissionGuard from '../components/PermissionGuard'
 import { Permission } from '../config/permissions'
 // import { usePermission } from '../hooks/usePermission' // 预留用于未来的权限控制
@@ -54,7 +54,7 @@ const FortuneManagement = () => {
 
       const res = await api.get('/orders', { params })
       if (res.data.success) {
-        const ordersData = res.data.data || []
+        const ordersData = (res.data.data || res.data) || []
         setOrders(ordersData)
 
         if (res.data.pagination) {
@@ -79,7 +79,7 @@ const FortuneManagement = () => {
         })
       }
     } catch (error: any) {
-      message.error(error.response?.data?.message || '获取算命记录失败')
+      message.error(error.response?.data?.message || '获取运势记录失败')
       setOrders([])
     } finally {
       setLoading(false)
@@ -182,7 +182,7 @@ const FortuneManagement = () => {
       render: (username, record) => username || `ID: ${record.user_id}`
     },
     {
-      title: '算命服务',
+      title: '运势服务',
       dataIndex: 'service_name',
       key: 'service_name',
       width: 150,
@@ -288,7 +288,7 @@ const FortuneManagement = () => {
 
         {/* 订单列表 */}
         <Card
-          title="算命记录"
+          title="运势记录"
           extra={
             <Space>
               <Select

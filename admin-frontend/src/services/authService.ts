@@ -1,5 +1,6 @@
 // 导入统一的 axios 实例
-import api from './apiService'
+import api from './api'
+import storage from '../utils/storage'
 
 export interface LoginRequest {
   username: string
@@ -66,34 +67,28 @@ export const refreshToken = async (token: string): Promise<string> => {
  */
 export const logout = async (): Promise<void> => {
   await api.post('/auth/logout')
-  localStorage.removeItem('admin_token')
-  localStorage.removeItem('admin_user')
+  storage.remove('admin_token')
+  storage.remove('admin_user')
 }
 
 /**
  * 保存登录信息到本地
  */
 export const saveAuthData = (token: string, user: UserInfo): void => {
-  localStorage.setItem('admin_token', token)
-  localStorage.setItem('admin_user', JSON.stringify(user))
+  storage.set('admin_token', token)
+  storage.setJSON('admin_user', user)
 }
 
 /**
  * 获取本地保存的用户信息
  */
 export const getLocalUser = (): UserInfo | null => {
-  const userStr = localStorage.getItem('admin_user')
-  if (!userStr) return null
-  try {
-    return JSON.parse(userStr)
-  } catch {
-    return null
-  }
+  return storage.getJSON<UserInfo>('admin_user')
 }
 
 /**
  * 检查是否已登录
  */
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('admin_token')
+  return !!storage.get('admin_token')
 }

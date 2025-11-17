@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Form, Input, Button, Card, message, Alert, Result } from 'antd'
 import { MailOutlined, ArrowLeftOutlined } from '@ant-design/icons'
-import api from '../services/apiService'
+import api from '../services/api'
 
 const ForgotPassword = () => {
   const [loading, setLoading] = useState(false)

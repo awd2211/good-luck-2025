@@ -66,7 +66,7 @@ import {
   TitleComponent,
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import api from '../services/apiService'
+import api from '../services/api'
 
 // 注册ECharts组件
 echarts.use([
@@ -853,7 +853,7 @@ const AIModelManagement = () => {
           model: model.name,
           status: 'success',
           duration,
-          response: res.data.data?.response?.content || '成功',
+          response: (res.data.data || res.data)?.response?.content || '成功',
         }])
       } catch (error: any) {
         setBatchTestResults(prev => [...prev, {
@@ -881,7 +881,7 @@ const AIModelManagement = () => {
       // 模拟API调用
       // const res = await api.get(`/ai-models/${modelId}/versions`)
       // if (res.data.success) {
-      //   setVersionHistory(res.data.data)
+      //   setVersionHistory((res.data.data || res.data))
       // }
 
       // 使用模拟数据
@@ -1078,10 +1078,10 @@ const AIModelManagement = () => {
     try {
       const params: any = { page, limit: pageSize }
 
-      if (filters.providers && filters.providers.length > 0) {
+      if ((filters.providers?.length ?? 0) > 0) {
         params.provider = filters.providers
       }
-      if (filters.statuses && filters.statuses.length > 0) {
+      if ((filters.statuses?.length ?? 0) > 0) {
         params.status = filters.statuses
       }
       if (filters.is_active) {
@@ -1097,7 +1097,7 @@ const AIModelManagement = () => {
       const res = await api.get('/ai-models', { params })
 
       if (res.data.success) {
-        const modelsData = res.data.data
+        const modelsData = (res.data.data || res.data)
         if (modelsData && Array.isArray(modelsData.list)) {
           let filteredModels = modelsData.list
           if (filters.priorityRange) {
@@ -1224,7 +1224,7 @@ const AIModelManagement = () => {
       const res = await api.post(`/ai-models/${testingModel.id}/test`, values)
 
       if (res.data.success) {
-        setTestResult(res.data.data)
+        setTestResult((res.data.data || res.data))
         message.success('测试成功')
         fetchModels()
       }
@@ -1250,7 +1250,7 @@ const AIModelManagement = () => {
     try {
       const res = await api.get(`/ai-models/${model.id}/stats`)
       if (res.data.success) {
-        setModelStats(res.data.data)
+        setModelStats((res.data.data || res.data))
         setTestingModel(model)
         setStatsModalVisible(true)
       }
@@ -1360,8 +1360,8 @@ const AIModelManagement = () => {
       try {
         setProviderModelsLoading(true)
         const response = await api.get(`/ai-models/by-provider/${provider}`)
-        console.log('从数据库获取的模型:', response.data.data)
-        setProviderModels(response.data.data || [])
+        console.log('从数据库获取的模型:', response.data?.data)
+        setProviderModels(response.data?.data || [])
       } catch (error: any) {
         console.error('获取供应商模型失败:', error)
         message.error(error.response?.data?.message || '获取模型列表失败')
@@ -1757,7 +1757,7 @@ const AIModelManagement = () => {
   return (
     <div>
       {/* 健康告警 */}
-      {healthAlerts.length > 0 && (
+      {healthAlerts?.length > 0 && (
         <Alert
           message="健康监控告警"
           description={
@@ -1846,6 +1846,9 @@ const AIModelManagement = () => {
                 echarts={echarts}
                 option={getTrendChartOption()}
                 style={{ height: 300 }}
+                notMerge={true}
+                lazyUpdate={true}
+                opts={{ renderer: 'canvas' }}
               />
             )}
           </Card>
@@ -1859,6 +1862,9 @@ const AIModelManagement = () => {
                 echarts={echarts}
                 option={getTokenStatsChartOption()}
                 style={{ height: 300 }}
+                notMerge={true}
+                lazyUpdate={true}
+                opts={{ renderer: 'canvas' }}
               />
             )}
           </Card>
@@ -1871,6 +1877,9 @@ const AIModelManagement = () => {
               echarts={echarts}
               option={getRealtimeChartOption()}
               style={{ height: 250 }}
+              notMerge={true}
+              lazyUpdate={true}
+              opts={{ renderer: 'canvas' }}
             />
           </Card>
         </Col>
@@ -2006,7 +2015,7 @@ const AIModelManagement = () => {
         {/* 视图切换和列自定义 */}
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
           <div>
-            {selectedRowKeys.length > 0 && (
+            {selectedRowKeys?.length > 0 && (
               <Space wrap>
                 <span>已选择 {selectedRowKeys.length} 项</span>
                 <Button
@@ -2239,7 +2248,7 @@ const AIModelManagement = () => {
               <Form.Item name="system_prompt" label="系统提示词">
                 <TextArea
                   rows={3}
-                  placeholder="你是一位专业的算命大师..."
+                  placeholder="你是一位专业的运势分析师..."
                 />
               </Form.Item>
 
@@ -2410,7 +2419,7 @@ const AIModelManagement = () => {
         <Space direction="vertical" style={{ width: '100%' }}>
           <Progress percent={batchTestProgress} status={batchTestRunning ? 'active' : 'normal'} />
 
-          {batchTestResults.length > 0 && (
+          {batchTestResults?.length > 0 && (
             <List
               dataSource={batchTestResults}
               renderItem={(result) => (
@@ -2506,13 +2515,13 @@ const AIModelManagement = () => {
                     <p><strong>Token使用:</strong></p>
                     <Descriptions size="small" column={3}>
                       <Descriptions.Item label="Prompt Tokens">
-                        {testResult.response.usage.prompt_tokens}
+                        {testResult.response?.usage?.prompt_tokens || 0}
                       </Descriptions.Item>
                       <Descriptions.Item label="Completion Tokens">
-                        {testResult.response.usage.completion_tokens}
+                        {testResult.response?.usage?.completion_tokens || 0}
                       </Descriptions.Item>
                       <Descriptions.Item label="Total Tokens">
-                        {testResult.response.usage.total_tokens}
+                        {testResult.response?.usage?.total_tokens || 0}
                       </Descriptions.Item>
                     </Descriptions>
                   </div>
@@ -2825,7 +2834,7 @@ const AIModelManagement = () => {
                         <strong>操作人：</strong>
                         {version.changed_by}
                       </div>
-                      {Object.keys(version.changes).length > 0 && (
+                      {Object.keys(version?.changes || {}).length > 0 && (
                         <div>
                           <strong>变更字段：</strong>
                           <Descriptions size="small" column={1} bordered>

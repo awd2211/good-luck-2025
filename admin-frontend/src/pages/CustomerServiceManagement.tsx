@@ -29,7 +29,7 @@ import {
   BarChartOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import apiService from '../services/apiService';
+import apiService from '../services/api';
 
 interface CSAgent {
   id: number;
@@ -523,7 +523,7 @@ const CustomerServiceManagement: React.FC = () => {
           </Form.Item>
 
           <Form.Item label="专长标签" name="specialty_tags">
-            <Input placeholder="用逗号分隔,如: 算命,占卜,风水" />
+            <Input placeholder="用逗号分隔,如: 运势,占卜,风水" />
           </Form.Item>
 
           <Form.Item label="启用状态" name="is_active" valuePropName="checked">

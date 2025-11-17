@@ -41,9 +41,9 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { UploadFile } from 'antd/es/upload/interface'
-import ReactQuill from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
-import api from '../services/apiService'
+import SunEditor from 'suneditor-react'
+import 'suneditor/dist/css/suneditor.min.css'
+import api from '../services/api'
 
 
 const { Option } = Select
@@ -122,24 +122,13 @@ const FortuneServiceManagement = () => {
     total: 0,
   })
 
-  // 富文本编辑器配置
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ list: 'ordered' }, { list: 'bullet' }],
-      [{ color: [] }, { background: [] }],
-      ['link', 'image'],
-      ['clean'],
-    ],
-  }
 
   // 获取统计数据
   const fetchStats = async () => {
     try {
       const res = await api.get('/fortune-services/stats')
       if (res.data.success) {
-        setStats(res.data.data)
+        setStats((res.data.data || res.data))
       }
     } catch (error: any) {
       console.error('获取统计数据失败:', error)
@@ -151,7 +140,7 @@ const FortuneServiceManagement = () => {
     try {
       const res = await api.get('/fortune-categories')
       if (res.data.success) {
-        const categoriesData = res.data.data
+        const categoriesData = (res.data.data || res.data)
         if (Array.isArray(categoriesData)) {
           setCategories(categoriesData)
         } else if (categoriesData && Array.isArray(categoriesData.list)) {
@@ -174,7 +163,7 @@ const FortuneServiceManagement = () => {
         params: { page, limit: pageSize, ...filters },
       })
       if (res.data.success) {
-        const servicesData = res.data.data
+        const servicesData = (res.data.data || res.data)
         if (Array.isArray(servicesData)) {
           setServices(servicesData)
           setPagination({
@@ -219,9 +208,9 @@ const FortuneServiceManagement = () => {
       form.setFieldsValue(service)
       setDescription(service.description || '')
       // 设置图片文件列表
-      if (service.images && service.images.length > 0) {
+      if ((service.images?.length ?? 0) > 0) {
         setFileList(
-          service.images.map((url, index) => ({
+          service.images!.map((url, index) => ({
             uid: String(index),
             name: `image-${index}`,
             status: 'done',
@@ -490,7 +479,7 @@ const FortuneServiceManagement = () => {
       key: 'images',
       width: 80,
       render: (images: string[]) => {
-        if (images && images.length > 0) {
+        if (images?.length > 0) {
           return <Image width={50} height={50} src={images[0]} />
         }
         return <div style={{ width: 50, height: 50, background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>无</div>
@@ -675,7 +664,7 @@ const FortuneServiceManagement = () => {
       </Row>
 
       <Card
-        title="算命服务管理"
+        title="运势服务管理"
         extra={
           <Space>
             <Button
@@ -794,12 +783,22 @@ const FortuneServiceManagement = () => {
           </Form.Item>
 
           <Form.Item label="服务简介">
-            <ReactQuill
-              theme="snow"
-              value={description}
+            <SunEditor
+              height="200"
+              defaultValue={description}
               onChange={setDescription}
-              modules={quillModules}
-              style={{ height: 200, marginBottom: 50 }}
+              setOptions={{
+                buttonList: [
+                  ['undo', 'redo'],
+                  ['bold', 'underline', 'italic', 'strike'],
+                  ['fontColor', 'hiliteColor'],
+                  ['removeFormat'],
+                  ['outdent', 'indent'],
+                  ['align', 'horizontalRule', 'list', 'lineHeight'],
+                  ['table', 'link', 'image'],
+                  ['fullScreen', 'showBlocks', 'codeView']
+                ]
+              }}
             />
           </Form.Item>
 
@@ -988,10 +987,10 @@ const FortuneServiceManagement = () => {
         {previewService && (
           <div>
             {/* 图片轮播 */}
-            {previewService.images && previewService.images.length > 0 && (
+            {(previewService.images?.length ?? 0) > 0 && (
               <div style={{ marginBottom: 24 }}>
                 <Image.PreviewGroup>
-                  {previewService.images.map((img, index) => (
+                  {previewService.images!.map((img, index) => (
                     <Image key={index} width="100%" src={img} />
                   ))}
                 </Image.PreviewGroup>

@@ -1,3 +1,8 @@
+/**
+ * 用户端支付 API 路由
+ * 支持PayPal、Stripe和余额支付
+ */
+
 import { Router } from 'express'
 import * as paymentController from '../../controllers/user/paymentController'
 import { authenticateUser } from '../../middleware/userAuth'
@@ -7,109 +12,524 @@ const router = Router()
 // ========== 新版支付API（PayPal + Stripe + 余额） ==========
 
 /**
- * @route   GET /api/payments/methods
- * @desc    获取可用支付方式
- * @access  Public
+ * @openapi
+ * /api/payments/methods:
+ *   get:
+ *     summary: 获取支付方式
+ *     description: 获取所有可用的支付方式列表
+ *     tags:
+ *       - User - Payments
+ *     responses:
+ *       200:
+ *         description: 成功获取支付方式
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       method_code:
+ *                         type: string
+ *                       method_name:
+ *                         type: string
+ *                       provider:
+ *                         type: string
+ *                       is_enabled:
+ *                         type: boolean
  */
 router.get('/methods', paymentController.getPaymentMethods)
 
 /**
- * @route   POST /api/payments/create
- * @desc    创建支付（支持PayPal/Stripe/余额）
- * @access  Private (用户)
- * @body    { orderId, amount, currency, paymentMethod, returnUrl?, cancelUrl? }
+ * @openapi
+ * /api/payments/create:
+ *   post:
+ *     summary: 创建支付订单
+ *     description: 创建支付订单,支持PayPal、Stripe和余额支付
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - amount
+ *               - currency
+ *               - paymentMethod
+ *             properties:
+ *               orderId:
+ *                 type: integer
+ *                 description: 订单ID
+ *               amount:
+ *                 type: number
+ *                 description: 支付金额
+ *               currency:
+ *                 type: string
+ *                 description: 货币代码
+ *                 example: USD
+ *               paymentMethod:
+ *                 type: string
+ *                 enum: [paypal, stripe, balance]
+ *                 description: 支付方式
+ *               returnUrl:
+ *                 type: string
+ *                 description: 支付成功返回URL
+ *               cancelUrl:
+ *                 type: string
+ *                 description: 支付取消返回URL
+ *     responses:
+ *       200:
+ *         description: 支付订单创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/create', authenticateUser, paymentController.createPaymentOrder)
 
 /**
- * @route   POST /api/payments/paypal/confirm
- * @desc    确认PayPal支付
- * @access  Public
- * @body    { paypalOrderId, transactionId }
+ * @openapi
+ * /api/payments/paypal/confirm:
+ *   post:
+ *     summary: 确认PayPal支付
+ *     description: 确认PayPal支付订单并完成支付流程
+ *     tags:
+ *       - User - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - paypalOrderId
+ *               - transactionId
+ *             properties:
+ *               paypalOrderId:
+ *                 type: string
+ *                 description: PayPal订单ID
+ *               transactionId:
+ *                 type: string
+ *                 description: 交易记录ID
+ *     responses:
+ *       200:
+ *         description: PayPal支付确认成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
  */
 router.post('/paypal/confirm', paymentController.confirmPayPalPayment)
 
 /**
- * @route   POST /api/payments/stripe/confirm
- * @desc    确认Stripe支付
- * @access  Public
- * @body    { paymentIntentId, transactionId }
+ * @openapi
+ * /api/payments/stripe/confirm:
+ *   post:
+ *     summary: 确认Stripe支付
+ *     description: 确认Stripe支付意图并完成支付流程
+ *     tags:
+ *       - User - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - paymentIntentId
+ *               - transactionId
+ *             properties:
+ *               paymentIntentId:
+ *                 type: string
+ *                 description: Stripe支付意图ID
+ *               transactionId:
+ *                 type: string
+ *                 description: 交易记录ID
+ *     responses:
+ *       200:
+ *         description: Stripe支付确认成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
  */
 router.post('/stripe/confirm', paymentController.confirmStripePayment)
 
 /**
- * @route   GET /api/payments/status/:transactionId
- * @desc    查询支付状态
- * @access  Private (用户)
+ * @openapi
+ * /api/payments/status/{transactionId}:
+ *   get:
+ *     summary: 查询支付状态
+ *     description: 查询指定交易的支付状态
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: transactionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 交易ID
+ *     responses:
+ *       200:
+ *         description: 成功获取支付状态
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                     transaction_id:
+ *                       type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/status/:transactionId', authenticateUser, paymentController.checkPaymentStatus)
 
 /**
- * @route   POST /api/payments/refund
- * @desc    申请退款
- * @access  Private (用户)
- * @body    { transactionId, amount?, reason }
+ * @openapi
+ * /api/payments/refund:
+ *   post:
+ *     summary: 申请退款
+ *     description: 对已完成的支付申请退款
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - transactionId
+ *               - reason
+ *             properties:
+ *               transactionId:
+ *                 type: string
+ *                 description: 交易ID
+ *               amount:
+ *                 type: number
+ *                 description: 退款金额(可选,默认全额退款)
+ *               reason:
+ *                 type: string
+ *                 description: 退款原因
+ *     responses:
+ *       200:
+ *         description: 退款申请提交成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/refund', authenticateUser, paymentController.requestRefund)
 
 /**
- * @route   POST /api/payments/webhook/paypal
- * @desc    PayPal Webhook回调
- * @access  Public (需验证签名)
+ * @openapi
+ * /api/payments/webhook/paypal:
+ *   post:
+ *     summary: PayPal Webhook回调
+ *     description: 接收PayPal的Webhook通知(需要验证签名)
+ *     tags:
+ *       - User - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook处理成功
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
  */
 router.post('/webhook/paypal', paymentController.handlePayPalWebhook)
 
 /**
- * @route   POST /api/payments/webhook/stripe
- * @desc    Stripe Webhook回调
- * @access  Public (需验证签名)
+ * @openapi
+ * /api/payments/webhook/stripe:
+ *   post:
+ *     summary: Stripe Webhook回调
+ *     description: 接收Stripe的Webhook通知(需要验证签名)
+ *     tags:
+ *       - User - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook处理成功
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
  */
 router.post('/webhook/stripe', paymentController.handleStripeWebhook)
 
 // ========== 旧版支付API（向后兼容） ==========
 
 /**
- * @route   POST /api/payments
- * @desc    创建支付订单（旧版）
- * @access  Private (用户)
- * @body    { orderId, payMethod }
+ * @openapi
+ * /api/payments:
+ *   post:
+ *     summary: 创建支付(旧版)
+ *     description: 创建支付订单(向后兼容的旧版API)
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - orderId
+ *               - payMethod
+ *             properties:
+ *               orderId:
+ *                 type: integer
+ *                 description: 订单ID
+ *               payMethod:
+ *                 type: string
+ *                 description: 支付方式
+ *     responses:
+ *       200:
+ *         description: 支付创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/', authenticateUser, paymentController.createPayment)
 
 /**
- * @route   POST /api/payments/callback
- * @desc    支付回调（模拟第三方支付回调）
- * @access  Public（实际应该验证第三方签名）
- * @body    { paymentId, transactionNo?, status, errorMessage? }
+ * @openapi
+ * /api/payments/callback:
+ *   post:
+ *     summary: 支付回调
+ *     description: 接收第三方支付平台的回调通知(实际应验证签名)
+ *     tags:
+ *       - User - Payments
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - paymentId
+ *               - status
+ *             properties:
+ *               paymentId:
+ *                 type: string
+ *                 description: 支付ID
+ *               transactionNo:
+ *                 type: string
+ *                 description: 第三方交易号
+ *               status:
+ *                 type: string
+ *                 enum: [success, failed]
+ *                 description: 支付状态
+ *               errorMessage:
+ *                 type: string
+ *                 description: 错误信息
+ *     responses:
+ *       200:
+ *         description: 回调处理成功
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
  */
 router.post('/callback', paymentController.paymentCallback)
 
 /**
- * @route   GET /api/payments/:paymentId
- * @desc    查询支付状态
- * @access  Private (用户)
+ * @openapi
+ * /api/payments/{paymentId}:
+ *   get:
+ *     summary: 查询支付状态(旧版)
+ *     description: 查询指定支付的状态信息
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: paymentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 支付ID
+ *     responses:
+ *       200:
+ *         description: 成功获取支付状态
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/:paymentId', authenticateUser, paymentController.getPaymentStatus)
 
 /**
- * @route   GET /api/payments/order/:orderId
- * @desc    获取订单的支付记录
- * @access  Private (用户)
+ * @openapi
+ * /api/payments/order/{orderId}:
+ *   get:
+ *     summary: 获取订单支付记录
+ *     description: 获取指定订单的所有支付记录
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 订单ID
+ *     responses:
+ *       200:
+ *         description: 成功获取支付记录
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/order/:orderId', authenticateUser, paymentController.getOrderPayments)
 
 /**
- * @route   GET /api/payments
- * @desc    获取用户的支付记录列表
- * @access  Private (用户)
- * @query   page, limit, status
+ * @openapi
+ * /api/payments:
+ *   get:
+ *     summary: 获取支付记录列表
+ *     description: 获取当前用户的支付记录列表,支持分页和筛选
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 页码
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 每页数量
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, success, failed, refunded]
+ *         description: 支付状态筛选
+ *     responses:
+ *       200:
+ *         description: 成功获取支付记录
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/', authenticateUser, paymentController.getUserPaymentsOld)
 
 /**
- * @route   PUT /api/payments/:paymentId/cancel
- * @desc    取消支付
- * @access  Private (用户)
+ * @openapi
+ * /api/payments/{paymentId}/cancel:
+ *   put:
+ *     summary: 取消支付
+ *     description: 取消待支付状态的支付订单
+ *     tags:
+ *       - User - Payments
+ *     security:
+ *       - UserBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: paymentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 支付ID
+ *     responses:
+ *       200:
+ *         description: 支付取消成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:paymentId/cancel', authenticateUser, paymentController.cancelPayment)
 

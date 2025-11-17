@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import * as favoriteService from '../services/favoriteService'
@@ -10,6 +11,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import './BrowseHistoryPage.css'
 
 const BrowseHistoryPage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user } = useAuth()
   const { addItem } = useCart()
@@ -42,10 +44,10 @@ const BrowseHistoryPage = () => {
 
   const handleClearHistory = async () => {
     const confirmed = await confirm({
-      title: '清空浏览历史',
-      message: '确定要清空所有浏览历史吗？此操作不可恢复。',
-      confirmText: '清空',
-      cancelText: '取消',
+      title: t('browseHistory.clearConfirmTitle'),
+      message: t('browseHistory.clearConfirmMessage'),
+      confirmText: t('browseHistory.clearConfirmButton'),
+      cancelText: t('common.cancel'),
       variant: 'danger'
     })
 
@@ -54,9 +56,9 @@ const BrowseHistoryPage = () => {
     try {
       await favoriteService.clearBrowseHistory()
       setHistory([])
-      showToast({ title: '成功', content: '浏览历史已清空', type: 'success' })
+      showToast({ title: t('common.success'), content: t('browseHistory.clearSuccess'), type: 'success' })
     } catch (error) {
-      showToast({ title: '错误', content: '操作失败，请重试', type: 'error' })
+      showToast({ title: t('common.error'), content: t('favorites.operationFailed'), type: 'error' })
     }
   }
 
@@ -78,9 +80,9 @@ const BrowseHistoryPage = () => {
         status: 'active' as const
       }
       await addItem(fortune)
-      showToast({ title: '成功', content: '已添加到购物车', type: 'success' })
+      showToast({ title: t('common.success'), content: t('browseHistory.addedToCart'), type: 'success' })
     } catch (error) {
-      showToast({ title: '错误', content: '添加失败，请重试', type: 'error' })
+      showToast({ title: t('common.error'), content: t('browseHistory.addFailed'), type: 'error' })
     }
   }
 
@@ -129,12 +131,12 @@ const BrowseHistoryPage = () => {
       <div className="browse-history-page">
         <div className="history-header">
         <button className="back-btn" onClick={() => navigate(-1)}>
-          ‹ 返回
+          ‹ {t('browseHistory.back')}
         </button>
-        <h1>浏览历史</h1>
+        <h1>{t('browseHistory.title')}</h1>
         {history.length > 0 && (
           <button className="clear-btn" onClick={handleClearHistory}>
-            清空
+            {t('browseHistory.clear')}
           </button>
         )}
       </div>
@@ -194,9 +196,9 @@ const BrowseHistoryPage = () => {
         ) : (
           <div className="empty-history">
             <div className="empty-icon">🕐</div>
-            <p>还没有浏览历史</p>
+            <p>{t('browseHistory.noHistory')}</p>
             <button onClick={() => navigate('/')} className="go-explore-btn">
-              去逛逛
+              {t('browseHistory.goExplore')}
             </button>
           </div>
         )}

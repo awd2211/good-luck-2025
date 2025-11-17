@@ -1,0 +1,240 @@
+.trust-footer {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 40px 20px;
+  margin-top: 60px;
+}
+
+.trust-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.trust-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.trust-header h3 {
+  font-size: 28px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  color: white;
+}
+
+.trust-header p {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* 统计数据 */
+.trust-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 30px;
+  margin-bottom: 50px;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 20px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-icon .icon {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-number {
+  font-size: 32px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* 专家资质 */
+.trust-certifications {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 30px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.trust-certifications h4 {
+  font-size: 20px;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.cert-list {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.cert-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cert-badge {
+  background: #ffd700;
+  color: #333;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.cert-item span {
+  font-size: 14px;
+}
+
+/* 隐私安全保障 */
+.trust-security {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 30px;
+  border-radius: 16px;
+  margin-bottom: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.trust-security h4 {
+  font-size: 20px;
+  margin: 0 0 25px 0;
+  text-align: center;
+}
+
+.security-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.security-item {
+  display: flex;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.security-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.security-title {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.security-desc {
+  font-size: 14px;
+  opacity: 0.85;
+  line-height: 1.5;
+}
+
+/* 联系方式 */
+.trust-contact {
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.trust-contact p {
+  margin: 10px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.trust-links a {
+  color: white;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+}
+
+.trust-links a:hover {
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.trust-links .separator {
+  margin: 0 10px;
+  opacity: 0.5;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .trust-footer {
+    padding: 30px 15px;
+  }
+
+  .trust-header h3 {
+    font-size: 22px;
+  }
+
+  .trust-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .stat-item {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+
+  .cert-list {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cert-item {
+    justify-content: center;
+  }
+
+  .security-features {
+    grid-template-columns: 1fr;
+  }
+}

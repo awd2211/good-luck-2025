@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '../hooks/useAuth'
 import { useCart } from '../contexts/CartContext'
 import { getUserTags, getUserPortrait, type UserTag, type UserPortrait } from '../services/profileService'
@@ -8,6 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import './ProfilePage.css'
 
 const ProfilePage = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
   const { itemCount } = useCart()
@@ -47,10 +49,10 @@ const ProfilePage = () => {
 
   const handleLogout = async () => {
     const confirmed = await confirm({
-      title: '退出登录',
-      message: '确定要退出登录吗？',
-      confirmText: '退出',
-      cancelText: '取消',
+      title: t('auth.logout'),
+      message: t('profile.logoutConfirm'),
+      confirmText: t('profile.logoutButton'),
+      cancelText: t('common.cancel'),
       variant: 'danger'
     })
 
@@ -66,30 +68,30 @@ const ProfilePage = () => {
 
   const menuItems = [
     {
-      section: '我的服务',
+      section: t('profile.myServices'),
       items: [
-        { icon: '📦', label: '我的订单', path: '/orders', badge: null },
-        { icon: '💰', label: '我的余额', path: '/balance', badge: `¥${typeof user.balance === 'number' ? user.balance.toFixed(2) : user.balance}` },
-        { icon: '🎫', label: '优惠券', path: '/coupons', badge: null },
-        { icon: '⭐', label: '我的收藏', path: '/favorites', badge: null },
-        { icon: '👁️', label: '浏览历史', path: '/history', badge: null },
+        { icon: '📦', label: t('profile.myOrders'), path: '/orders', badge: null },
+        { icon: '💰', label: t('profile.myBalance'), path: '/balance', badge: `¥${typeof user.balance === 'number' ? user.balance.toFixed(2) : user.balance}` },
+        { icon: '🎫', label: t('quickNav.coupons'), path: '/coupons', badge: null },
+        { icon: '⭐', label: t('profile.myFavorites'), path: '/favorites', badge: null },
+        { icon: '👁️', label: t('profile.browsingHistory'), path: '/history', badge: null },
       ],
     },
     {
-      section: '客户服务',
+      section: t('profile.customerService'),
       items: [
-        { icon: '💬', label: '在线客服', path: '/customer-service', badge: null },
-        { icon: '❓', label: '帮助中心', path: '/help', badge: null },
-        { icon: '📝', label: '我的评价', path: '/my-reviews', badge: null },
-        { icon: '💭', label: '意见反馈', path: '/feedback', badge: null },
+        { icon: '💬', label: t('profile.onlineSupport'), path: '/customer-service', badge: null },
+        { icon: '❓', label: t('profile.helpCenter'), path: '/help', badge: null },
+        { icon: '📝', label: t('profile.myReviews'), path: '/my-reviews', badge: null },
+        { icon: '💭', label: t('profile.feedback'), path: '/feedback', badge: null },
       ],
     },
     {
-      section: '账号设置',
+      section: t('profile.accountSettings'),
       items: [
-        { icon: '👤', label: '个人信息', path: '/profile/edit', badge: null },
-        { icon: '🔒', label: '修改密码', path: '/profile/password', badge: null },
-        { icon: '⚙️', label: '设置', path: '/settings', badge: null },
+        { icon: '👤', label: t('profile.personalInfo'), path: '/profile/edit', badge: null },
+        { icon: '🔒', label: t('profile.changePassword'), path: '/profile/password', badge: null },
+        { icon: '⚙️', label: t('profile.settings'), path: '/settings', badge: null },
       ],
     },
   ]
@@ -111,7 +113,7 @@ const ProfilePage = () => {
       <div className="user-card">
         <div className="user-avatar">
           {user.avatar ? (
-            <img src={user.avatar} alt={user.nickname || '用户'} />
+            <img src={user.avatar} alt={user.nickname || t('profile.user')} />
           ) : (
             <div className="avatar-placeholder">
               {(user.nickname || user.email)?.[0]?.toUpperCase() || 'U'}
@@ -119,7 +121,7 @@ const ProfilePage = () => {
           )}
         </div>
         <div className="user-info">
-          <h2>{user.nickname || '未设置昵称'}</h2>
+          <h2>{user.nickname || t('profile.nicknameNotSet')}</h2>
           <p>{user.email}</p>
           {userTags.length > 0 && (
             <div className="user-tags">
@@ -137,7 +139,7 @@ const ProfilePage = () => {
           )}
         </div>
         <button className="edit-btn" onClick={() => navigate('/profile/edit')}>
-          编辑
+          {t('profile.edit')}
         </button>
       </div>
 
@@ -145,19 +147,19 @@ const ProfilePage = () => {
       <div className="stats-grid">
         <Link to="/orders?status=pending" className="stat-item">
           <div className="stat-value">0</div>
-          <div className="stat-label">待支付</div>
+          <div className="stat-label">{t('profile.pending')}</div>
         </Link>
         <Link to="/orders?status=processing" className="stat-item">
           <div className="stat-value">0</div>
-          <div className="stat-label">处理中</div>
+          <div className="stat-label">{t('profile.processing')}</div>
         </Link>
         <Link to="/orders?status=completed" className="stat-item">
           <div className="stat-value">0</div>
-          <div className="stat-label">已完成</div>
+          <div className="stat-label">{t('profile.completed')}</div>
         </Link>
         <Link to="/cart" className="stat-item">
           <div className="stat-value">{itemCount}</div>
-          <div className="stat-label">购物车</div>
+          <div className="stat-label">{t('cart.title')}</div>
         </Link>
       </div>
 
@@ -165,7 +167,7 @@ const ProfilePage = () => {
       {portrait && (
         <div className="portrait-card">
           <div className="portrait-header">
-            <h3>我的画像</h3>
+            <h3>{t('profile.myPortrait')}</h3>
             <span className="vip-badge">{portrait.profile.vipLabel}</span>
           </div>
 
@@ -174,7 +176,7 @@ const ProfilePage = () => {
               <div className="portrait-stat-icon">💬</div>
               <div className="portrait-stat-content">
                 <div className="portrait-stat-value">{portrait.profile.totalSessions}</div>
-                <div className="portrait-stat-label">会话次数</div>
+                <div className="portrait-stat-label">{t('profile.sessionCount')}</div>
               </div>
             </div>
 
@@ -182,7 +184,7 @@ const ProfilePage = () => {
               <div className="portrait-stat-icon">✉️</div>
               <div className="portrait-stat-content">
                 <div className="portrait-stat-value">{portrait.profile.totalMessages}</div>
-                <div className="portrait-stat-label">消息数</div>
+                <div className="portrait-stat-label">{t('profile.messageCount')}</div>
               </div>
             </div>
 
@@ -191,7 +193,7 @@ const ProfilePage = () => {
                 <div className="portrait-stat-icon">⭐</div>
                 <div className="portrait-stat-content">
                   <div className="portrait-stat-value">{portrait.profile.avgSatisfactionRating}</div>
-                  <div className="portrait-stat-label">平均评分</div>
+                  <div className="portrait-stat-label">{t('profile.avgRating')}</div>
                 </div>
               </div>
             )}
@@ -201,12 +203,12 @@ const ProfilePage = () => {
             <div className="portrait-session-stats">
               <div className="session-stat-bar">
                 <div className="session-stat-label">
-                  <span>总会话: {portrait.sessionStats.total}</span>
+                  <span>{t('profile.totalSessions')}: {portrait.sessionStats.total}</span>
                 </div>
                 <div className="session-stat-details">
-                  <span className="stat-completed">已完成: {portrait.sessionStats.completed}</span>
+                  <span className="stat-completed">{t('profile.completedCount')}: {portrait.sessionStats.completed}</span>
                   {portrait.sessionStats.active > 0 && (
-                    <span className="stat-active">进行中: {portrait.sessionStats.active}</span>
+                    <span className="stat-active">{t('profile.activeSessions')}: {portrait.sessionStats.active}</span>
                   )}
                 </div>
               </div>
@@ -216,7 +218,7 @@ const ProfilePage = () => {
           {portrait.profile.memberSince && (
             <div className="portrait-footer">
               <span className="member-since">
-                👤 会员自 {new Date(portrait.profile.memberSince).toLocaleDateString('zh-CN')}
+                👤 {t('profile.memberSince')} {new Date(portrait.profile.memberSince).toLocaleDateString()}
               </span>
             </div>
           )}
@@ -246,7 +248,7 @@ const ProfilePage = () => {
 
       {/* 退出登录 */}
       <button className="logout-btn" onClick={handleLogout}>
-        退出登录
+        {t('auth.logout')}
       </button>
 
       <div className="app-info">

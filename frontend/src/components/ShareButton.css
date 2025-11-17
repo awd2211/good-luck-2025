@@ -1,23 +1,40 @@
-/* 分享按钮样式 */
+/* 分享按钮 - 现代化设计 */
 .share-button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  border-radius: 25px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  overflow: hidden;
+}
+
+.share-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.share-button:hover::before {
+  left: 100%;
 }
 
 .share-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .share-button:active {
@@ -27,26 +44,35 @@
 .share-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .share-icon {
   width: 20px;
   height: 20px;
+  stroke-width: 2;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-/* 分享弹窗 */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* 分享弹窗遮罩层 */
 .share-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
+  z-index: 9999;
+  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes fadeIn {
@@ -58,232 +84,374 @@
   }
 }
 
+/* 分享弹窗 */
 .share-modal {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  max-width: 500px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 24px;
+  padding: 0;
+  max-width: 540px;
   width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(50px);
     opacity: 0;
+    transform: translateY(30px) scale(0.95);
   }
   to {
-    transform: translateY(0);
     opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
+/* 弹窗头部 */
 .share-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-modal-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
 }
 
 .share-modal-header h3 {
   margin: 0;
-  font-size: 24px;
-  color: #333;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
 }
 
 .close-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  font-size: 32px;
-  color: #999;
+  color: white;
+  font-size: 28px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
+  transition: all 0.3s;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  position: relative;
+  z-index: 1;
 }
 
 .close-btn:hover {
-  color: #333;
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
 }
 
-/* 平台按钮网格 */
+/* 平台网格 */
 .share-platforms {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px;
+  padding: 28px;
 }
 
-@media (min-width: 500px) {
-  .share-platforms {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
+/* 平台按钮 */
 .platform-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 16px 12px;
-  border: 2px solid #e0e0e0;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 20px 12px;
   background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  position: relative;
+  overflow: hidden;
+}
+
+.platform-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(102, 126, 234, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.platform-btn:hover::before {
+  opacity: 1;
 }
 
 .platform-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  border-color: currentColor;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.platform-btn:active {
+  transform: translateY(-2px);
 }
 
 .platform-btn svg {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
+  transition: transform 0.3s;
+  position: relative;
+  z-index: 1;
+}
+
+.platform-btn:hover svg {
+  transform: scale(1.1);
 }
 
 .platform-btn span {
-  color: #333;
+  position: relative;
+  z-index: 1;
 }
 
 /* 各平台特定颜色 */
-.platform-btn.facebook:hover {
-  border-color: #1877F2;
-  background: #1877F2;
-}
+.platform-btn.facebook { color: #1877f2; }
+.platform-btn.facebook:hover { border-color: #1877f2; background: linear-gradient(135deg, #1877f2 0%, #3b5998 100%); color: white; }
+.platform-btn.facebook:hover svg { fill: white; }
 
-.platform-btn.facebook:hover svg,
-.platform-btn.facebook:hover span {
+.platform-btn.twitter { color: #1da1f2; }
+.platform-btn.twitter:hover { border-color: #1da1f2; background: linear-gradient(135deg, #1da1f2 0%, #0e71c8 100%); color: white; }
+.platform-btn.twitter:hover svg { fill: white; }
+
+.platform-btn.linkedin { color: #0077b5; }
+.platform-btn.linkedin:hover { border-color: #0077b5; background: linear-gradient(135deg, #0077b5 0%, #005582 100%); color: white; }
+.platform-btn.linkedin:hover svg { fill: white; }
+
+.platform-btn.whatsapp { color: #25d366; }
+.platform-btn.whatsapp:hover { border-color: #25d366; background: linear-gradient(135deg, #25d366 0%, #128c7e 100%); color: white; }
+.platform-btn.whatsapp:hover svg { fill: white; }
+
+.platform-btn.telegram { color: #0088cc; }
+.platform-btn.telegram:hover { border-color: #0088cc; background: linear-gradient(135deg, #0088cc 0%, #006699 100%); color: white; }
+.platform-btn.telegram:hover svg { fill: white; }
+
+.platform-btn.line { color: #00c300; }
+.platform-btn.line:hover { border-color: #00c300; background: linear-gradient(135deg, #00c300 0%, #009900 100%); color: white; }
+.platform-btn.line:hover svg { fill: white; }
+
+.platform-btn.tiktok { color: #000000; }
+.platform-btn.tiktok:hover {
+  border-color: #ff0050;
+  background: linear-gradient(135deg, #ff0050 0%, #00f2ea 100%);
   color: white;
 }
+.platform-btn.tiktok:hover svg { fill: white; }
 
-.platform-btn.facebook svg {
-  color: #1877F2;
+.platform-btn.email { color: #ea4335; }
+.platform-btn.email:hover { border-color: #ea4335; background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); color: white; }
+.platform-btn.email:hover svg { fill: white; }
+
+.platform-btn.copy-link { color: #6c757d; }
+.platform-btn.copy-link:hover { border-color: #6c757d; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+.platform-btn.copy-link:hover svg { fill: white; }
+
+.platform-btn.qrcode { color: #9c27b0; }
+.platform-btn.qrcode:hover { border-color: #9c27b0; background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%); color: white; }
+.platform-btn.qrcode:hover svg { fill: white; }
+
+/* 二维码弹窗 */
+.qr-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  z-index: 10000;
+  animation: scaleIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 90%;
 }
 
-.platform-btn.twitter:hover {
-  border-color: #1DA1F2;
-  background: #1DA1F2;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
-.platform-btn.twitter:hover svg,
-.platform-btn.twitter:hover span {
+.qr-modal-content {
+  text-align: center;
+}
+
+.qr-modal-content h3 {
+  margin: 0 0 20px 0;
+  font-size: 20px;
+  color: #333;
+  font-weight: 700;
+}
+
+.qr-modal-content canvas {
+  border: 3px solid #f0f0f0;
+  border-radius: 12px;
+  margin: 10px 0;
+}
+
+.qr-modal-content p {
+  margin: 15px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.qr-close-btn {
+  margin-top: 20px;
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.platform-btn.twitter svg {
-  color: #1DA1F2;
+.qr-close-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
-.platform-btn.linkedin:hover {
-  border-color: #0A66C2;
-  background: #0A66C2;
-}
-
-.platform-btn.linkedin:hover svg,
-.platform-btn.linkedin:hover span {
+/* Toast 提示 */
+.share-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  padding: 16px 28px;
+  border-radius: 50px;
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 10001;
+  animation: toastSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.platform-btn.linkedin svg {
-  color: #0A66C2;
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
-.platform-btn.whatsapp:hover {
-  border-color: #25D366;
-  background: #25D366;
+.share-toast.fade-out {
+  animation: toastFadeOut 0.3s ease-out forwards;
 }
 
-.platform-btn.whatsapp:hover svg,
-.platform-btn.whatsapp:hover span {
-  color: white;
+@keyframes toastFadeOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
 }
 
-.platform-btn.whatsapp svg {
-  color: #25D366;
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  animation: checkmark 0.5s ease;
 }
 
-.platform-btn.telegram:hover {
-  border-color: #0088cc;
-  background: #0088cc;
+@keyframes checkmark {
+  0% { transform: scale(0) rotate(-45deg); }
+  50% { transform: scale(1.2) rotate(-45deg); }
+  100% { transform: scale(1) rotate(0); }
 }
 
-.platform-btn.telegram:hover svg,
-.platform-btn.telegram:hover span {
-  color: white;
-}
-
-.platform-btn.telegram svg {
-  color: #0088cc;
-}
-
-.platform-btn.line:hover {
-  border-color: #00B900;
-  background: #00B900;
-}
-
-.platform-btn.line:hover svg,
-.platform-btn.line:hover span {
-  color: white;
-}
-
-.platform-btn.line svg {
-  color: #00B900;
-}
-
-.platform-btn.email:hover {
-  border-color: #EA4335;
-  background: #EA4335;
-}
-
-.platform-btn.email:hover svg,
-.platform-btn.email:hover span {
-  color: white;
-}
-
-.platform-btn.email svg {
-  color: #EA4335;
-}
-
-.platform-btn.copy-link:hover {
-  border-color: #6366f1;
-  background: #6366f1;
-}
-
-.platform-btn.copy-link:hover svg,
-.platform-btn.copy-link:hover span {
-  color: white;
-}
-
-.platform-btn.copy-link svg {
-  color: #6366f1;
-}
-
-/* 响应式设计 */
-@media (max-width: 500px) {
+/* 移动端适配 */
+@media (max-width: 768px) {
   .share-modal {
+    max-width: 95%;
+    margin: 10px;
+  }
+
+  .share-platforms {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     padding: 20px;
   }
 
-  .share-modal-header h3 {
-    font-size: 20px;
-  }
-
   .platform-btn {
-    padding: 12px 8px;
-    font-size: 13px;
+    padding: 16px 8px;
+    font-size: 12px;
   }
 
   .platform-btn svg {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
+
+  .share-modal-header h3 {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .share-platforms {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .share-button {
+    padding: 10px 18px;
+    font-size: 14px;
+  }
+
+  .qr-modal {
+    width: 90%;
+    padding: 20px;
+  }
+}
+
+/* 加载动画 */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

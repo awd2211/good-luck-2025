@@ -6,7 +6,7 @@ import PermissionGuard from '../components/PermissionGuard'
 import { usePermission } from '../hooks/usePermission'
 import { Permission } from '../config/permissions'
 import dayjs from 'dayjs'
-import api from '../services/apiService'
+import { getRefunds, reviewRefund } from '../services/refundService'
 
 const { TextArea } = Input
 
@@ -51,15 +51,12 @@ const RefundManagement = () => {
   const loadRefunds = async (page = 1, pageSize = 15) => {
     setLoading(true)
     try {
-      const response = await api.get('/refunds', {
-        params: { page, limit: pageSize }
-      })
-      const data = response.data.data || []
-      setRefunds(Array.isArray(data) ? data : data.list || [])
+      const response = await getRefunds({ page, limit: pageSize })
+      setRefunds(response.data.data || [])
       setPagination({
         current: page,
         pageSize,
-        total: data.total || (Array.isArray(data) ? data.length : data.list?.length || 0),
+        total: response.data.pagination?.total || 0,
       })
     } catch (error: any) {
       message.error(error.response?.data?.message || '加载退款记录失败')
@@ -94,7 +91,7 @@ const RefundManagement = () => {
         refund_method: reviewAction === 'approve' ? values.refund_method : undefined,
       }
 
-      await api.post(`/refunds/${currentRefund?.id}/review`, payload)
+      await reviewRefund(currentRefund!.id, payload)
       message.success(reviewAction === 'approve' ? '退款已批准' : '退款已拒绝')
       setIsReviewModalOpen(false)
       loadRefunds()

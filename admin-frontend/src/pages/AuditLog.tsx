@@ -30,9 +30,7 @@ import {
   Tabs,
   Dropdown,
   Switch,
-  Badge,
   Divider,
-  Empty,
   Tooltip
 } from 'antd';
 import {
@@ -51,7 +49,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { Permission } from '../config/permissions';
 import PermissionGuard from '../components/PermissionGuard';
-import apiService from '../services/apiService';
+import apiService from '../services/api';
 import dayjs from 'dayjs';
 import * as echarts from 'echarts';
 import ExcelJS from 'exceljs';
@@ -160,11 +158,11 @@ const AuditLogPage = () => {
 
       const response = await apiService.get(endpoint, { params });
 
-      setLogs(response.data || []);
+      setLogs(response.data?.data || []);
       setPagination({
-        current: response.pagination?.page || page,
-        pageSize: response.pagination?.pageSize || pageSize,
-        total: response.pagination?.total || 0
+        current: response.data?.pagination?.page || page,
+        pageSize: response.data?.pagination?.pageSize || pageSize,
+        total: response.data?.pagination?.total || 0
       });
     } catch (error: any) {
       message.error('加载审计日志失败');
@@ -567,7 +565,7 @@ const AuditLogPage = () => {
           const response = await apiService.post('/audit/archive', {
             daysToKeep: 90
           });
-          message.success(response.message || '归档成功');
+          message.success(response.data?.message || '归档成功');
           loadLogs();
           loadStats();
         } catch (error: any) {
@@ -690,13 +688,13 @@ const AuditLogPage = () => {
   return (
     <PermissionGuard permission={Permission.LOG_VIEW}>
       {/* 异常告警 */}
-      {anomalies && (anomalies.highFailureRate || anomalies.slowResponses > 0 || anomalies.suspiciousActivities.length > 0) && (
+      {anomalies && (anomalies.highFailureRate || anomalies.slowResponses > 0 || (anomalies.suspiciousActivities && anomalies.suspiciousActivities.length > 0)) && (
         <Alert
           message="检测到异常日志"
           description={
             <div>
               {anomalies.highFailureRate && <div>⚠️ 最近10分钟内失败率超过30%</div>}
-              {anomalies.slowResponses > 0 && <div>⚠️ 最近1小时内有{anomalies.slowResponses}个慢响应(>5秒)</div>}
+              {anomalies.slowResponses > 0 && <div>⚠️ 最近1小时内有{anomalies.slowResponses}个慢响应({'>'}5秒)</div>}
               {anomalies.suspiciousActivities.length > 0 && <div>⚠️ 检测到{anomalies.suspiciousActivities.length}次可疑登录失败</div>}
             </div>
           }

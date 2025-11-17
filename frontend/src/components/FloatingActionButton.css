@@ -124,7 +124,7 @@
 .scroll-to-top {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 70px; /* 调整为70px，避免被底部导航栏（60px高）遮挡 */
   width: 48px;
   height: 48px;
   border-radius: 50%;
@@ -204,7 +204,7 @@
 
   .scroll-to-top {
     right: 16px;
-    bottom: 16px;
+    bottom: 70px; /* 移动端也调整为70px */
     width: 44px;
     height: 44px;
     font-size: 18px;
@@ -229,7 +229,7 @@
 
   .scroll-to-top {
     right: 12px;
-    bottom: 12px;
+    bottom: 70px; /* 小屏幕也调整为70px */
   }
 }
 

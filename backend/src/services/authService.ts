@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs'
 import jwt, { SignOptions } from 'jsonwebtoken'
 import { query } from '../config/database'
 import { config } from '../config'
+import configService from './configService'
 
 // 管理员用户接口
 interface AdminUser {
@@ -145,9 +146,11 @@ export const refreshToken = (oldToken: string) => {
 
 /**
  * 生成密码哈希（辅助工具，用于创建管理员账号）
+ * BCRYPT_SALT_ROUNDS 已迁移到数据库配置：security.bcryptSaltRounds（默认10）
  */
 export const hashPassword = async (password: string) => {
-  const salt = await bcrypt.genSalt(10)
+  const saltRounds = await configService.get<number>('security.bcryptSaltRounds', 10)
+  const salt = await bcrypt.genSalt(saltRounds)
   return bcrypt.hash(password, salt)
 }
 

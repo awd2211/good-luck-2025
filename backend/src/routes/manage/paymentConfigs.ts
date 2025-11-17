@@ -1,4 +1,23 @@
 /**
+ * TODO: 为此文件添加完整的 @openapi 注解
+ * 
+ * 文件: manage/paymentConfigs.ts
+ * 标签: Admin - Payment Configs
+ * 前缀: /api/manage/payment-configs
+ * 
+ * 找到的路由:
+ *   - GET /
+ *   - GET /:id
+ *   - POST /
+ *   - PUT /:id
+ *   - PUT /batch/update
+ *   - DELETE /:id
+ *   - POST /test
+ *
+ * 请参考已完成的文件(如 routes/auth.ts)添加完整文档
+ */
+
+/**
  * 管理后台 - 支付配置管理路由
  */
 
@@ -8,8 +27,43 @@ import pool from '../../config/database'
 const router = Router()
 
 /**
- * 获取所有支付配置
- * GET /api/manage/payment-configs
+ * @openapi
+ * /api/manage/payment-configs:
+ *   get:
+ *     summary: 获取支付配置列表
+ *     description: 获取所有支付提供商的配置列表,敏感信息会被脱敏
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: provider
+ *         schema:
+ *           type: string
+ *           enum: [paypal, stripe, balance]
+ *         description: 支付提供商筛选
+ *       - in: query
+ *         name: is_production
+ *         schema:
+ *           type: boolean
+ *         description: 是否生产环境配置
+ *     responses:
+ *       200:
+ *         description: 成功获取配置列表
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get('/', async (req, res, next) => {
   try {
@@ -67,8 +121,33 @@ router.get('/', async (req, res, next) => {
 })
 
 /**
- * 获取单个支付配置
- * GET /api/manage/payment-configs/:id
+ * @openapi
+ * /api/manage/payment-configs/{id}:
+ *   get:
+ *     summary: 获取支付配置详情
+ *     description: 获取指定支付配置的详细信息
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 配置ID
+ *     responses:
+ *       200:
+ *         description: 成功获取配置详情
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get('/:id', async (req, res, next) => {
   try {
@@ -115,8 +194,50 @@ router.get('/:id', async (req, res, next) => {
 })
 
 /**
- * 创建支付配置
- * POST /api/manage/payment-configs
+ * @openapi
+ * /api/manage/payment-configs:
+ *   post:
+ *     summary: 创建支付配置
+ *     description: 创建新的支付提供商配置项
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *               - config_key
+ *               - config_value
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 enum: [paypal, stripe, balance]
+ *               config_key:
+ *                 type: string
+ *               config_value:
+ *                 type: string
+ *               is_production:
+ *                 type: boolean
+ *               is_enabled:
+ *                 type: boolean
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: 配置创建成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/', async (req, res, next) => {
   try {
@@ -164,8 +285,48 @@ router.post('/', async (req, res, next) => {
 })
 
 /**
- * 更新支付配置
- * PUT /api/manage/payment-configs/:id
+ * @openapi
+ * /api/manage/payment-configs/{id}:
+ *   put:
+ *     summary: 更新支付配置
+ *     description: 更新指定的支付配置项
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 配置ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               config_value:
+ *                 type: string
+ *               is_enabled:
+ *                 type: boolean
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: 配置更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put('/:id', async (req, res, next) => {
   try {
@@ -228,8 +389,51 @@ router.put('/:id', async (req, res, next) => {
 })
 
 /**
- * 批量更新支付配置（用于保存整个提供商的配置）
- * PUT /api/manage/payment-configs/batch
+ * @openapi
+ * /api/manage/payment-configs/batch/update:
+ *   put:
+ *     summary: 批量更新配置
+ *     description: 批量更新同一支付提供商的多个配置项
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *               - configs
+ *             properties:
+ *               provider:
+ *                 type: string
+ *               is_production:
+ *                 type: boolean
+ *               configs:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     config_key:
+ *                       type: string
+ *                     config_value:
+ *                       type: string
+ *                     is_enabled:
+ *                       type: boolean
+ *     responses:
+ *       200:
+ *         description: 批量更新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.put('/batch/update', async (req, res, next) => {
   const client = await pool.connect()
@@ -282,8 +486,33 @@ router.put('/batch/update', async (req, res, next) => {
 })
 
 /**
- * 删除支付配置
- * DELETE /api/manage/payment-configs/:id
+ * @openapi
+ * /api/manage/payment-configs/{id}:
+ *   delete:
+ *     summary: 删除支付配置
+ *     description: 删除指定的支付配置项
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: 配置ID
+ *     responses:
+ *       200:
+ *         description: 配置删除成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete('/:id', async (req, res, next) => {
   try {
@@ -308,8 +537,47 @@ router.delete('/:id', async (req, res, next) => {
 })
 
 /**
- * 测试支付配置是否有效
- * POST /api/manage/payment-configs/test
+ * @openapi
+ * /api/manage/payment-configs/test:
+ *   post:
+ *     summary: 测试支付配置
+ *     description: 测试指定支付提供商的配置是否完整有效
+ *     tags:
+ *       - Admin - Payment Configs
+ *     security:
+ *       - AdminBearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 enum: [paypal, stripe]
+ *               is_production:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: 测试结果
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *       400:
+ *         $ref: '#/components/responses/BadRequestError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post('/test', async (req, res, next) => {
   try {
