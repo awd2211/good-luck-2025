@@ -38,6 +38,7 @@ const DailyHoroscopeManagement = lazy(() => import('./pages/DailyHoroscopeManage
 const ArticleManagement = lazy(() => import('./pages/ArticleManagement'))
 const AIModelManagement = lazy(() => import('./pages/AIModelManagement'))
 const AttributionAnalytics = lazy(() => import('./pages/AttributionAnalytics'))
+const ConversionAnalytics = lazy(() => import('./pages/ConversionAnalytics'))
 const PaymentConfigManagement = lazy(() => import('./pages/PaymentConfigManagement'))
 const PaymentMethodManagement = lazy(() => import('./pages/PaymentMethodManagement'))
 const PaymentTransactions = lazy(() => import('./pages/PaymentTransactions'))
@@ -94,6 +95,7 @@ function App() {
         <Route path="users" element={<UserManagement />} />
         <Route path="orders" element={<OrderManagement />} />
         <Route path="attribution" element={<AttributionAnalytics />} />
+        <Route path="conversion-analytics" element={<ConversionAnalytics />} />
         <Route path="share-analytics" element={<ShareAnalytics />} />
         <Route path="fortunes" element={<FortuneManagement />} />
         <Route path="fortune-categories" element={<FortuneCategoryManagement />} />

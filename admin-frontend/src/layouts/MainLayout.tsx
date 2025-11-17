@@ -102,6 +102,12 @@ const MainLayout = () => {
           label: '归因统计',
           permission: Permission.STATS_VIEW,
         },
+        {
+          key: '/conversion-analytics',
+          icon: <ThunderboltOutlined />,
+          label: '转化分析',
+          permission: Permission.STATS_VIEW,
+        },
       ],
     },
     {
