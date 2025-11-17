@@ -23,6 +23,7 @@ import {
   Descriptions,
   Badge,
   Divider,
+  Alert,
 } from 'antd'
 import {
   PlusOutlined,
@@ -38,12 +39,14 @@ import {
   StarOutlined,
   ShoppingCartOutlined,
   DollarOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { UploadFile } from 'antd/es/upload/interface'
 import SunEditor from 'suneditor-react'
 import 'suneditor/dist/css/suneditor.min.css'
 import api from '../services/api'
+import AnimationPreview from '../components/animations/AnimationPreview'
 
 
 const { Option } = Select
@@ -77,6 +80,7 @@ interface FortuneService {
   order_count: number
   rating: number
   images?: string[]
+  animation_template?: string  // 3D动画模板
   created_at: string
 }
 
@@ -99,6 +103,8 @@ const FortuneServiceManagement = () => {
   const [previewVisible, setPreviewVisible] = useState(false)
   const [batchModalVisible, setBatchModalVisible] = useState(false)
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false)
+  const [animationPreviewVisible, setAnimationPreviewVisible] = useState(false)
+  const [previewAnimationTemplate, setPreviewAnimationTemplate] = useState<string>('')
   const [editingService, setEditingService] = useState<FortuneService | null>(null)
   const [previewService, setPreviewService] = useState<FortuneService | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
@@ -121,6 +127,32 @@ const FortuneServiceManagement = () => {
     pageSize: 20,
     total: 0,
   })
+
+  // 3D动画模板选项
+  const animationTemplates = [
+    { value: 'BaziEnhancedAnimation', label: '🌟 八字增强版', category: '八字命理' },
+    { value: 'TarotThreeAnimation', label: '🃏 塔罗牌', category: '塔罗占卜' },
+    { value: 'ZodiacThreeAnimation', label: '🐉 生肖/星座', category: '生肖星座' },
+    { value: 'TimeFlowThreeAnimation', label: '⏰ 时间流', category: '流年运势' },
+    { value: 'TaijiThreeAnimation', label: '☯️ 太极', category: '命理测算' },
+    { value: 'LotteryThreeAnimation', label: '🎋 抽签', category: '灵签占卜' },
+    { value: 'WealthThreeAnimation', label: '💰 财富流', category: '财运分析' },
+    { value: 'LoveThreeAnimation', label: '💕 爱情', category: '婚恋姻缘' },
+    { value: 'CareerThreeAnimation', label: '🚀 事业阶梯', category: '事业发展' },
+    { value: 'HealthThreeAnimation', label: '⚕️ 健康能量', category: '健康养生' },
+    { value: 'DreamThreeAnimation', label: '💭 解梦云雾', category: '周公解梦' },
+    { value: 'PhysiognomyThreeAnimation', label: '👤 相学扫描', category: '面相手相' },
+    { value: 'NumberThreeAnimation', label: '🔢 号码矩阵', category: '号码吉凶' },
+    { value: 'NameThreeAnimation', label: '📝 姓名书法', category: '起名改名' },
+    { value: 'FengshuiThreeAnimation', label: '🏠 风水房屋', category: '风水布局' },
+    { value: 'BabyCradleThreeAnimation', label: '👶 婴儿摇篮', category: '宝宝起名' },
+    { value: 'PoetryScrollThreeAnimation', label: '📜 诗词卷轴', category: '诗词解析' },
+    { value: 'AIBrainThreeAnimation', label: '🤖 AI大脑', category: 'AI分析' },
+    { value: 'ExamThreeAnimation', label: '📝 考试场景', category: '考试择吉' },
+    { value: 'LuckTransformThreeAnimation', label: '🌈 转运彩虹', category: '转运开运' },
+    { value: 'BlessingLightThreeAnimation', label: '💫 开光圣光', category: '开光祈福' },
+    { value: 'BloodThreeAnimation', label: '🩸 血型', category: '血型分析' },
+  ]
 
 
   // 获取统计数据
@@ -472,6 +504,8 @@ const FortuneServiceManagement = () => {
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend',
     },
     {
       title: '图片',
@@ -490,18 +524,54 @@ const FortuneServiceManagement = () => {
       dataIndex: 'name',
       key: 'name',
       width: 200,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '分类',
       dataIndex: 'category_name',
       key: 'category_name',
       width: 100,
+      sorter: (a, b) => a.category_name.localeCompare(b.category_name, 'zh-CN'),
       render: (text) => <Tag color="blue">{text}</Tag>,
+    },
+    {
+      title: '3D模板',
+      dataIndex: 'animation_template',
+      key: 'animation_template',
+      width: 200,
+      render: (template) => {
+        const found = animationTemplates.find((t) => t.value === template)
+        return (
+          <Space>
+            {found ? (
+              <Tag color="purple">{found.label}</Tag>
+            ) : template ? (
+              <Tag>{template}</Tag>
+            ) : (
+              <Tag color="default">未设置</Tag>
+            )}
+            {template && (
+              <Button
+                type="link"
+                size="small"
+                icon={<PlayCircleOutlined />}
+                onClick={() => {
+                  setPreviewAnimationTemplate(template)
+                  setAnimationPreviewVisible(true)
+                }}
+              >
+                预览
+              </Button>
+            )}
+          </Space>
+        )
+      },
     },
     {
       title: '价格',
       key: 'price',
       width: 150,
+      sorter: (a, b) => a.current_price - b.current_price,
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <span style={{ textDecoration: 'line-through', color: '#999' }}>¥{record.original_price}</span>
@@ -526,6 +596,7 @@ const FortuneServiceManagement = () => {
       title: '统计',
       key: 'stats',
       width: 150,
+      sorter: (a, b) => a.order_count - b.order_count,
       render: (_, record) => (
         <Space direction="vertical" size="small">
           <span>浏览: {record.view_count}</span>
@@ -539,6 +610,7 @@ const FortuneServiceManagement = () => {
       dataIndex: 'status',
       key: 'status',
       width: 100,
+      sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status, record) => (
         <Select
           value={status}
@@ -782,6 +854,43 @@ const FortuneServiceManagement = () => {
             <Input placeholder="请输入副标题" />
           </Form.Item>
 
+          <Form.Item label="3D动画模板">
+            <Space.Compact style={{ width: '100%' }}>
+              <Form.Item name="animation_template" noStyle>
+                <Select
+                  placeholder="选择3D动画效果"
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  style={{ width: '100%' }}
+                >
+                  {animationTemplates.map((template) => (
+                    <Option key={template.value} value={template.value}>
+                      <Space>
+                        <span>{template.label}</span>
+                        <Tag color="blue" style={{ fontSize: '12px' }}>{template.category}</Tag>
+                      </Space>
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <Button
+                icon={<PlayCircleOutlined />}
+                onClick={() => {
+                  const selectedTemplate = form.getFieldValue('animation_template')
+                  if (selectedTemplate) {
+                    setPreviewAnimationTemplate(selectedTemplate)
+                    setAnimationPreviewVisible(true)
+                  } else {
+                    message.warning('请先选择一个3D模板')
+                  }
+                }}
+              >
+                预览
+              </Button>
+            </Space.Compact>
+          </Form.Item>
+
           <Form.Item label="服务简介">
             <SunEditor
               height="200"
@@ -1006,6 +1115,23 @@ const FortuneServiceManagement = () => {
               <Descriptions.Item label="分类">
                 <Tag color="blue">{previewService.category_name}</Tag>
               </Descriptions.Item>
+              <Descriptions.Item label="3D动画模板">
+                {previewService.animation_template ? (
+                  (() => {
+                    const found = animationTemplates.find((t) => t.value === previewService.animation_template)
+                    return found ? (
+                      <Space>
+                        <Tag color="purple">{found.label}</Tag>
+                        <Tag color="blue">{found.category}</Tag>
+                      </Space>
+                    ) : (
+                      <Tag>{previewService.animation_template}</Tag>
+                    )
+                  })()
+                ) : (
+                  <Tag color="default">未设置</Tag>
+                )}
+              </Descriptions.Item>
               <Descriptions.Item label="价格">
                 <Space direction="vertical">
                   <span style={{ textDecoration: 'line-through', color: '#999' }}>
@@ -1064,6 +1190,74 @@ const FortuneServiceManagement = () => {
           </div>
         )}
       </Drawer>
+
+      {/* 3D动画预览模态框 */}
+      <Modal
+        title="3D动画效果预览"
+        open={animationPreviewVisible}
+        onCancel={() => setAnimationPreviewVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setAnimationPreviewVisible(false)}>
+            关闭
+          </Button>,
+        ]}
+        width={900}
+        centered
+      >
+        {previewAnimationTemplate && (() => {
+          const found = animationTemplates.find((t) => t.value === previewAnimationTemplate)
+          return (
+            <div>
+              {/* 模板信息 */}
+              <Alert
+                message={
+                  <Space>
+                    <span style={{ fontSize: 16, fontWeight: 'bold' }}>
+                      {found?.label || previewAnimationTemplate}
+                    </span>
+                    <Tag color="blue">{found?.category}</Tag>
+                  </Space>
+                }
+                description={
+                  <div style={{ marginTop: 12 }}>
+                    <p><strong>组件名称：</strong>{previewAnimationTemplate}</p>
+                    <p><strong>适用场景：</strong>{found?.category}</p>
+                    <p><strong>说明：</strong>此为真实的3D动画效果预览，可使用鼠标拖拽旋转、滚轮缩放</p>
+                  </div>
+                }
+                type="info"
+                showIcon
+                style={{ marginBottom: 20 }}
+              />
+
+              {/* 真实的3D动画预览 */}
+              <div style={{
+                borderRadius: 8,
+                overflow: 'hidden',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}>
+                <AnimationPreview animationType={previewAnimationTemplate} />
+              </div>
+
+              {/* 操作提示 */}
+              <Alert
+                message="交互提示"
+                description={
+                  <div>
+                    <p>• 🖱️ 拖拽鼠标左键旋转视角</p>
+                    <p>• 🎡 滚动鼠标滚轮缩放画面</p>
+                    <p>• 🎨 动画会自动旋转播放</p>
+                    <p>• ⚡ 实时渲染，流畅交互</p>
+                  </div>
+                }
+                type="success"
+                showIcon
+                style={{ marginTop: 20 }}
+              />
+            </div>
+          )
+        })()}
+      </Modal>
     </div>
   )
 }

@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import * as echarts from 'echarts';
 import api from '../services/api';
+import { getUsers } from '../services/userService';
 import type { EChartsOption } from 'echarts';
 
 const { RangePicker } = DatePicker;
@@ -93,6 +94,7 @@ const ShareAnalytics: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
   const [selectedUser, setSelectedUser] = useState<string | undefined>(undefined);
+  const [userList, setUserList] = useState<Array<{ id: string; username: string; phone: string }>>([]);
 
   // 加载总览数据
   const loadOverview = async () => {
@@ -183,6 +185,21 @@ const ShareAnalytics: React.FC = () => {
     }
   };
 
+  // 加载用户列表（用于筛选）
+  const loadUserList = async () => {
+    try {
+      const response = await getUsers({ page: 1, limit: 1000 });
+      const users = response.data.data || [];
+      setUserList(users.map((u: any) => ({
+        id: u.id,
+        username: u.username || u.phone,
+        phone: u.phone
+      })));
+    } catch (error) {
+      console.error('加载用户列表失败:', error);
+    }
+  };
+
   useEffect(() => {
     loadOverview();
     loadFunnel();
@@ -190,6 +207,7 @@ const ShareAnalytics: React.FC = () => {
     loadDeviceData();
     loadTrends();
     loadLeaderboard();
+    loadUserList(); // 加载用户列表
   }, [dateRange, selectedUser]);
 
   // 渲染渠道分布图表
@@ -522,11 +540,17 @@ const ShareAnalytics: React.FC = () => {
             <Select
               placeholder="选择用户（可选）"
               allowClear
+              showSearch
               style={{ width: '100%' }}
               onChange={(value) => setSelectedUser(value)}
-            >
-              {/* 这里可以从API加载用户列表 */}
-            </Select>
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={userList.map(user => ({
+                value: user.id,
+                label: `${user.username} (${user.phone})`
+              }))}
+            />
           </Col>
         </Row>
       </Card>

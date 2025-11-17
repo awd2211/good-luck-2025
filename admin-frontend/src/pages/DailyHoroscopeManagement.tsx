@@ -338,14 +338,17 @@ const DailyHoroscopeManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 60
+      width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '日期',
       dataIndex: 'date',
       key: 'date',
       width: 120,
-      render: (date) => dayjs(date).format('YYYY-MM-DD')
+      render: (date) => dayjs(date).format('YYYY-MM-DD'),
+      sorter: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     },
     {
       title: '类型',
@@ -356,13 +359,15 @@ const DailyHoroscopeManagement = () => {
         <Tag color={type === 'zodiac' ? 'blue' : 'green'}>
           {type === 'zodiac' ? '星座' : '生肖'}
         </Tag>
-      )
+      ),
+      sorter: (a, b) => a.type.localeCompare(b.type, 'zh-CN')
     },
     {
       title: '对象',
       dataIndex: 'type_value',
       key: 'type_value',
-      width: 100
+      width: 100,
+      sorter: (a, b) => a.type_value.localeCompare(b.type_value, 'zh-CN')
     },
     {
       title: '综合',
@@ -373,47 +378,54 @@ const DailyHoroscopeManagement = () => {
         <Tag color={getFortuneColor(score)}>
           {getFortuneStars(score)}
         </Tag>
-      )
+      ),
+      sorter: (a, b) => a.overall_score - b.overall_score
     },
     {
       title: '爱情',
       dataIndex: 'love_score',
       key: 'love_score',
       width: 80,
-      render: (score) => getFortuneStars(score)
+      render: (score) => getFortuneStars(score),
+      sorter: (a, b) => a.love_score - b.love_score
     },
     {
       title: '事业',
       dataIndex: 'career_score',
       key: 'career_score',
       width: 80,
-      render: (score) => getFortuneStars(score)
+      render: (score) => getFortuneStars(score),
+      sorter: (a, b) => a.career_score - b.career_score
     },
     {
       title: '财运',
       dataIndex: 'wealth_score',
       key: 'wealth_score',
       width: 80,
-      render: (score) => getFortuneStars(score)
+      render: (score) => getFortuneStars(score),
+      sorter: (a, b) => a.wealth_score - b.wealth_score
     },
     {
       title: '健康',
       dataIndex: 'health_score',
       key: 'health_score',
       width: 80,
-      render: (score) => getFortuneStars(score)
+      render: (score) => getFortuneStars(score),
+      sorter: (a, b) => a.health_score - b.health_score
     },
     {
       title: '幸运色',
       dataIndex: 'lucky_color',
       key: 'lucky_color',
-      width: 80
+      width: 80,
+      sorter: (a, b) => a.lucky_color.localeCompare(b.lucky_color, 'zh-CN')
     },
     {
       title: '幸运数字',
       dataIndex: 'lucky_number',
       key: 'lucky_number',
-      width: 90
+      width: 90,
+      sorter: (a, b) => a.lucky_number.localeCompare(b.lucky_number, 'zh-CN')
     },
     {
       title: '操作',

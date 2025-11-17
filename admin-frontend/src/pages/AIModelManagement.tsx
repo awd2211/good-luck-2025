@@ -1505,12 +1505,15 @@ const AIModelManagement = () => {
       dataIndex: 'id',
       key: 'id',
       width: columnWidths['id'] || 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend',
     },
     {
       title: '模型名称',
       dataIndex: 'name',
       key: 'name',
       width: columnWidths['name'] || 200,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
       render: (text, record) => (
         <Space>
           {text}
@@ -1527,6 +1530,7 @@ const AIModelManagement = () => {
       dataIndex: 'provider',
       key: 'provider',
       width: columnWidths['provider'] || 150,
+      sorter: (a, b) => a.provider.localeCompare(b.provider),
       render: (provider) => getProviderTag(provider),
     },
     {
@@ -1534,12 +1538,14 @@ const AIModelManagement = () => {
       dataIndex: 'model_name',
       key: 'model_name',
       width: columnWidths['model_name'] || 150,
+      sorter: (a, b) => a.model_name.localeCompare(b.model_name),
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
       width: columnWidths['status'] || 100,
+      sorter: (a, b) => a.status.localeCompare(b.status),
       render: (status) => getStatusBadge(status),
     },
     {
@@ -1547,6 +1553,7 @@ const AIModelManagement = () => {
       dataIndex: 'health_status',
       key: 'health_status',
       width: columnWidths['health_status'] || 120,
+      sorter: (a, b) => (a.health_status || '').localeCompare(b.health_status || ''),
       render: (health_status, record) => (
         <Space direction="vertical" size="small">
           {getHealthStatusBadge(health_status)}
@@ -1591,18 +1598,26 @@ const AIModelManagement = () => {
       dataIndex: 'usage_count',
       key: 'usage_count',
       width: columnWidths['usage_count'] || 100,
+      sorter: (a, b) => (a.usage_count || 0) - (b.usage_count || 0),
     },
     {
       title: '优先级',
       dataIndex: 'priority',
       key: 'priority',
       width: columnWidths['priority'] || 80,
+      sorter: (a, b) => (a.priority || 0) - (b.priority || 0),
     },
     {
       title: '最后使用',
       dataIndex: 'last_used_at',
       key: 'last_used_at',
       width: columnWidths['last_used_at'] || 160,
+      sorter: (a, b) => {
+        if (!a.last_used_at && !b.last_used_at) return 0;
+        if (!a.last_used_at) return 1;
+        if (!b.last_used_at) return -1;
+        return new Date(a.last_used_at).getTime() - new Date(b.last_used_at).getTime();
+      },
       render: (text) => (text ? new Date(text).toLocaleString('zh-CN') : '-'),
     },
     {
