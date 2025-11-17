@@ -39,6 +39,7 @@ const roleDescriptions: Record<Role, string> = {
 const RoleManagement = () => {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<AdminStats | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   useEffect(() => {
     loadStats()
@@ -203,6 +204,10 @@ const RoleManagement = () => {
           columns={columns}
           dataSource={roles}
           pagination={false}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           scroll={{ x: 1000 }}
         />
       </Card>

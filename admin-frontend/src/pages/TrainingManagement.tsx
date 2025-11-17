@@ -48,6 +48,7 @@ const TrainingManagement: React.FC = () => {
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [courseForm] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
 
   useEffect(() => {
@@ -348,10 +349,17 @@ const TrainingManagement: React.FC = () => {
               dataSource={courses}
               rowKey="id"
               loading={loading}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+              }}
               pagination={{
                 current: pagination.current,
                 pageSize: pagination.pageSize,
                 total: pagination.total,
+                showSizeChanger: true,
+                showQuickJumper: true,
+                showTotal: (total) => `共 ${total} 条`,
                 onChange: (page, pageSize) => loadCourses(page, pageSize)
               }}
             />

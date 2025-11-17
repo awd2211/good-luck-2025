@@ -65,6 +65,7 @@ const QuickReplyManagement: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingReply, setEditingReply] = useState<QuickReply | null>(null);
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     fetchReplies();
@@ -370,12 +371,17 @@ const QuickReplyManagement: React.FC = () => {
             dataSource={replies}
             rowKey="id"
             loading={loading}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+            }}
             pagination={{
               current: page,
               pageSize: limit,
               total,
               onChange: setPage,
               showSizeChanger: false,
+              showQuickJumper: true,
               showTotal: (total) => `共 ${total} 条`
             }}
           />

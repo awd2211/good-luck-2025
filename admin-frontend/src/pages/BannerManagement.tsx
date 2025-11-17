@@ -33,6 +33,7 @@ const BannerManagement = () => {
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null)
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -270,6 +271,10 @@ const BannerManagement = () => {
           dataSource={banners}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

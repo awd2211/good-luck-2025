@@ -72,6 +72,7 @@ const TechnicalConfigManagement: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // 加载配置统计
   const loadStats = async () => {
@@ -295,14 +296,20 @@ const TechnicalConfigManagement: React.FC = () => {
       key: 'config_key',
       width: 280,
       fixed: 'left',
-      render: (text) => <Text strong copyable={{ text }}>{text}</Text>
+      render: (text) => <Text strong copyable={{ text }}>{text}</Text>,
+      sorter: (a, b) => a.config_key.localeCompare(b.config_key, 'zh-CN')
     },
     {
       title: '当前值',
       dataIndex: 'config_value',
       key: 'config_value',
       width: 150,
-      render: (text) => <Text code style={{ fontSize: 14 }}>{text}</Text>
+      render: (text) => <Text code style={{ fontSize: 14 }}>{text}</Text>,
+      sorter: (a, b) => {
+        const aVal = typeof a.config_value === 'number' ? a.config_value : parseFloat(String(a.config_value)) || 0;
+        const bVal = typeof b.config_value === 'number' ? b.config_value : parseFloat(String(b.config_value)) || 0;
+        return aVal - bVal;
+      }
     },
     {
       title: '分类',
@@ -318,7 +325,8 @@ const TechnicalConfigManagement: React.FC = () => {
           rateLimit: 'orange'
         };
         return <Tag color={colors[text] || 'default'}>{text}</Tag>;
-      }
+      },
+      sorter: (a, b) => a.category.localeCompare(b.category, 'zh-CN')
     },
     {
       title: '描述',
@@ -329,7 +337,8 @@ const TechnicalConfigManagement: React.FC = () => {
         <Tooltip title={text}>
           <Text ellipsis>{text}</Text>
         </Tooltip>
-      )
+      ),
+      sorter: (a, b) => a.description.localeCompare(b.description, 'zh-CN')
     },
     {
       title: '操作',
@@ -490,10 +499,15 @@ const TechnicalConfigManagement: React.FC = () => {
           dataSource={filteredConfigs}
           rowKey="config_key"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             pageSize: 20,
             showSizeChanger: true,
-            showTotal: (total) => `共 ${total} 条配置`
+            showQuickJumper: true,
+            showTotal: (total) => `共 ${total} 条`
           }}
           scroll={{ x: 1000 }}
         />

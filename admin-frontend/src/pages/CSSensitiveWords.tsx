@@ -61,6 +61,7 @@ const CSSensitiveWords: React.FC = () => {
   const [form] = Form.useForm();
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
   const [filters, setFilters] = useState<any>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     fetchWords();
@@ -171,37 +172,47 @@ const CSSensitiveWords: React.FC = () => {
     {
       title: 'ID',
       dataIndex: 'id',
-      width: 80
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '敏感词',
       dataIndex: 'word',
       width: 150,
-      render: (word: string) => <Tag color="red">{word}</Tag>
+      render: (word: string) => <Tag color="red">{word}</Tag>,
+      sorter: (a, b) => a.word.localeCompare(b.word, 'zh-CN')
     },
     {
       title: '分类',
       dataIndex: 'category',
       width: 120,
-      render: (category: string) => <Tag color="blue">{category}</Tag>
+      render: (category: string) => <Tag color="blue">{category}</Tag>,
+      sorter: (a, b) => a.category.localeCompare(b.category, 'zh-CN')
     },
     {
       title: '严重程度',
       dataIndex: 'severity',
       width: 100,
-      render: (severity: string) => getSeverityTag(severity)
+      render: (severity: string) => getSeverityTag(severity),
+      sorter: (a, b) => {
+        const order = { low: 1, medium: 2, high: 3, critical: 4 };
+        return (order[a.severity as keyof typeof order] || 0) - (order[b.severity as keyof typeof order] || 0);
+      }
     },
     {
       title: '处理动作',
       dataIndex: 'action',
       width: 100,
-      render: (action: string) => getActionTag(action)
+      render: (action: string) => getActionTag(action),
+      sorter: (a, b) => a.action.localeCompare(b.action, 'zh-CN')
     },
     {
       title: '替换词',
       dataIndex: 'replacement',
       width: 120,
-      render: (replacement: string) => replacement || '-'
+      render: (replacement: string) => replacement || '-',
+      sorter: (a, b) => (a.replacement || '').localeCompare(b.replacement || '', 'zh-CN')
     },
     {
       title: '状态',
@@ -220,7 +231,8 @@ const CSSensitiveWords: React.FC = () => {
       title: '创建时间',
       dataIndex: 'createdAt',
       width: 180,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm')
+      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
+      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     },
     {
       title: '操作',
@@ -385,9 +397,14 @@ const CSSensitiveWords: React.FC = () => {
           dataSource={words}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`
           }}
           onChange={(newPagination) => {

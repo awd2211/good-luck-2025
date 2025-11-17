@@ -52,6 +52,7 @@ const PaymentMethodManagement: React.FC = () => {
   const [editingMethod, setEditingMethod] = useState<PaymentMethod | null>(null)
   const [selectedMethodStats, setSelectedMethodStats] = useState<PaymentMethodStats | null>(null)
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   useEffect(() => {
     fetchMethods()
@@ -275,6 +276,10 @@ const PaymentMethodManagement: React.FC = () => {
           dataSource={methods}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={false}
         />
       </Card>

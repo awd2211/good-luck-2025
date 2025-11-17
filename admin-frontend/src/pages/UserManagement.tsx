@@ -46,6 +46,7 @@ const UserManagement = () => {
   const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(null)
   const [passwordForm] = Form.useForm()
   const [stats, setStats] = useState<Stats | null>(null)
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -499,6 +500,10 @@ const UserManagement = () => {
           dataSource={users}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

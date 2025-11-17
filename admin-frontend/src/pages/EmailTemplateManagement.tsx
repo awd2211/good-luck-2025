@@ -33,8 +33,8 @@ const { Option } = Select
 interface EmailTemplate {
   id: number
   template_key: string
-  template_name: string
-  template_type: string
+  name: string
+  category: string
   subject: string
   html_content: string
   variables: string[]
@@ -55,14 +55,14 @@ const EmailTemplateManagement = () => {
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 邮件模板类型
-  const templateTypes = [
-    { value: 'password_reset', label: '密码重置' },
-    { value: '2fa_enabled', label: '2FA启用通知' },
-    { value: 'test_email', label: '测试邮件' },
-    { value: 'system_notification', label: '系统通知' },
-    { value: 'custom', label: '自定义' },
+  const templateCategories = [
+    { value: 'admin', label: '管理员' },
+    { value: 'user', label: '用户' },
+    { value: 'system', label: '系统' },
+    { value: 'marketing', label: '营销' },
   ]
 
   // 可用变量说明
@@ -178,8 +178,8 @@ const EmailTemplateManagement = () => {
   const handleCopy = (template: EmailTemplate) => {
     form.setFieldsValue({
       template_key: `${template.template_key}_copy`,
-      template_name: `${template.template_name}（副本）`,
-      template_type: template.template_type,
+      name: `${template.name}（副本）`,
+      category: template.category,
       subject: template.subject,
       html_content: template.html_content,
       variables: template.variables?.join(', ') || '',
@@ -196,6 +196,15 @@ const EmailTemplateManagement = () => {
       dataIndex: 'id',
       key: 'id',
       width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
+    },
+    {
+      title: '模板名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 200,
+      sorter: (a, b) => (a.name || '').localeCompare(b.name || '', 'zh-CN')
     },
     {
       title: '模板键',
@@ -208,43 +217,18 @@ const EmailTemplateManagement = () => {
           {record.is_system && <Tag color="orange">系统</Tag>}
         </Space>
       ),
-    },
-    {
-      title: '模板名称',
-      dataIndex: 'template_name',
-      key: 'template_name',
-      width: 200,
+      sorter: (a, b) => (a.template_key || '').localeCompare(b.template_key || '', 'zh-CN')
     },
     {
       title: '类型',
-      dataIndex: 'template_type',
-      key: 'template_type',
+      dataIndex: 'category',
+      key: 'category',
       width: 120,
-      render: (type) => {
-        const found = templateTypes.find((t) => t.value === type)
-        return <Tag color="green">{found?.label || type}</Tag>
+      render: (category) => {
+        const found = templateCategories.find((t) => t.value === category)
+        return <Tag color="green">{found?.label || category}</Tag>
       },
-    },
-    {
-      title: '主题',
-      dataIndex: 'subject',
-      key: 'subject',
-      ellipsis: true,
-      width: 200,
-    },
-    {
-      title: '变量',
-      dataIndex: 'variables',
-      key: 'variables',
-      width: 150,
-      render: (variables: string[]) =>
-        variables?.length > 0 ? (
-          <Tooltip title={variables.join(', ')}>
-            <Tag>{variables.length} 个变量</Tag>
-          </Tooltip>
-        ) : (
-          <Tag>无</Tag>
-        ),
+      sorter: (a, b) => (a.category || '').localeCompare(b.category || '', 'zh-CN')
     },
     {
       title: '状态',
@@ -258,10 +242,26 @@ const EmailTemplateManagement = () => {
       ),
     },
     {
-      title: '更新人',
-      dataIndex: 'updated_by',
-      key: 'updated_by',
-      width: 100,
+      title: '主题',
+      dataIndex: 'subject',
+      key: 'subject',
+      ellipsis: true,
+      width: 200,
+      sorter: (a, b) => (a.subject || '').localeCompare(b.subject || '', 'zh-CN')
+    },
+    {
+      title: '变量',
+      dataIndex: 'variables',
+      key: 'variables',
+      width: 120,
+      render: (variables: string[]) =>
+        variables?.length > 0 ? (
+          <Tooltip title={variables.join(', ')}>
+            <Tag>{variables.length} 个变量</Tag>
+          </Tooltip>
+        ) : (
+          <Tag>无</Tag>
+        ),
     },
     {
       title: '更新时间',
@@ -269,6 +269,14 @@ const EmailTemplateManagement = () => {
       key: 'updated_at',
       width: 160,
       render: (time) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+    },
+    {
+      title: '更新人',
+      dataIndex: 'updated_by',
+      key: 'updated_by',
+      width: 100,
+      sorter: (a, b) => (a.updated_by || '').localeCompare(b.updated_by || '', 'zh-CN')
     },
     {
       title: '操作',
@@ -336,6 +344,10 @@ const EmailTemplateManagement = () => {
           dataSource={templates}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           scroll={{ x: 1500 }}
           pagination={{
             showSizeChanger: true,
@@ -394,7 +406,7 @@ const EmailTemplateManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="template_name"
+            name="name"
             label="模板名称"
             rules={[{ required: true, message: '请输入模板名称' }]}
           >
@@ -402,7 +414,7 @@ const EmailTemplateManagement = () => {
           </Form.Item>
 
           <Form.Item
-            name="template_type"
+            name="category"
             label="模板类型"
             rules={[{ required: true, message: '请选择模板类型' }]}
           >
@@ -410,7 +422,7 @@ const EmailTemplateManagement = () => {
               placeholder="选择模板类型"
               disabled={editingTemplate?.is_system}
             >
-              {templateTypes.map((type) => (
+              {templateCategories.map((type) => (
                 <Option key={type.value} value={type.value}>
                   {type.label}
                 </Option>

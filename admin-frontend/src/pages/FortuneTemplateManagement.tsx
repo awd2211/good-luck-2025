@@ -38,6 +38,7 @@ const FortuneTemplateManagement = () => {
   const [editingTemplate, setEditingTemplate] = useState<FortuneTemplate | null>(null)
   const [viewingTemplate, setViewingTemplate] = useState<FortuneTemplate | null>(null)
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -205,33 +206,39 @@ const FortuneTemplateManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 60
+      width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '模板名称',
       dataIndex: 'name',
       key: 'name',
-      width: 200
+      width: 200,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN')
     },
     {
       title: '关联服务',
       dataIndex: 'service_name',
       key: 'service_name',
       width: 150,
-      render: (text) => <Tag color="blue">{text}</Tag>
+      render: (text) => <Tag color="blue">{text}</Tag>,
+      sorter: (a, b) => (a.service_name || '').localeCompare(b.service_name || '', 'zh-CN')
     },
     {
       title: '模板类型',
       dataIndex: 'template_type',
       key: 'template_type',
       width: 120,
-      render: (type) => <Tag color="green">{type}</Tag>
+      render: (type) => <Tag color="green">{type}</Tag>,
+      sorter: (a, b) => a.template_type.localeCompare(b.template_type, 'zh-CN')
     },
     {
       title: '版本',
       dataIndex: 'version',
       key: 'version',
-      width: 80
+      width: 80,
+      sorter: (a, b) => (a.version || '').localeCompare(b.version || '', 'zh-CN')
     },
     {
       title: '状态',
@@ -248,14 +255,16 @@ const FortuneTemplateManagement = () => {
       title: '创建人',
       dataIndex: 'created_by',
       key: 'created_by',
-      width: 120
+      width: 120,
+      sorter: (a, b) => (a.created_by || '').localeCompare(b.created_by || '', 'zh-CN')
     },
     {
       title: '更新时间',
       dataIndex: 'updated_at',
       key: 'updated_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString('zh-CN')
+      render: (time) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
     },
     {
       title: '操作',
@@ -321,6 +330,10 @@ const FortuneTemplateManagement = () => {
           dataSource={templates}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           scroll={{ x: 1400 }}
           pagination={{
             current: pagination.current,

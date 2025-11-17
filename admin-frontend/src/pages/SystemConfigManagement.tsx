@@ -252,6 +252,7 @@ const SystemConfigManagement = () => {
   const [formValues, setFormValues] = useState<any>(null) // 通用表单值
   const [editMode, setEditMode] = useState<'form' | 'json'>('form') // 编辑模式：表单或JSON
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 分页和筛选状态
   const [pagination, setPagination] = useState({
@@ -570,14 +571,17 @@ const SystemConfigManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 60
+      width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '配置键',
       dataIndex: 'config_key',
       key: 'config_key',
       width: 200,
-      render: (key) => <Tag color="blue">{key}</Tag>
+      render: (key) => <Tag color="blue">{key}</Tag>,
+      sorter: (a, b) => a.config_key.localeCompare(b.config_key, 'zh-CN')
     },
     {
       title: '配置类型',
@@ -587,7 +591,8 @@ const SystemConfigManagement = () => {
       render: (type) => <Tag color="green">{type}</Tag>,
       filters: types.map(t => ({ text: t, value: t })),
       filteredValue: filters.config_type ? [filters.config_type] : null,
-      onFilter: (value, record) => record.config_type === value
+      onFilter: (value, record) => record.config_type === value,
+      sorter: (a, b) => a.config_type.localeCompare(b.config_type, 'zh-CN')
     },
     {
       title: '配置值',
@@ -614,20 +619,23 @@ const SystemConfigManagement = () => {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN')
     },
     {
       title: '更新人',
       dataIndex: 'updated_by',
       key: 'updated_by',
-      width: 120
+      width: 120,
+      sorter: (a, b) => (a.updated_by || '').localeCompare(b.updated_by || '', 'zh-CN')
     },
     {
       title: '更新时间',
       dataIndex: 'updated_at',
       key: 'updated_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString('zh-CN')
+      render: (time) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
     },
     {
       title: '操作',
@@ -742,6 +750,10 @@ const SystemConfigManagement = () => {
               dataSource={configs}
               rowKey="id"
               loading={loading}
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+              }}
               scroll={{ x: 1400 }}
               pagination={{
                 current: pagination.current,

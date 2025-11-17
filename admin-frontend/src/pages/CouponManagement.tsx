@@ -37,6 +37,7 @@ const CouponManagement = () => {
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null)
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 15,
@@ -384,6 +385,10 @@ const CouponManagement = () => {
           dataSource={coupons}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

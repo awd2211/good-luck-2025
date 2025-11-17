@@ -68,6 +68,7 @@ const CustomerServiceManagement: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAgent, setEditingAgent] = useState<CSAgent | null>(null);
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // 筛选条件
   const [filters] = useState({
@@ -459,9 +460,14 @@ const CustomerServiceManagement: React.FC = () => {
         dataSource={agents}
         rowKey="id"
         loading={loading}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+        }}
         pagination={{
           ...pagination,
           showSizeChanger: true,
+          showQuickJumper: true,
           showTotal: (total) => `共 ${total} 条`,
           onChange: (page, pageSize) => loadAgents(page, pageSize)
         }}

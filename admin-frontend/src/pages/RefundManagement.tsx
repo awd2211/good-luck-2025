@@ -38,6 +38,7 @@ const RefundManagement = () => {
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve')
   const [form] = Form.useForm()
   const checkPermission = usePermission()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 15,
@@ -269,6 +270,10 @@ const RefundManagement = () => {
           dataSource={refunds}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

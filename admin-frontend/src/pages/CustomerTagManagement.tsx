@@ -91,6 +91,7 @@ const CustomerTagManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
   const [filters, setFilters] = useState<any>({});
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   useEffect(() => {
     fetchTags();
@@ -444,9 +445,14 @@ const CustomerTagManagement: React.FC = () => {
           dataSource={tags}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             ...pagination,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`
           }}
           onChange={(newPagination) => {

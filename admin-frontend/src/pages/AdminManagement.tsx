@@ -85,6 +85,7 @@ const AdminManagement = () => {
   const [searchText, setSearchText] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('')
   const [password, setPassword] = useState('')
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 20,
@@ -658,6 +659,10 @@ const AdminManagement = () => {
                     dataSource={admins}
                     rowKey="id"
                     loading={loading}
+                    rowSelection={{
+                      selectedRowKeys,
+                      onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+                    }}
                     pagination={{
                       ...pagination,
                       showSizeChanger: true,

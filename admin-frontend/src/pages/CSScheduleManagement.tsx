@@ -45,6 +45,7 @@ const CSScheduleManagement: React.FC = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [statistics, setStatistics] = useState<any>({});
   const [swapRequests, setSwapRequests] = useState<SwapRequest[]>([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 判断是否为客服主管
@@ -304,6 +305,10 @@ const CSScheduleManagement: React.FC = () => {
                 columns={swapColumns}
                 dataSource={swapRequests}
                 rowKey="id"
+                rowSelection={{
+                  selectedRowKeys,
+                  onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+                }}
                 pagination={false}
               />
             </Card>

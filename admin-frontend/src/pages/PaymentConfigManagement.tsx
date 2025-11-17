@@ -47,6 +47,7 @@ const PaymentConfigManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('paypal')
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>('sandbox')
   const [showValues, setShowValues] = useState<Record<string, boolean>>({})
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   useEffect(() => {
     fetchConfigs()
@@ -331,6 +332,10 @@ const PaymentConfigManagement: React.FC = () => {
               dataSource={configs}
               loading={loading}
               rowKey="id"
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+              }}
               pagination={false}
             />
           </TabPane>
@@ -341,6 +346,10 @@ const PaymentConfigManagement: React.FC = () => {
               dataSource={configs}
               loading={loading}
               rowKey="id"
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+              }}
               pagination={false}
             />
           </TabPane>

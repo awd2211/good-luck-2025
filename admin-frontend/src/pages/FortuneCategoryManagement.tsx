@@ -24,6 +24,7 @@ const FortuneCategoryManagement = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [form] = Form.useForm()
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 分页状态
   const [pagination, setPagination] = useState({
@@ -191,7 +192,9 @@ const FortuneCategoryManagement = () => {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 60
+      width: 60,
+      sorter: (a, b) => a.id - b.id,
+      defaultSortOrder: 'descend'
     },
     {
       title: '图标',
@@ -204,20 +207,23 @@ const FortuneCategoryManagement = () => {
       title: '分类名称',
       dataIndex: 'name',
       key: 'name',
-      width: 150
+      width: 150,
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN')
     },
     {
       title: '代码',
       dataIndex: 'code',
       key: 'code',
       width: 150,
-      render: (code) => <Tag color="blue">{code}</Tag>
+      render: (code) => <Tag color="blue">{code}</Tag>,
+      sorter: (a, b) => a.code.localeCompare(b.code, 'zh-CN')
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN')
     },
     {
       title: '状态',
@@ -240,7 +246,8 @@ const FortuneCategoryManagement = () => {
       dataIndex: 'created_at',
       key: 'created_at',
       width: 180,
-      render: (time) => new Date(time).toLocaleString('zh-CN')
+      render: (time) => new Date(time).toLocaleString('zh-CN'),
+      sorter: (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     },
     {
       title: '操作',
@@ -290,6 +297,10 @@ const FortuneCategoryManagement = () => {
           dataSource={categories}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,

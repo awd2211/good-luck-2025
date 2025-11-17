@@ -30,6 +30,7 @@ const FortuneManagement = () => {
   const [loading, setLoading] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -326,6 +327,10 @@ const FortuneManagement = () => {
             dataSource={orders}
             rowKey="id"
             loading={loading}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+            }}
             scroll={{ x: 1200 }}
             pagination={{
               ...pagination,

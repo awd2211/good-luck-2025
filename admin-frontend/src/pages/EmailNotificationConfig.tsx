@@ -64,6 +64,7 @@ const EmailNotificationConfigPage: React.FC = () => {
   const [currentConfig, setCurrentConfig] = useState<EmailNotificationConfig | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [form] = Form.useForm();
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
 
   // 加载配置列表
   const loadConfigs = async (category?: string) => {
@@ -422,9 +423,14 @@ const EmailNotificationConfigPage: React.FC = () => {
           dataSource={configs}
           rowKey="id"
           loading={loading}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+          }}
           pagination={{
             pageSize: 20,
             showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total) => `共 ${total} 条`,
           }}
         />
