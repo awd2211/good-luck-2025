@@ -38,6 +38,7 @@ const NotificationTemplates = () => {
     pageSize: 20,
     total: 0
   })
+  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
 
   // 检查是否可以编辑系统模板（只有超级管理员和管理员可以）
   const canEditSystemTemplate = user?.role === Role.SUPER_ADMIN || user?.role === Role.ADMIN
@@ -165,6 +166,13 @@ const NotificationTemplates = () => {
 
   const columns: ColumnsType<NotificationTemplate> = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 80,
+      sorter: (a, b) => a.id - b.id,
+    },
+    {
       title: '模板名称',
       dataIndex: 'name',
       key: 'name',
@@ -175,6 +183,7 @@ const NotificationTemplates = () => {
           {record.is_system && <Tag color="purple">系统</Tag>}
         </Space>
       ),
+      sorter: (a, b) => a.name.localeCompare(b.name, 'zh-CN'),
     },
     {
       title: '标题',
@@ -182,6 +191,7 @@ const NotificationTemplates = () => {
       key: 'title',
       width: 200,
       ellipsis: true,
+      sorter: (a, b) => a.title.localeCompare(b.title, 'zh-CN'),
     },
     {
       title: '内容预览',
@@ -200,6 +210,7 @@ const NotificationTemplates = () => {
           {content}
         </div>
       ),
+      sorter: (a, b) => a.content.localeCompare(b.content, 'zh-CN'),
     },
     {
       title: '类型',
@@ -259,6 +270,7 @@ const NotificationTemplates = () => {
       key: 'description',
       width: 200,
       ellipsis: true,
+      sorter: (a, b) => (a.description || '').localeCompare(b.description || '', 'zh-CN'),
     },
     {
       title: '操作',
@@ -332,6 +344,13 @@ const NotificationTemplates = () => {
           dataSource={templates}
           loading={loading}
           rowKey="id"
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (selectedKeys) => setSelectedRowKeys(selectedKeys),
+            getCheckboxProps: (record) => ({
+              disabled: record.is_system && !canEditSystemTemplate,
+            }),
+          }}
           pagination={{
             current: pagination.current,
             pageSize: pagination.pageSize,
